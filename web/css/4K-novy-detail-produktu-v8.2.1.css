@@ -1,0 +1,212 @@
+/* 4K – nový detail produktu (čistá verze v8.2.1, 5. 11. 2026)
+   Nahrazuje celý předchozí obsah včetně záplat v3–v7.
+   Vypnutí: Internetový obchod → Stylesheety → odškrtnout Aktivní. */
+
+/* ===================== SPOLEČNÉ (počítač i mobil) ===================== */
+
+/* název a krátký popis */
+#PDMaster bs-empty{display:none}
+#PDMaster h1.Heading{display:block;margin:0;font-family:'FKScreamer-Upright',Impact,sans-serif;font-weight:400;text-transform:uppercase;line-height:1.02;letter-spacing:0;color:#231F20}
+#PDProductDescription{font-size:17px;line-height:1.5;color:#3b3b3b}
+
+/* cena: akční velká, běžná přeškrtnutá vedle, bez DPH skrytá
+   (nadpisové písmo má jen jeden řez → bez umělého ztučnění) */
+#PDMaster #PDTable.PDTable{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;align-items:baseline!important;gap:4px 14px}
+#PDTable .price.vat .value{font-family:'FKScreamer-Upright',Impact,sans-serif;font-size:36px;line-height:1;color:#231F20}
+#PDTable .price.user.vat{order:1}
+#PDTable .price.user.vat .value,#PDTable .price.user.vat .value *{font-weight:400!important;font-synthesis:none!important}
+#PDTable .price.vat .from{font-family:'FKScreamer-Upright',Impact,sans-serif!important;font-size:36px!important;line-height:1!important;font-weight:400!important;font-synthesis:none!important;color:#231F20!important}
+#PDTable .price.retail{order:2}
+#PDTable .price.retail .caption,#PDTable .price.retail .vatText,#PDTable .price.novat{display:none}
+#PDTable .price.retail .value{font:400 18px 'GoodSans-Regular',Arial,sans-serif!important;color:#8a8a86!important;text-decoration:line-through}
+
+/* štítky na fotce (detail i výpisy): žlutá sleva; pokud je sleva,
+   štítky se seskupí vpravo nahoře – nahoře Black Friday, pod ním sleva */
+.productFlag.icon.discount{min-width:0!important;aspect-ratio:auto!important;background:#FFC524!important;color:#231F20!important;font-family:'GoodSans-Bold',Arial,sans-serif!important}
+.productFlag.icon.discount,.productFlag.icon.discount span{font-weight:400!important;font-synthesis:none!important}
+.productFlag.icon.discount span{font-family:inherit!important;color:inherit!important}
+.icons:has(.productFlag.discount){display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:5px!important;width:max-content!important;margin-left:auto!important}
+.icons .productFlag:not(.discount){order:1!important}
+.icons .productFlag.discount{order:2!important;position:static!important;inset:auto!important}
+.icons:has(.productFlag.discount) .productFlag{display:flex!important;justify-content:center!important;align-items:center!important;align-self:stretch!important;box-sizing:border-box!important;width:auto!important;max-width:none!important;height:auto!important;margin:0!important;padding:5px 9px!important;border-radius:3px!important;font-size:14px!important;line-height:1.2!important;letter-spacing:.04em!important;text-align:center!important}
+.icons:has(.productFlag.discount) .productFlag span{font-size:inherit!important;line-height:inherit!important}
+/* menší ve výpisech */
+.ActionIcons .icons:has(.productFlag.discount){gap:3px!important}
+.ActionIcons .icons:has(.productFlag.discount) .productFlag{font-size:11px!important;padding:3px 6px!important;letter-spacing:.03em!important}
+
+/* velikosti – dlaždice, číslo vždy ve stejné výšce */
+#PDVariantSelector .title{display:none}
+#PDVariantSelector .caption{display:block;margin:0 0 10px;font-size:15px;color:#6a6a66}
+#PDVariantSelector .buttons{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(64px,1fr))!important;gap:8px}
+#PDVariantSelector .buttons .value{box-sizing:border-box;width:auto!important;min-width:0!important;height:62px;margin:0!important;padding:9px 3px 0!important;display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;align-items:center;justify-content:flex-start!important;gap:3px;overflow:hidden;border:1px solid #dcdcd8!important;border-radius:4px!important;background:#fff!important;color:#231F20!important;box-shadow:none!important;cursor:pointer}
+#PDVariantSelector .buttons .value .labelValue,#PDVariantSelector .buttons .value .availabilityInfo{display:block!important;width:auto!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;text-align:center}
+#PDVariantSelector .buttons .value .labelValue{font-family:'GoodSans-Regular',Arial,sans-serif;font-size:17px;line-height:1.1!important}
+#PDVariantSelector .buttons .value .availabilityInfo{font-size:11px!important;line-height:1.1!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;hyphens:manual!important}
+#PDVariantSelector .availabilityInfo.zelena{color:#1f7a3a!important}
+#PDVariantSelector .buttons .value .availabilityInfo{flex:1 1 auto!important;display:flex!important;align-items:center!important;justify-content:center!important;padding-bottom:9px!important}
+#PDVariantSelector .availabilityInfo.oranzova{color:#a85200!important}
+#PDVariantSelector .value:has(.oranzova){background:#f4f4f2!important}
+#PDVariantSelector .value:has(.oranzova) .labelValue{color:#8a8a86}
+#PDVariantSelector .buttons .value:hover{border-color:#231F20!important}
+#PDVariantSelector .buttons .value.selected{background:#231F20!important;border-color:#231F20!important;color:#fff!important}
+#PDVariantSelector .buttons .value.selected .labelValue{color:#fff;text-decoration:none}
+#PDVariantSelector .buttons .value.selected .availabilityInfo{color:#cfe8d6!important}
+#PDVariantSelector .buttons .value.selected:has(.oranzova) .availabilityInfo{color:#d8d8d4!important}
+
+/* před výběrem velikosti: šedé pole „Vyberte velikost“ na místě tlačítka Koupit */
+#PDMaster:not(:has(.PDAddToCart))::after{content:"Vyberte velikost";display:flex!important;align-items:center;justify-content:center;box-sizing:border-box;height:56px;border-radius:6px;background:#e6e6e3;color:#5a5a5a;font:400 17px 'GoodSans-Regular',Arial,sans-serif;clear:none;visibility:visible}
+
+/* počet kusů (jeden rámeček, „1 ks“ uprostřed) + Koupit */
+#PDMaster .PDAddToCart{display:grid!important;grid-template-columns:44px 56px 44px minmax(0,1fr)!important;grid-template-rows:56px!important;align-items:stretch;height:56px}
+#PDMaster .PDAddToCart::before{content:""!important;display:block!important;grid-column:1 / 4;grid-row:1;box-sizing:border-box;position:static!important;width:auto!important;height:auto!important;margin:0!important;border:1px solid #dcdcd8;border-radius:6px;background:#fff}
+#PDMaster .PDAddToCart .button.decrease,#PDMaster .PDAddToCart .quantity,#PDMaster .PDAddToCart .button.increase{grid-row:1;box-sizing:border-box;position:relative;z-index:1;width:auto!important;height:56px!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important}
+#PDMaster .PDAddToCart .button.decrease{grid-column:1}
+#PDMaster .PDAddToCart .quantity{grid-column:2;display:grid!important;align-items:center}
+#PDMaster .PDAddToCart .button.increase{grid-column:3}
+#PDMaster .PDAddToCart .button.decrease,#PDMaster .PDAddToCart .button.increase{display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important;color:#231F20}
+#PDMaster .PDAddToCart .button.decrease::before,#PDMaster .PDAddToCart .button.increase::before{content:"−"!important;display:block!important;position:static!important;width:auto!important;height:auto!important;margin:0!important;background:none!important;font:400 22px/1 'GoodSans-Regular',Arial,sans-serif;color:#231F20;text-align:center!important}
+#PDMaster .PDAddToCart .button.increase::before{content:"+"!important}
+#PDMaster .PDAddToCart .button.decrease.disabled::before{color:#c9c9c4}
+#PDMaster .PDAddToCart .button.decrease::after,#PDMaster .PDAddToCart .button.increase::after{display:none!important}
+#PDMaster .PDAddToCart .quantity input{grid-area:1/1;box-sizing:border-box;width:100%!important;height:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:0;background:transparent;box-shadow:none;-webkit-appearance:none;appearance:none;text-align:center!important;font:400 17px 'GoodSans-Regular',Arial,sans-serif!important;letter-spacing:0}
+#PDMaster .PDAddToCart .quantity input.real{color:transparent!important;-webkit-text-fill-color:transparent;caret-color:#231F20}
+#PDMaster .PDAddToCart .quantity input.real:focus{color:#231F20!important;-webkit-text-fill-color:#231F20}
+#PDMaster .PDAddToCart .quantity input.ghost{pointer-events:none}
+#PDMaster .PDAddToCart .quantity:focus-within input.ghost{visibility:hidden}
+#PDMaster .PDAddToCart .button.buy{grid-column:4;grid-row:1;box-sizing:border-box;height:56px;margin-left:10px;display:flex!important;align-items:center;justify-content:center;border:0!important;border-radius:6px!important;background:#FFC524!important;color:#231F20!important;font:400 18px 'GoodSans-Bold',Arial,sans-serif;text-transform:none;box-shadow:none!important}
+#PDMaster .PDAddToCart .button.buy:hover{background:#f0b400!important}
+#PDMaster .PDAddToCart .button.buy span{font:inherit;color:inherit}
+#PDMaster .PDAddToCart .button.buy::before,#PDMaster .PDAddToCart .button.buy::after{display:none!important}
+
+/* srdíčko (oblíbené) */
+#PDMaster .PDActionPanel .favorites{box-sizing:border-box;width:56px;height:56px;padding:0!important;border:1px solid #dcdcd8;border-radius:6px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23231F20' stroke-width='2'%3E%3Cpath d='M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z'/%3E%3C/svg%3E") center/22px no-repeat!important;font-size:0!important;color:transparent!important;cursor:pointer;justify-self:end;align-self:start!important}
+#PDMaster .PDActionPanel .favorites::before,#PDMaster .PDActionPanel .favorites::after{display:none!important}
+#PDMaster .PDActionPanel .favorites.remove{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='%23231F20' stroke='%23231F20' stroke-width='2'%3E%3Cpath d='M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z'/%3E%3C/svg%3E")!important}
+
+/* dostupnost a doručení */
+#PDMaster .PDAvailabilityInfo{box-sizing:border-box;padding:14px 16px 14px 48px;border:1px solid #e6e6e3;border-radius:4px 4px 0 0;font-size:15px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%231f7a3a' stroke-width='2.4'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") 16px center/20px no-repeat}
+#PDMaster .PDAvailabilityInfo.cs_zelena .label{color:#1f7a3a}
+#PDMaster .PDAvailabilityInfo:not(.cs_zelena){background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23a85200' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E")}
+#PDMaster .PDAvailabilityInfo:not(.cs_zelena) .label{color:#a85200}
+#PDAvailabilityPanel{display:block!important;box-sizing:border-box;border:1px solid #e6e6e3;border-top:0;border-radius:0 0 4px 4px;font-size:15px;color:#3b3b3b}
+#PDAvailabilityPanel>dc-con{display:block;padding:14px 16px 14px 48px;border-bottom:1px solid #e6e6e3;background:no-repeat 16px center/20px}
+#PDAvailabilityPanel>dc-con:has(.personalTaking){background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23231F20' stroke-width='2'%3E%3Cpath d='M3 10l9-6 9 6v10H3z'/%3E%3Cpath d='M9 20v-6h6v6'/%3E%3C/svg%3E")}
+#PDAvailabilityPanel>dc-con:has(.delivery){background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23231F20' stroke-width='2'%3E%3Cpath d='M3 7h12v10H3zM15 10h4l2 3v4h-6'/%3E%3Ccircle cx='7' cy='18' r='1.5'/%3E%3Ccircle cx='18' cy='18' r='1.5'/%3E%3C/svg%3E")}
+#PDAvailabilityPanel .caption{margin-right:4px}
+#PDAvailabilityPanel .value{font-weight:700;color:#231F20}
+#PDAvailabilityPanel::after{content:"Vrácení do 14 dnů";display:block;padding:14px 16px 14px 48px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23231F20' stroke-width='2'%3E%3Cpath d='M4 12a8 8 0 1 0 3-6.2'/%3E%3Cpath d='M4 4v4h4'/%3E%3C/svg%3E") no-repeat 16px center/20px}
+/* oblečení a tretry: výměna velikosti + doprava */
+body:has(.BreadcrumbNavigation a[href*="/obleceni-c296/"]) #PDAvailabilityPanel::after,
+body:has(.BreadcrumbNavigation a[href*="tretry"]) #PDAvailabilityPanel::after{content:"Vrácení do 14 dnů – i výměna velikosti"}
+body:has(.BreadcrumbNavigation a[href*="/obleceni-c296/"]) #PDAvailabilityPanel .delivery::after,
+body:has(.BreadcrumbNavigation a[href*="tretry"]) #PDAvailabilityPanel .delivery::after{content:" · PPL nebo Zásilkovna, nad 2 500 Kč zdarma";font-weight:400;color:#3b3b3b}
+/* kola */
+body:has(.BreadcrumbNavigation a[href*="/jizdni-kola-c276/"]) #PDAvailabilityPanel .delivery::after{content:" · složené, seřízené a zkontrolované. Před odesláním se vám ozveme.";font-weight:400;color:#3b3b3b}
+
+/* kód, odkazy pod cenou, Essox jako text */
+#PDTable2 .caption,#PDTable2 .maker,#PDTable2 bs-grid-item:not(.code.value):not(.maker.value){display:none!important}
+#PDTable2 .code.value{display:block!important;font-size:13px;line-height:1.4;color:#6a6a66}
+#PDTable2 .code.value::before{content:"Kód: "}
+#PDTable2 .maker.value{display:block!important;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5a5a5a}
+#PDMaster .PDActionPanel .print,#PDMaster .PDActionPanel .sendByEmail{display:none!important}
+#PDMaster .PDActionPanel .askQuestion,#PDMaster .PDActionPanel .watchdog{height:auto!important;min-height:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;font-size:13px!important;line-height:1.4;color:#6a6a66!important;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+#PDMaster .PDActionPanel .askQuestion::before,#PDMaster .PDActionPanel .watchdog::before,#PDMaster .PDActionPanel .askQuestion::after,#PDMaster .PDActionPanel .watchdog::after{display:none!important}
+#PDMaster .PDActionPanel .askQuestion span,#PDMaster .PDActionPanel .watchdog span{font:inherit;color:inherit;padding:0!important;background:none!important}
+#PDInstallmentCalculator,#PDInstallmentCalculator>dc-con,#PDEssoxButton{display:block!important;width:max-content!important;min-width:0!important;height:auto!important;padding:0!important;line-height:1.4}
+#PDEssoxButton .linkButton{display:inline-block!important;width:auto!important;height:auto!important;padding:0!important;border:0!important;background:none!important;font-size:13px!important;line-height:1.4!important;cursor:pointer}
+#PDEssoxButton .linkButton::before{content:"Nákup na splátky";display:inline!important;width:auto!important;height:auto!important;background:none!important;font:400 13px 'GoodSans-Regular',Arial,sans-serif!important;color:#6a6a66!important;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+
+/* rozložení: prvky pravého sloupce se vyjmou ze svých boxů a skládají do mřížky #PDMaster */
+#PDMaster>dc-con:has(#PDTable),#PDMaster>dc-con:has(#PDTable) #PDTable2,#PDMaster>dc-con:has(#PDTable) #PDTable2>bs-grid-cont,#PDMaster>dc-con:has(#PDTable) .PDActionPanel,#PDMaster>dc-con:has(#PDTable) .PDActionPanel>dc-con{display:contents!important}
+#PDMaster>*,#PDVariantSelector,#PDVariantSelector .buttons{min-width:0!important}
+
+
+/* ===================== POČÍTAČ (od 900 px) ===================== */
+@media (min-width:900px){
+ /* sloupce: fotka | pravý sloupec s pevnou šířkou 510 px jako v návrhu (nic se nepřeskupí po výběru velikosti) */
+ #PDMaster{grid-template-columns:minmax(0,1fr) 162px 125px 135px 88px!important;grid-template-rows:repeat(9,auto) 1fr!important;grid-auto-rows:auto;column-gap:0!important;row-gap:0!important;align-items:start}
+ #PDMaster>dc-con:has(#PDImage){grid-column:1;grid-row:1 / span 10;padding-right:56px}
+
+ /* značka nad názvem (odkaz doplní podpora BSSHOP, šipka se pak ukáže sama) */
+ #PDTable2 .maker.value{grid-column:2 / -1;grid-row:1;margin:4px 0 6px;font-size:13px}
+ #PDTable2 .maker.value a{color:#5a5a5a;text-decoration:none;border-bottom:1px solid #c9c9c4;padding-bottom:2px}
+ #PDTable2 .maker.value a::after{content:"→";margin-left:6px}
+
+ #PDMaster>dc-con:has(>h1){grid-column:2 / -1;grid-row:2}
+ #PDMaster h1.Heading{font-size:44px}
+ #PDMaster>dc-con:has(#PDProductDescription){grid-column:2 / -1;grid-row:3;margin-top:8px}
+ #PDTable{grid-column:2 / -1!important;grid-row:4!important;margin:16px 0 0!important}
+ #PDVariantSelector{grid-column:2 / -1!important;grid-row:5!important;margin:28px 0 0}
+ #PDMaster .PDAddToCart,#PDMaster:not(:has(.PDAddToCart))::after{grid-column:2 / -1!important;grid-row:6!important;margin:28px 66px 0 0}
+ #PDMaster .PDActionPanel .favorites{grid-column:5;grid-row:6!important;margin-top:28px!important}
+ #PDMaster .PDAvailabilityInfo{grid-column:2 / -1!important;grid-row:7!important;margin-top:28px}
+ #PDAvailabilityPanel{grid-column:2 / -1!important;grid-row:8!important}
+ #PDTable2 .code.value{grid-column:2;grid-row:9;margin-top:28px}
+ #PDMaster .PDActionPanel .askQuestion{grid-column:3;grid-row:9;margin:28px 0 0 16px!important}
+ #PDInstallmentCalculator{grid-column:4!important;grid-row:9!important;align-self:start;margin:28px 0 0 16px!important}
+ #PDMaster .PDActionPanel .watchdog{grid-column:5;grid-row:9;margin:28px 0 0 16px!important}
+ #PDMaster>dc-con.dcOtherProducts{grid-column:1 / -1;grid-row:11}
+ #PDMaster>dc-con:has(#PDTabsMaster){grid-column:1 / -1;grid-row:12;margin-top:64px}
+ #PDMaster>dc-con:last-child:not(:has(#PDTabsMaster)){grid-column:1 / -1;grid-row:13}
+
+ /* galerie: náhledy vlevo, nejvýš 6, na šestém +N (klik otevře galerii) */
+ #PDImage{display:grid!important;grid-template-columns:88px minmax(0,1fr);gap:12px;position:relative}
+ #PDImage .mainImage{grid-column:2;grid-row:1;width:100%!important;height:680px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:4px;overflow:hidden}
+ #PDImage .mainImage img{width:auto!important;height:auto!important;max-width:100%!important;max-height:100%!important;object-fit:contain}
+ #PDImage .PDActionIcons{grid-column:2!important;grid-row:1!important;align-self:start;justify-self:end;position:relative!important;left:auto!important;z-index:2;margin:14px 14px 0 0}
+ #PDImage .images{grid-column:1;grid-row:1;margin:0!important;width:88px}
+ #PDImage .images>.button{display:none!important}
+ #PDImage .itemsOuter{overflow:visible!important;width:88px!important;height:auto!important}
+ #PDImage .items{display:flex!important;flex-flow:column!important;gap:8px;transform:none!important;width:88px!important;position:static!important}
+ #PDImage .items .item{width:88px!important;height:110px!important;margin:0!important;border:1px solid #e6e6e3;border-radius:4px;overflow:hidden;position:relative}
+ #PDImage .items .item img{width:100%;height:100%;object-fit:contain;background:#fff}
+ #PDImage .items .item:nth-child(n+7){display:none!important}
+ #PDImage .items .item:nth-child(6)::after{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(35,31,32,.72);color:#fff;font:400 26px 'FKScreamer-Upright',Impact,sans-serif;pointer-events:none}
+ #PDImage .items:has(.item:nth-child(7):last-child) .item:nth-child(6)::after{content:"+1"}
+ #PDImage .items:has(.item:nth-child(8):last-child) .item:nth-child(6)::after{content:"+2"}
+ #PDImage .items:has(.item:nth-child(9):last-child) .item:nth-child(6)::after{content:"+3"}
+ #PDImage .items:has(.item:nth-child(10):last-child) .item:nth-child(6)::after{content:"+4"}
+ #PDImage .items:has(.item:nth-child(11):last-child) .item:nth-child(6)::after{content:"+5"}
+ #PDImage .items:has(.item:nth-child(12):last-child) .item:nth-child(6)::after{content:"+6"}
+ #PDImage .items:has(.item:nth-child(13):last-child) .item:nth-child(6)::after{content:"+7"}
+ #PDImage .items:has(.item:nth-child(14):last-child) .item:nth-child(6)::after{content:"+8"}
+ #PDImage .items:has(.item:nth-child(15):last-child) .item:nth-child(6)::after{content:"+9"}
+ #PDImage .items:has(.item:nth-child(16)) .item:nth-child(6)::after{content:"+10"}
+ #PDImage .items:has(.item:nth-child(17)) .item:nth-child(6)::after{content:"+"}
+}
+
+
+/* ===================== MOBIL (do 899 px) ===================== */
+@media (max-width:899px){
+ #PDMaster{display:grid!important;grid-template-columns:max-content max-content max-content minmax(0,1fr)!important;grid-template-rows:none!important;grid-auto-rows:auto;column-gap:0!important;row-gap:0!important;align-items:start}
+ #PDTable2 .maker.value{grid-column:1 / -1;grid-row:1;margin:0 0 6px;font-size:12px}
+ #PDMaster>dc-con:has(>h1){grid-column:1 / -1;grid-row:2}
+ #PDMaster h1.Heading{font-size:34px}
+ #PDMaster>dc-con:has(#PDProductDescription){grid-column:1 / -1;grid-row:3;margin-top:6px}
+ #PDMaster>dc-con:has(#PDImage){grid-column:1 / -1;grid-row:4;margin-top:16px}
+ /* pevná výška fotky – stránka při výběru velikosti neposkakuje */
+ #PDImage .mainImage{display:flex!important;align-items:center;justify-content:center;height:82vw!important;max-height:460px}
+ #PDImage .mainImage img{width:auto!important;height:auto!important;max-width:100%!important;max-height:100%!important;object-fit:contain}
+ #PDTable{grid-column:1 / -1!important;grid-row:5!important;margin:20px 0 0!important}
+ #PDVariantSelector{grid-column:1 / -1!important;grid-row:6!important;margin:20px 0 0!important}
+ #PDVariantSelector .buttons{grid-template-columns:repeat(auto-fit,minmax(52px,1fr))!important;gap:6px!important}
+ #PDVariantSelector .buttons .value{height:66px!important}
+ #PDVariantSelector .buttons .value .availabilityInfo{font-size:10px!important}
+ #PDMaster .PDAddToCart,#PDMaster:not(:has(.PDAddToCart))::after{grid-column:1 / -1!important;grid-row:7!important;margin:20px 64px 0 0!important}
+ #PDMaster .PDActionPanel .favorites{grid-column:4;grid-row:7!important;margin:20px 0 0!important}
+ #PDMaster .PDAvailabilityInfo{grid-column:1 / -1!important;grid-row:8!important;margin-top:20px}
+ #PDAvailabilityPanel{grid-column:1 / -1!important;grid-row:9!important}
+ #PDTable2 .code.value{grid-column:1 / -1;grid-row:10;margin-top:20px}
+ #PDMaster .PDActionPanel .askQuestion{grid-column:1;grid-row:11;margin:10px 16px 0 0!important}
+ #PDInstallmentCalculator{grid-column:2!important;grid-row:11!important;margin:10px 16px 0 0!important}
+ #PDMaster .PDActionPanel .watchdog{grid-column:3;grid-row:11;margin:10px 0 0!important}
+ #PDMaster>dc-con.dcOtherProducts{grid-column:1 / -1;grid-row:12}
+ #PDMaster>dc-con:has(#PDTabsMaster){grid-column:1 / -1;grid-row:13;margin-top:40px}
+ #PDMaster>dc-con:last-child:not(:has(#PDTabsMaster)){grid-column:1 / -1;grid-row:14}
+
+ /* štítky menší: detail 11 px, výpisy 10 px */
+ .PDActionIcons .icons:has(.productFlag.discount){gap:3px!important}
+ .PDActionIcons .icons:has(.productFlag.discount) .productFlag{font-size:11px!important;padding:3px 6px!important}
+ .ActionIcons .icons:has(.productFlag.discount){gap:2px!important}
+ .ActionIcons .icons:has(.productFlag.discount) .productFlag{font-size:10px!important;padding:2px 5px!important;border-radius:2px!important;letter-spacing:.02em!important}
+}

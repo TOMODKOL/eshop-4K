@@ -9,6 +9,7 @@ Podklady pro práci na e-shopu 4kluciodkol.cz s Claude: instrukce, skill bsadmin
 | `INSTRUKCE.md` | Pravidla pro Clauda: co číst před prací, zásady, kde co je |
 | `skills/bsadmin/SKILL.md` | Skill bsadmin: BSADMIN, importy, názvy, popisy produktů, CSS, SEO, e-maily |
 | `bsadmin-skill.zip` | Tentýž skill zabalený k nahrání do Claude |
+| `web/` | Kód webu: CSS, skripty, popisy, e-maily, texty kategorií (viz web/README.md) |
 | `fonty/` | Písma FK Screamer a Good Sans. Zakoupená licence, jen pro práci pro firmu |
 
 ## Jak si to nastavit v Claude (jednou)

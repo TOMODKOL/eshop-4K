@@ -1,0 +1,50 @@
+<!-- 4K – skript pro výpis produktů: 1) filtr (otevírání/zavírání panelu), 2) větší obrázky ve výpisu (dočasně do úpravy BSSHOP) -->
+<script>
+/* 4K – filtr ve výpisu: panel se otevře kliknutím na Cena / Velikost / Výrobce,
+   zůstane otevřený při zaklikávání hodnot a zavře se kliknutím mimo, klávesou Esc
+   nebo dalším kliknutím na stejné tlačítko. Patří k stylesheetu „4K – výpis produktů“. */
+(function () {
+  var html = document.documentElement;
+  html.classList.add('fx-js');
+  var F = '#AttributeTabsFilter';
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var tab = t.closest(F + ' .tab');
+    if (tab) {
+      var otevreno = html.classList.contains('fx-open') && tab.classList.contains('selected');
+      html.classList.toggle('fx-open', !otevreno);
+      return;
+    }
+    if (t.closest(F + ' .SimpleFilter')) { html.classList.remove('fx-open'); return; }
+    if (!t.closest(F)) html.classList.remove('fx-open');
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') html.classList.remove('fx-open');
+  });
+})();
+
+(function () {
+  // 4K – větší obrázky ve výpisu produktů (dočasně, dokud BSSHOP nepřepne velikost).
+  // Mění jen adresu obrázku z velikosti /0/ (220 px) na /1/ (500 px), nic jiného.
+  var RE = /(\/images\/0\/[0-9a-f]+\/)0\//;
+  function vetsi(img) {
+    ['data-src', 'src'].forEach(function (a) {
+      var v = img.getAttribute(a);
+      if (v && RE.test(v)) img.setAttribute(a, v.replace(RE, '$11/'));
+    });
+  }
+  function projdi(koren) {
+    if (!koren || !koren.querySelectorAll) return;
+    if (koren.matches && koren.matches('#ProductListDefault img')) vetsi(koren);
+    koren.querySelectorAll('#ProductListDefault img').forEach(vetsi);
+  }
+  projdi(document);
+  new MutationObserver(function (zmeny) {
+    zmeny.forEach(function (z) {
+      if (z.type === 'attributes') { if (z.target.closest && z.target.closest('#ProductListDefault')) vetsi(z.target); }
+      else z.addedNodes.forEach(projdi);
+    });
+  }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'data-src'] });
+})();
+</script>

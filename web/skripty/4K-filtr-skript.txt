@@ -1,0 +1,25 @@
+<script>
+/* 4K – filtr ve výpisu: panel se otevře kliknutím na Cena / Velikost / Výrobce,
+   zůstane otevřený při zaklikávání hodnot a zavře se kliknutím mimo, klávesou Esc
+   nebo dalším kliknutím na stejné tlačítko. Patří k stylesheetu „4K – výpis produktů“. */
+(function () {
+  var html = document.documentElement;
+  html.classList.add('fx-js');
+  var F = '#AttributeTabsFilter';
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var tab = t.closest(F + ' .tab');
+    if (tab) {
+      var otevreno = html.classList.contains('fx-open') && tab.classList.contains('selected');
+      html.classList.toggle('fx-open', !otevreno);
+      return;
+    }
+    if (t.closest(F + ' .SimpleFilter')) { html.classList.remove('fx-open'); return; }
+    if (!t.closest(F)) html.classList.remove('fx-open');
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') html.classList.remove('fx-open');
+  });
+})();
+</script>

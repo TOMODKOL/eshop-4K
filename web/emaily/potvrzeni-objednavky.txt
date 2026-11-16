@@ -1,0 +1,183 @@
+<!-- [if mso | IE]> <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" align="center" style="width:600px; max-width: 600px;"> <tr> <td style="line-height:0px;mso-line-height-rule:exactly;"> <![endif]-->
+<div style="margin: 0px auto; max-width: 700px; background: #ffffff;">
+	<table style="width: 100%; background: #ffffff; max-width: 700px; margin: 0px auto;" border="0" cellspacing="0" cellpadding="0" align="center">
+		<tbody>
+			<tr>
+				<td style="text-align: center; vertical-align: top; direction: ltr; padding: 10px 0px 0px 0px;">
+					<!-- [if mso | IE]> <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px;"><tr><td style="vertical-align:top;width:600px;"> <![endif]-->
+					<div class="mj-column-per-100 outlook-group-fix" style="line-height: 22px; vertical-align: top; display: inline-block; direction: ltr; font-size: 13px; text-align: left; width: 100%; max-width: 700px;">
+						<table style="max-width: 700px;" border="0" width="100%" cellspacing="0" cellpadding="0">
+							<tbody>
+								<tr>
+									<td style="word-wrap: break-word; padding: 10px 25px;" align="left">
+										<div style="cursor: auto; color: #444444; font-family: Ubuntu, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 500; line-height: 50px; text-align: left;">Potvrzení objednávky č. $CISLO_OBJEDNAVKY</div>
+									</td>
+								</tr>
+								<tr>
+									<td style="word-wrap: break-word; padding: 0px 25px; padding-bottom: 0px;" align="left">
+										<div style="cursor: auto; color: #444444; font-family: Ubuntu, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 22px; text-align: left;">
+											<table style="background-color: white; width: 100%; color: #444444; font-family: Ubuntu, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 22px; height: auto; border-collapse: collapse; text-align: left;" cellspacing="0" cellpadding="0">
+												<tbody>
+													<tr>
+														<td colspan="4">
+															<br>
+															<p>
+																Dobrý den,
+																<br>
+																<br>
+																děkujeme za Váš nákup na
+																<a href="$WEB">$WEB</a>
+																. Vaši objednávku jsme přijali a zasíláme souhrné informace.
+															</p>
+														</td>
+													</tr>
+													<tr>
+														<td colspan="4">&nbsp;</td>
+													</tr>
+													<tr>
+														<td style="width: 20%;">Objednávka č.</td>
+														<td style="width: 30%;">$CISLO_OBJEDNAVKY</td>
+														<td style="width: 20%;">Doprava:</td>
+														<td>$ZPUSOB_DOPRAVY</td>
+													</tr>
+													<tr>
+														<td>Přijato:</td>
+														<td>$DATUM_A_CAS_VYTVORENI_OBJEDNAVKY</td>
+														<td>Platba:</td>
+														<td>$ZPUSOB_PLATBY</td>
+													</tr>
+													<tr>
+														<td>Cena celkem:</td>
+														<td colspan="3">$CENA_CELKEM_DPH $this.CurrencyCode vč. DPH</td>
+													</tr>
+												</tbody>
+											</table>
+										</div>
+									</td>
+								</tr>
+								<tr>
+									<td style="word-wrap: break-word; padding: 25px 25px; padding-bottom: 0px;" align="left">
+										<div style="cursor: auto; color: #444444; font-family: Ubuntu, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 22px; text-align: left;">
+											<table style="background-color: white; width: 100%; color: #444444; font-family: Ubuntu, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 22px; height: auto; border-collapse: collapse; text-align: left;" cellspacing="0" cellpadding="0">
+												<tbody>
+													<tr>
+														<td style="width: 50%;">
+															<strong>Fakturační údaje:</strong>
+														</td>
+														<td>
+															<strong>Dodací údaje:</strong>
+														</td>
+													</tr>
+													<tr>
+														<td>$FAKTURACNI_FIRMA $FAKTURACNI_JMENO</td>
+														<td>#if ($DODACI_ULICE==$FAKTURACNI_ULICE) (dodací údaje jsou shodné s fakturačními) #else $DODACI_JMENO $DODACI_FIRMA #end</td>
+													</tr>
+													<tr>
+														<td>­$FAKTURACNI_ULICE</td>
+														<td>­#if ($DODACI_ULICE!=$FAKTURACNI_ULICE)$DODACI_ULICE #end</td>
+													</tr>
+													<tr>
+														<td>$FAKTURACNI_PSC $FAKTURACNI_OBEC</td>
+														<td>#if ($DODACI_ULICE!=$FAKTURACNI_ULICE)$DODACI_PSC $DODACI_OBEC #end</td>
+													</tr>
+													<tr>
+														<td>
+															#if ($.NeniPrazdne($FAKTURACNI_ICO))IČ: $FAKTURACNI_ICO#end #if ($.NeniPrazdne($FAKTURACNI_DIC))
+															<br>
+															DIČ: $FAKTURACNI_DIC#end
+														</td>
+														<td>#if ($.NeniPrazdne($DODACI_TELEFON))Tel.: $DODACI_TELEFON#end</td>
+													</tr>
+													<tr>
+														<td colspan="2">
+															<a href="mailto:$EMAIL_ZAKAZNIKA">$EMAIL_ZAKAZNIKA</a>
+														</td>
+													</tr>
+													<tr>
+														<td>#if ($.NeniPrazdne($FAKTURACNI_TELEFON))Tel.: $FAKTURACNI_TELEFON#end</td>
+														<td>&nbsp;</td>
+													</tr>
+													<tr>
+														<td>&nbsp;</td>
+														<td>&nbsp;</td>
+													</tr>
+													<tr>
+														<td colspan="2">
+															<p>
+																#if($ZPUSOB_PLATBY=="Převod")
+																<strong>
+																	Zde jsou platební informace:
+																	<br>
+																	IBAN:
+																</strong>
+																$IBAN
+																<strong>
+																	<br>
+																	Číslo účtu:
+																</strong>
+																$CISLO_UCTU / $KOD_BANKY
+																<strong>
+																	<br>
+																	Variabilní symbol:
+																</strong>
+																$CISLO_OBJEDNAVKY
+																<strong>
+																	<br>
+																	Cena celkem:
+																</strong>
+																$CENA_CELKEM_DPH $this.CurrencyCode vč. DPH
+																<strong>
+																	<br>
+																	<strong>
+																		$.GetQrCode()#end
+																		<br>
+																	</strong>
+																</strong>
+																Objednané zboží:
+																<strong>
+																	<strong>
+																		<strong>
+																			<br>
+																		</strong>
+																	</strong>
+																</strong>
+																$SEZNAM_POLOZEK
+															</p>
+															<p style="text-align: right;">
+																<strong>Cena celkem:</strong>
+																<strong>$CENA_CELKEM_DPH $this.CurrencyCode vč. DPH</strong>
+															</p>
+														</td>
+													</tr>
+													<tr>
+														<td colspan="2">&nbsp;</td>
+													</tr>
+													<tr>
+														<td colspan="2">
+															<p>
+																#if ($.NeniPrazdne($POZNAMKA))
+																<strong>Poznámka</strong>
+																: $POZNAMKA#end
+															</p>
+															<p>
+																<strong>$POZNAMKA_PRO_ZAKAZNIKA</strong>
+															</p>
+															<p>Pokud se některé zboží ve Vaší objednávce vyprodá nebo z jiného nečekaného důvodu nebude skladem, budeme Vás obratem kontakovat. O dalším průběhu objednávky Vás budeme informovat e-mailem.</p>
+															<p>&nbsp;</p>
+														</td>
+													</tr>
+												</tbody>
+											</table>
+										</div>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<!-- [if mso | IE]> </td></tr></table> <![endif]-->
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+<!-- [if mso | IE]> </td></tr></table> <![endif]-->

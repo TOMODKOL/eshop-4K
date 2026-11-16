@@ -1,0 +1,199 @@
+/* 4K – výpis produktů (v1, 5. 11. 2026)
+   Filtr jako řádek tlačítek, mřížka produktů, nová karta produktu.
+   Vypnutí: Internetový obchod → Stylesheety → odškrtnout Aktivní.
+
+   ▶ POČET PRODUKTŮ VEDLE SEBE NA POČÍTAČI: změňte číslo 3 na 4 (nic jiného měnit netřeba). */
+:root{--4k-sloupce:3}
+
+/* ===================== FILTR ===================== */
+
+/* nic nesmí roztáhnout stránku do šířky (hlavně na mobilu) */
+#ProductsMaster,#ProductsHost,#CompoundFilter,#CompoundPagingTop,#CompoundPagingBottom,#AttributeTabsFilter,#AttributeTabsFilter .tabpages,#AttributeTabsFilter .SimpleFilter,#CompoundPagingTop .ProductSorting,#CompoundPagingTop .sortingBox,#ProductListDefault,#ProductListDefault .items{min-width:0!important;max-width:100%!important}
+
+/* obal filtru bez šedého podkladu */
+#AttributeTabsFilter{background:none!important;padding:0!important;margin:0 0 4px!important;border:0!important}
+#AttributeTabsFilter dc-con.bottom{background:none!important;padding:0!important;margin:0!important;border:0!important}
+#ScrollToProductHost{display:none!important}
+
+/* řádek tlačítek: Cena ▾ Velikost ▾ Výrobce ▾ | Skladem · Skladem u dodavatele · Black Friday */
+#AttributeTabsFilter .tabpages{display:grid!important;grid-template-columns:repeat(var(--tab-count,3),max-content) minmax(0,1fr)!important;grid-template-rows:auto auto!important;grid-auto-flow:row!important;column-gap:8px!important;row-gap:14px!important;align-items:center;margin:0!important;padding:14px 0!important;background:none!important;border:0!important;border-top:1px solid #e6e6e3!important;border-bottom:1px solid #e6e6e3!important}
+#AttributeTabsFilter .tab{grid-row:1!important;box-sizing:border-box;height:44px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px;margin:0!important;padding:0 16px!important;border:1px solid #dcdcd8!important;border-radius:22px!important;background:#fff!important;color:#231F20!important;font:400 15px 'GoodSans-Regular',Arial,sans-serif!important;line-height:1!important;cursor:pointer;box-shadow:none!important;white-space:nowrap;user-select:none}
+#AttributeTabsFilter .tab:hover{border-color:#231F20!important}
+#AttributeTabsFilter .tab span{align-self:center!important;color:inherit!important;font:inherit!important;padding:0!important;margin:0!important}
+#AttributeTabsFilter .tab::before{display:none!important}
+#AttributeTabsFilter .tab::after{content:""!important;display:block!important;position:static!important;align-self:center!important;width:7px!important;height:7px!important;margin:-4px 0 0!important;border:0!important;border-right:2px solid currentColor!important;border-bottom:2px solid currentColor!important;background:none!important;transform:rotate(45deg)!important}
+/* „Cena a Dostupnost“ → „Cena“ */
+#AttributeTabsFilter .tab[data-pageid="0"] span{font-size:0!important}
+#AttributeTabsFilter .tab[data-pageid="0"] span::before{content:"Cena";font-size:15px}
+/* u záložky s aktivním filtrem žlutá tečka */
+#AttributeTabsFilter .tab.hasSelectedValue span::after{content:"";display:inline-block;width:7px;height:7px;margin:0 0 1px 7px;border-radius:50%;background:#FFC524;vertical-align:middle}
+
+/* rychlé filtry vytažené ze záložky Cena do řádku tlačítek */
+#AttributeTabsFilter .page[data-pageid="0"],#AttributeTabsFilter #CompoundFilterSimple{display:contents!important}
+#AttributeTabsFilter .SimpleFilter{grid-column:-2 / -1!important;grid-row:1!important;display:flex!important;flex-wrap:wrap;align-items:center;gap:8px;margin:0!important;padding:0 0 0 14px!important;border:0!important;border-left:1px solid #e6e6e3!important;background:none!important}
+#AttributeTabsFilter .SimpleFilter label{position:relative;box-sizing:border-box;height:44px;display:flex!important;align-items:center;margin:0!important;padding:0 16px!important;border:1px solid #dcdcd8;border-radius:22px;background:#fff;color:#231F20;font:400 15px 'GoodSans-Regular',Arial,sans-serif;line-height:1;cursor:pointer;white-space:nowrap}
+#AttributeTabsFilter .SimpleFilter label:hover{border-color:#231F20}
+#AttributeTabsFilter .SimpleFilter label input{position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;margin:0!important;pointer-events:none}
+#AttributeTabsFilter .SimpleFilter label span{color:inherit!important;padding:0!important}
+#AttributeTabsFilter .SimpleFilter label span::before{display:none!important}
+#AttributeTabsFilter .SimpleFilter label:has(input:checked){background:#231F20;border-color:#231F20;color:#fff}
+#AttributeTabsFilter .SimpleFilter label:has(input:focus-visible){outline:2px solid #231F20;outline-offset:2px}
+/* Black Friday: černé se žlutým písmem, zapnuté naopak žluté
+   (název „BLACK FRIDAY“ místo „Výprodej“ dodává hlavní CSS – po akci stačí tyto 4 řádky smazat) */
+#AttributeTabsFilter .SimpleFilter label.flag03{background:#231F20;border-color:#231F20;color:#FFC524}
+#AttributeTabsFilter .SimpleFilter label.flag03 span::after{color:#FFC524!important;font:400 15px 'GoodSans-Regular',Arial,sans-serif!important}
+#AttributeTabsFilter .SimpleFilter label.flag03:has(input:checked){background:#FFC524;border-color:#FFC524;color:#231F20}
+#AttributeTabsFilter .SimpleFilter label.flag03:has(input:checked) span::after{color:#231F20!important}
+
+/* panel pod tlačítky (bílá karta) */
+#AttributeTabsFilter .page:not([data-pageid="0"]),#AttributeTabsFilter #PriceFilter{grid-column:1 / -1!important;grid-row:2!important;box-sizing:border-box;width:100%;max-width:720px;margin:0!important;padding:22px!important;border:1px solid #e6e6e3!important;border-radius:10px!important;background:#fff!important;box-shadow:0 12px 32px rgba(35,31,32,.10)!important}
+/* cena patří jen k záložce Cena */
+#AttributeTabsFilter .tabpages:not(:has(.tab[data-pageid="0"].selected)) #PriceFilter{display:none!important}
+
+/* otevírání/zavírání panelu řídí skript (třída fx-open na <html>).
+   Bez skriptu zůstane chování BSSHOP (panel otevřený) – filtr tak nikdy nepřestane fungovat. */
+html.fx-js:not(.fx-open) #AttributeTabsFilter .page:not([data-pageid="0"]),
+html.fx-js:not(.fx-open) #AttributeTabsFilter #PriceFilter{display:none!important}
+html.fx-js:not(.fx-open) #AttributeTabsFilter .tabpages{row-gap:0!important}
+html.fx-js.fx-open #AttributeTabsFilter .tab.selected,
+html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important;border-color:#231F20!important;color:#fff!important}
+
+/* panel Cena: posuvník + pole od–do + tlačítko */
+#PriceFilter{display:grid!important;grid-template-columns:1fr 1fr auto;grid-template-rows:auto auto;gap:18px 12px;align-items:end}
+#PriceFilter .slider{grid-column:1 / -1;grid-row:1;margin:6px 10px 0!important;padding:0!important}
+#PriceFilter .slider .inner{margin:0!important;padding:0!important}
+#PriceFilter .ui-slider{height:4px!important;border:0!important;border-radius:2px!important;background:#e6e6e3!important}
+#PriceFilter .ui-slider-range{background:#231F20!important;border-radius:2px!important}
+#PriceFilter .ui-slider-handle{box-sizing:border-box!important;top:-9px!important;width:22px!important;height:22px!important;margin-left:-11px!important;border:2px solid #231F20!important;border-radius:50%!important;background:#fff!important;cursor:grab;outline:none}
+#PriceFilter .ui-slider-handle::before,#PriceFilter .ui-slider-handle::after{display:none!important}
+#PriceFilter input.price{grid-row:2;box-sizing:border-box;width:100%!important;height:44px!important;margin:0!important;padding:0 12px!important;border:1px solid #dcdcd8!important;border-radius:6px!important;background:#fff!important;font:400 16px 'GoodSans-Regular',Arial,sans-serif!important;color:#231F20!important;text-align:left!important}
+#PriceFilter input.price.from{grid-column:1}
+#PriceFilter input.price.to{grid-column:2}
+#PriceFilter .button.showItems{grid-column:3;grid-row:2;box-sizing:border-box;height:44px;display:flex!important;align-items:center;margin:0!important;padding:0 18px!important;border:0!important;border-radius:6px!important;background:#231F20!important;color:#fff!important;font:400 15px 'GoodSans-Regular',Arial,sans-serif!important;white-space:nowrap;cursor:pointer}
+#PriceFilter .button.showItems span{color:inherit!important;font:inherit!important}
+
+/* panely s hodnotami (Velikost, Výrobce, …): dlaždice */
+#AttributeTabsFilter .AttributeFilterValues>dc-con{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:0!important;padding:0!important}
+#AttributeTabsFilter .AttributeFilterValues .value{position:relative;width:auto!important;margin:0!important;padding:0!important;float:none!important}
+#AttributeTabsFilter .AttributeFilterValues .value dc-root{position:relative;display:flex!important;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;min-height:48px;padding:6px 10px!important;border:1px solid #dcdcd8;border-radius:6px;background:#fff;cursor:pointer}
+#AttributeTabsFilter .AttributeFilterValues .value input{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0!important;opacity:0!important;cursor:pointer;z-index:1}
+#AttributeTabsFilter .AttributeFilterValues .value label{margin:0!important;padding:0!important;font:400 16px 'GoodSans-Regular',Arial,sans-serif!important;color:#231F20!important;text-align:center}
+#AttributeTabsFilter .AttributeFilterValues .value label::before,#AttributeTabsFilter .AttributeFilterValues .value label::after{display:none!important}
+#AttributeTabsFilter .AttributeFilterValues .value .count{font-size:12px!important;color:#8a8a86!important}
+#AttributeTabsFilter .AttributeFilterValues .value dc-root:hover{border-color:#231F20}
+#AttributeTabsFilter .AttributeFilterValues .value:has(input:checked) dc-root{background:#231F20;border-color:#231F20}
+#AttributeTabsFilter .AttributeFilterValues .value:has(input:checked) label,#AttributeTabsFilter .AttributeFilterValues .value:has(input:checked) .count{color:#fff!important}
+#AttributeTabsFilter .AttributeFilterValues .value:has(input:focus-visible) dc-root{outline:2px solid #231F20;outline-offset:2px}
+#AttributeTabsFilter .AttributeFilterValues .spacer{display:none!important}
+/* tlačítko „Zobrazit vybrané“ uvnitř panelu – výpis se filtruje hned, není potřeba */
+#AttributeTabsFilter .page .button.update,#AttributeTabsFilter .page .ScrollButtonView,#AttributeTabsFilter .AttributeFilterValues .button.showItems{display:none!important}
+
+/* aktivní filtry: „Velikost: S ✕ · M ✕   Zrušit vše“ */
+#AttributeFilterActiveValues{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:14px 0 0!important;padding:0!important;background:none!important;border:0!important;font:400 14px 'GoodSans-Regular',Arial,sans-serif}
+#AttributeFilterActiveValues .activeValuesCaption{font-size:0!important}
+#AttributeFilterActiveValues .activeValues{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:0!important;padding:0!important}
+#AttributeFilterActiveValues .attribute{display:flex!important;align-items:center;gap:6px;margin:0!important;padding:0!important;background:none!important;border:0!important}
+#AttributeFilterActiveValues .attribute .name{color:#6a6a66!important;font-size:14px!important}
+#AttributeFilterActiveValues .attribute .name::after{content:":"}
+#AttributeFilterActiveValues .attribute .items{display:flex!important;gap:6px;margin:0!important;padding:0!important}
+#AttributeFilterActiveValues .attribute a.value{display:inline-flex!important;align-items:center;gap:6px;height:32px;margin:0!important;padding:0 10px 0 12px!important;border:0!important;border-radius:16px!important;background:#231F20!important;color:#fff!important;font-size:14px!important;cursor:pointer;text-decoration:none}
+#AttributeFilterActiveValues .attribute a.value span{color:inherit!important;font:inherit!important}
+#AttributeFilterActiveValues .attribute a.value::before,#AttributeFilterActiveValues .attribute a.value span::before,#AttributeFilterActiveValues .attribute a.value span::after{display:none!important}
+#AttributeFilterActiveValues .attribute a.value::after{content:"✕"!important;display:inline!important;position:static!important;width:auto!important;height:auto!important;background:none!important;font-size:11px;color:#c9c9c4}
+#AttributeFilterActiveValues .removeAllAttrValues{display:none!important}
+#AttributeFilterActiveValues .clearAll{width:auto!important;height:auto!important;white-space:nowrap;display:inline-flex!important;margin:0!important;padding:0!important;border:0!important;background:none!important;color:#231F20!important;font-size:14px!important;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+#AttributeFilterActiveValues .clearAll span{color:inherit!important;font:inherit!important}
+#AttributeFilterActiveValues .clearAll span{font-size:0!important;background:none!important;padding:0!important;width:auto!important}
+#AttributeFilterActiveValues .clearAll span::before{display:none!important}
+#AttributeFilterActiveValues .clearAll span::after{content:"Zrušit vše";font-size:14px}
+#AttributeFilterActiveValues .clearAll::before,#AttributeFilterActiveValues .clearAll::after{display:none!important}
+
+
+/* ===================== ŘAZENÍ + POČET ===================== */
+#CompoundPagingTop{display:flex!important;flex-wrap:wrap;align-items:center;gap:12px 16px;margin:18px 0 28px!important;padding:0!important;border:0!important;background:none!important}
+#CompoundPagingTop .separator{display:none!important}
+#CompoundPagingTop .ProductSorting{display:flex!important;align-items:center;gap:16px;flex:1 1 auto;margin:0!important;padding:0!important;border:0!important;background:none!important}
+#CompoundPagingTop .ProductSorting .sortingBox{display:flex!important;flex-wrap:wrap;align-items:center;gap:4px;margin:0!important;padding:0!important;border:0!important}
+#CompoundPagingTop .ProductSorting .sortingBox input{position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;pointer-events:none}
+#CompoundPagingTop .ProductSorting .sortingBox label{display:inline-flex!important;align-items:center;height:36px;margin:0!important;padding:0 14px!important;border:0!important;border-radius:18px!important;background:transparent!important;color:#6a6a66!important;font:400 15px 'GoodSans-Regular',Arial,sans-serif!important;white-space:nowrap;cursor:pointer;box-shadow:none!important}
+#CompoundPagingTop .ProductSorting .sortingBox label::before,#CompoundPagingTop .ProductSorting .sortingBox label::after{display:none!important}
+#CompoundPagingTop .ProductSorting .sortingBox label:hover{color:#231F20!important}
+#CompoundPagingTop .ProductSorting .sortingBox input:checked+label{background:#f0f0ed!important;color:#231F20!important}
+#CompoundPagingTop .ProductSorting .totalItems{margin-left:auto!important;font:400 14px 'GoodSans-Regular',Arial,sans-serif!important;font-style:normal!important;color:#6a6a66!important}
+#CompoundPagingTop .ProductPaging{margin:0!important}
+#CompoundPagingTop .ProductPaging:has(.page.first.last){display:none!important}
+
+
+/* ===================== MŘÍŽKA + KARTA PRODUKTU ===================== */
+#ProductListDefault .items{display:grid!important;grid-template-columns:repeat(var(--4k-sloupce),minmax(0,1fr))!important;gap:calc(40px + (4 - var(--4k-sloupce)) * 8px) calc(24px + (4 - var(--4k-sloupce)) * 8px)!important;margin:0!important;padding:0!important}
+#ProductListDefault .items>:not(.productHolder){display:none!important}
+#ProductListDefault .items>.productHolder{width:auto!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;float:none!important}
+
+#ProductListDefault .ProductView{position:relative;display:flex!important;flex-direction:column!important;height:100%;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
+#ProductListDefault .ProductView>*{grid-area:auto!important;width:auto!important;margin:0!important}
+#ProductListDefault .ProductView .spacer,#ProductListDefault .ProductView .code{display:none!important}
+
+/* fotka */
+#ProductListDefault .ProductView>dc-con:first-child{order:1;position:relative;display:block!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:0!important;border:0!important}
+#ProductListDefault .ProductView a.image{display:flex!important;align-items:center;justify-content:center;aspect-ratio:4 / 3;width:100%!important;height:auto!important;margin:0!important;padding:0!important;overflow:hidden;background:#fff}
+#ProductListDefault .ProductView a.image img{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain;transition:transform .25s ease}
+#ProductListDefault .ProductView:hover a.image img{transform:scale(1.04)}
+
+/* štítky (Black Friday + sleva) vpravo nahoře na fotce */
+#ProductListDefault .ProductView .ActionIcons{order:0;position:absolute!important;top:0!important;right:0!important;left:auto!important;bottom:auto!important;z-index:3;width:auto!important;height:auto!important;padding:0!important;pointer-events:none}
+
+/* název (celá karta je odkaz – klik kamkoli otevře detail) */
+#ProductListDefault .ProductView h2{order:2;margin:14px 0 0!important;padding:0!important;border:0!important;font:400 calc(17px + (4 - var(--4k-sloupce)) * 3px)/1.3 'GoodSans-Regular',Arial,sans-serif!important;color:#231F20!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;height:auto!important}
+#ProductListDefault .ProductView h2 a{position:static!important;color:inherit!important;text-decoration:none!important;font:inherit!important}
+#ProductListDefault .ProductView h2 a span{font:inherit!important;color:inherit!important}
+#ProductListDefault .ProductView h2 a::after{content:"";position:absolute;inset:0;z-index:1}
+#ProductListDefault .ProductView:hover h2{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+
+/* krátký popis – 2 řádky */
+#ProductListDefault .ProductView .description{order:3;margin:6px 0 0!important;padding:0!important;font-size:calc(13px + (4 - var(--4k-sloupce)) * 1px)!important;line-height:1.45!important;color:#6a6a66!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:auto!important;max-height:none!important}
+
+/* cena: akční nadpisovým písmem, původní přeškrtnutá */
+#ProductListDefault .ProductView .dcPrice{order:4;display:flex!important;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:12px 0 0!important;padding:0!important;border:0!important}
+#ProductListDefault .ProductView .dcPrice .price.user .value{font-family:'FKScreamer-Upright',Impact,sans-serif!important;font-weight:400!important;font-synthesis:none!important;font-size:calc(28px + (4 - var(--4k-sloupce)) * 6px)!important;line-height:1!important;color:#231F20!important}
+#ProductListDefault .ProductView .dcPrice .price.retail .value{font:400 15px 'GoodSans-Regular',Arial,sans-serif!important;color:#8a8a86!important;text-decoration:line-through}
+#ProductListDefault .ProductView .dcPrice .price{margin:0!important;padding:0!important}
+/* „Varianty“ jen otevírá detail → schované (klikací je celá karta); „Do košíku“ u produktů bez variant zůstává */
+#ProductListDefault .ProductView .AddToCartWithDropdown:has(.button.buy.master){display:none!important}
+#ProductListDefault .ProductView .AddToCartWithDropdown{position:relative;z-index:2;margin-left:auto!important}
+
+/* dostupnost s barevnou tečkou */
+#ProductListDefault .ProductView .AvailabilityInfo{order:5;display:flex!important;align-items:center;gap:8px;margin:8px 0 0!important;padding:0!important;font-size:14px!important;color:#a85200!important}
+#ProductListDefault .ProductView .AvailabilityInfo .label{color:inherit!important;font-size:inherit!important}
+#ProductListDefault .ProductView .AvailabilityInfo::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:currentColor}
+#ProductListDefault .ProductView .AvailabilityInfo.cs_zelena{color:#1f7a3a!important}
+
+
+/* ===================== TABLET A MOBIL ===================== */
+@media (max-width:1099px){
+ #ProductListDefault .items{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:40px 20px!important}
+}
+@media (max-width:899px){
+ /* filtr: tlačítka se posouvají vodorovně, rychlé filtry na druhém řádku */
+ #AttributeTabsFilter .tabpages{grid-template-columns:repeat(var(--tab-count,3),max-content) minmax(0,1fr)!important;row-gap:10px!important}
+ #AttributeTabsFilter .tab{height:40px!important;padding:0 14px!important}
+ #AttributeTabsFilter .SimpleFilter{grid-column:1 / -1!important;grid-row:2!important;flex-wrap:nowrap;overflow-x:auto;padding:0!important;border-left:0!important;scrollbar-width:none}
+ #AttributeTabsFilter .SimpleFilter::-webkit-scrollbar{display:none}
+ #AttributeTabsFilter .SimpleFilter label{flex:0 0 auto;height:40px;padding:0 14px!important}
+ #AttributeTabsFilter .page:not([data-pageid="0"]),#AttributeTabsFilter #PriceFilter{grid-row:3!important;max-width:none;padding:16px!important}
+ html.fx-js:not(.fx-open) #AttributeTabsFilter .tabpages{row-gap:10px!important}
+ #PriceFilter{grid-template-columns:1fr 1fr}
+ #PriceFilter .button.showItems{grid-column:1 / -1;grid-row:3;justify-content:center}
+ #AttributeTabsFilter .AttributeFilterValues>dc-con{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
+ /* řazení vodorovně posuvné */
+ #CompoundPagingTop .ProductSorting{flex-wrap:wrap}
+ #CompoundPagingTop .ProductSorting .sortingBox{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%}
+ #CompoundPagingTop .ProductSorting select.sortOrder{display:none!important}
+ #CompoundPagingTop .ViewTypeSelector{display:none!important}
+ /* 2 produkty vedle sebe, karta pod sebou */
+ #ProductListDefault .items{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:28px 12px!important}
+ #ProductListDefault .ProductView h2{font-size:15px!important;-webkit-line-clamp:3;min-height:3.9em}
+ #ProductListDefault .ProductView .description{display:none!important}
+ #ProductListDefault .ProductView .dcPrice .price.user .value{font-size:24px!important}
+ #ProductListDefault .ProductView .dcPrice .price.retail .value{font-size:13px!important}
+ #ProductListDefault .ProductView .AvailabilityInfo{font-size:13px!important}
+}
