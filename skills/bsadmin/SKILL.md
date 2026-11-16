@@ -86,6 +86,11 @@ Na co dát pozor:
   - master bez velikosti
 - **AMFLOW.** „AM…“ u KROSS je značka **AMFLOW**, nikdy ne KROSS.
 - **POC VPD Air Vest** je „chránič páteře“.
+- **Ložiska a díly (Enduro):** typ výrobku česky, zbytek názvu stejnými hodnotami jako ve filtrech (anglicky). Ložiska se jmenují jen „ložisko ENDURO 6903 LLB 17x30x7 mm“, ne „ložisko do náboje“. Jedinou výjimkou je „ložisko do hlavového složení“.
+- **Členění ložisek** (od 16. 11. 2026) je podle typu jako u Enduro:
+  - Ložiska/: Ložiska do nábojů, Ložiska do odpružení, Jehlová ložiska do tlumičů, Ložiska do hlavového složení, Ložiska do středového složení, Miniaturní ložiska, Sady ložisek do středů, Kuličky, Díly ložisek
+  - Středy/: Díly středového složení, Redukce středového složení
+  - Nářadí/: Nářadí na ložiska a středy
 - **URL** je název + `-p{ID}`. Přejmenování URL změní, ale stará adresa se přesměruje podle ID.
 - **Hledací slova** patří do **Klíčová slova pro hledání CZ**. Pole „SEO Klíčová slova CZ“ je jen meta tag.
 
@@ -97,6 +102,8 @@ Na co dát pozor:
 - **Změna existujícího parametru:** `intParameter actionType update` s `ftr:id` přiřazení. Prosté add jen varuje „lze přiřadit pouze jednou“ a nic nezmění.
 - **Seznamový parametr:** každá položka musí mít vyplněný Popis. Prázdný popis shodí celou Synchronizaci zásob. Kontrolovat log v Ovládání robotů (řádky Chyba).
 - **Fixace ceny:** `stk:fixation` jde jen exportovat. Fixaci Běžné ceny nastavuje uživatel ručně.
+- **Nové parametry raději jako textValue.** Stávající parametry (Velikost, Sezóna…) jsou textové a filtry na webu fungují. Textový parametr nemá problém s prázdným Popisem položek seznamu.
+- **Parametry pro ložiska a díly (Enduro, ID 56–76):** názvy česky, hodnoty anglicky přesně jako ve filtrech na endurobearings.com. Jsou to: Typ ložiska, Vnitřní průměr, Vnější průměr, Šířka ložiska, Materiál, Třída přesnosti (ABEC), Vůle ložiska, Kompatibilní označení, Použití, Osa kliky, Standard středového pouzdra, Typ středového složení, Typ nářadí, Typ dílu, Značka odpružení, Průměr nohou vidlice, Kompatibilita pohonu, Průměr kuliček, Třída kuliček (Grade), Počet zubů, Typ hlavového složení.
 
 ## Importy (Správce importů)
 
@@ -197,6 +204,19 @@ Postup a testování:
 - Stránky kol se poznají podle `/jizdni-kola-c276/`.
 
 Podpora BSSHOP je potřeba jen na šablonu detailu a galerii.
+
+### Kde je kód webu
+
+Aktuální kód je v GitHub repozitáři **TOMODKOL/eshop-4K**, složka `web/`. Před úpravou vždy vycházet z něj a novou verzi tam zase uložit.
+- `web/css/4K-novy-detail-produktu-v8.2.css`: detail produktu nasazený 4. 11. 2026. Vedle něj je novější `v8.2.1`; zda je nasazená, ověřit ve stavovém dokumentu.
+- `web/css/4K-vypis-produktu.css`: výpis kategorie. Počet sloupců se nastavuje číslem `--4k-sloupce`.
+- `web/skripty/`: skript filtru do Zápatí.
+- `web/popisy/`: vzorový popis kola (SuperSix EVO LAB71).
+- `web/emaily/`: master šablona, potvrzení objednávky, vratka a newsletter.
+- `web/kategorie/`: texty kategorií.
+- `web/ODKAZY.md`: odkazy na návrhy a dokumenty.
+
+U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory `4K-…`, `popis-…`, `NAHLED-…`). Nápovědu BSSHOP (BSSHOP-KB-5 až 48.pdf) najdeš v OneDrive, `Work/4 KLUCI OD KOL/Dokumenty/BSshop - návod`.
 
 ## Design webu
 
