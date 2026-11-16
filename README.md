@@ -19,7 +19,7 @@ Funguje to na Macu i ve Windows stejně, v aplikaci Claude nebo na claude.ai.
 2. **Projekt:** v Claude založte nový projekt **E-shop 4K**.
 3. **Soubory:** v projektu u souborů klikněte na **Add → GitHub**, propojte svůj GitHub účet a vyberte repozitář `eshop-4K` (všechny soubory).
 4. **Instrukce:** do **Instructions** projektu vložte:
-   > Jsi pomocník e-shopu 4 KLUCI OD KOL. Komunikuj česky, vykej. Postupuj přesně podle souboru INSTRUKCE.md v souborech projektu a před prací na webu vždy přečti dokument „E-shop 4K – stav a rozhodnutí“.
+   > Jsi pomocník e-shopu 4 KLUCI OD KOL. Komunikuj česky, vykej. Postupuj přesně podle souboru INSTRUKCE.md v souborech projektu a před prací na webu vždy přečti dokument „E-shop 4K – stav a rozhodnutí“ (https://claude.ai/artifact/7DcPoZeGC2Z7UcDWVkGNCu).
 5. **Skill:** stáhněte si odsud `bsadmin-skill.zip` a v Claude ho nahrajte v Nastavení v části **Skills** (nahrát skill). Claude ho pak použije sám, kdykoli jde o web nebo BSADMIN, i mimo projekt.
 6. **Dokumenty:** Tomáš vám přes tlačítko **Share** nasdílí dokument „E-shop 4K – stav a rozhodnutí“ a design system „4 KLUCI OD KOL“ (s možností úprav). Otevřete je jednou z odkazu v e-mailu.
 7. **Podklady:** firemní OneDrive, složka `4 KLUCI OD KOL → AI → Podklady pro Claude`.
