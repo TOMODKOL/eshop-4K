@@ -17,7 +17,7 @@ Funguje to na Macu i ve Windows stejně, v aplikaci Claude nebo na claude.ai.
 
 1. **GitHub:** přijměte pozvánku do tohoto repozitáře. Přijde e-mailem od GitHubu poté, co vás Tomáš pozve.
 2. **Projekt:** v Claude založte nový projekt **E-shop 4K**.
-3. **Soubory:** v projektu u souborů klikněte na **Add → GitHub**, propojte svůj GitHub účet a vyberte repozitář `eshop-4k` (všechny soubory).
+3. **Soubory:** v projektu u souborů klikněte na **Add → GitHub**, propojte svůj GitHub účet a vyberte repozitář `eshop-4K` (všechny soubory).
 4. **Instrukce:** do **Instructions** projektu vložte:
    > Jsi pomocník e-shopu 4 KLUCI OD KOL. Komunikuj česky, vykej. Postupuj přesně podle souboru INSTRUKCE.md v souborech projektu a před prací na webu vždy přečti dokument „E-shop 4K – stav a rozhodnutí“.
 5. **Skill:** stáhněte si odsud `bsadmin-skill.zip` a v Claude ho nahrajte v Nastavení v části **Skills** (nahrát skill). Claude ho pak použije sám, kdykoli jde o web nebo BSADMIN, i mimo projekt.
