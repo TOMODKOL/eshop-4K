@@ -23,7 +23,7 @@ Funguje to na Macu i ve Windows stejně, v aplikaci Claude nebo na claude.ai.
 3. **Soubory:** v projektu u souborů klikněte na **Add → GitHub**, propojte svůj GitHub účet a vyberte repozitář `eshop-4K` (všechny soubory).
 4. **Instrukce:** do **Instructions** projektu vložte:
    > Jsi pomocník e-shopu 4 KLUCI OD KOL. Komunikuj česky, vykej. Postupuj přesně podle souboru INSTRUKCE.md v souborech projektu a před prací na webu vždy přečti dokument „E-shop 4K – stav a rozhodnutí“ (https://claude.ai/artifact/7DcPoZeGC2Z7UcDWVkGNCu).
-5. **Skilly:** stáhněte si odsud `bsadmin-skill.zip` a `popisy-produktu-skill.zip` a v Claude je nahrajte: Customize → Skills → **+** → **Create skill** → **Upload a skill** (v Settings → Capabilities musí být zapnuté „Create and edit files“). Claude je pak použije sám, kdykoli jde o web, BSADMIN nebo popisy produktů, i mimo projekt.
+5. **Skilly:** nejjednodušší je napsat Claudovi do chatu: *„Načti změny z repozitáře TOMODKOL/eshop-4K a aktualizuj moje skilly bsadmin a popisy-produktu.“* Claude je nabídne v kartě a vy je jen uložíte. Ručně (záloha): stáhněte si odsud `bsadmin-skill.zip` a `popisy-produktu-skill.zip` a v Claude je nahrajte: Customize → Skills → **+** → **Create skill** → **Upload a skill** (v Settings → Capabilities musí být zapnuté „Create and edit files“). Claude je pak použije sám, kdykoli jde o web, BSADMIN nebo popisy produktů, i mimo projekt.
 6. **Dokumenty:** Tomáš vám přes tlačítko **Share** nasdílí dokument „E-shop 4K – stav a rozhodnutí“ a design system „4 KLUCI OD KOL“ (s možností úprav). Otevřete je jednou z odkazu v e-mailu.
 7. **Podklady:** firemní OneDrive, složka `4 KLUCI OD KOL → AI → Podklady pro Claude`.
 
@@ -32,7 +32,7 @@ Funguje to na Macu i ve Windows stejně, v aplikaci Claude nebo na claude.ai.
 Pravidla mění Tomáš, nebo Claude na jeho pokyn, přímo tady v repozitáři. Po změně:
 
 - v projektu u souborů z GitHubu klikněte na **synchronizovat / obnovit**;
-- pokud se změnil skill, nahrajte nový ZIP znovu (nahradí starý). Nahrání se nesynchronizuje samo.
+- pokud se změnil skill, napište Claudovi do chatu *„Načti změny z repozitáře TOMODKOL/eshop-4K a aktualizuj moje skilly bsadmin a popisy-produktu.“* a nabídnuté skilly uložte. Ručně (záloha): nahrajte nový ZIP znovu (nahradí starý). Skilly se samy nesynchronizují.
 
 Nová rozhodnutí o webu se píšou do dokumentu „E-shop 4K – stav a rozhodnutí“. Ten je sdílený, takže ho všichni vidí hned.
 
