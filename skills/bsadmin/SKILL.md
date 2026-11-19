@@ -199,6 +199,8 @@ Podpora BSSHOP je potřeba jen na šablonu detailu a galerii.
 ### Kde je kód webu
 
 Aktuální kód je v GitHub repozitáři **TOMODKOL/eshop-4K**, složka `web/`. Před úpravou vždy vycházet z něj a novou verzi tam zase uložit.
+
+V repozitáři jsou i skilly pro kolegy (Ondra): `skills/bsadmin/SKILL.md`, `skills/popisy-produktu/SKILL.md` a jejich ZIPy `bsadmin-skill.zip`, `popisy-produktu-skill.zip`. Po každé změně skillu v účtu nahrát do repozitáře novou verzi souboru i ZIPu (README.md popisuje, jak si je kolega nahraje).
 - `web/css/4K-novy-detail-produktu-v8.2.css`: detail produktu nasazený 4. 11. 2026. Vedle něj je novější `v8.2.1`; zda je nasazená, ověřit ve stavovém dokumentu.
 - `web/css/4K-vypis-produktu.css`: výpis kategorie. Počet sloupců se nastavuje číslem `--4k-sloupce`.
 - `web/skripty/`: skript filtru do Zápatí.
