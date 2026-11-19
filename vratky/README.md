@@ -32,13 +32,14 @@ Mobilní verze, styl podle e-mailových šablon 4K (světle šedé pozadí, bíl
 
 ## Technické poznámky
 
+- Forpsi (ověřeno 19. 11. 2026): Webhosting Advanced, Linux, 100 GB, PHP 7.4 (před nasazením přepnout na 8.x), MySQL v ceně 2 databáze (využito 0), subdomény v ceně 5 (využito 0), SSH lze aktivovat. DNS domény spravuje Forpsi (www → hosting.bsshop.cz), subdoménu vratky.4kluciodkol.cz tedy zřídíme přímo ve Forpsi.
+
 - Zásilkovna API: `createPacketClaimWithPassword` vrátí podací kód (password) a číslo zásilky; zpětná adresa podle fakturační adresy v klientské sekci. https://docs.packeta.com/docs/packet-creation/returns
 - Heslo k API jen na serveru (Forpsi), nikdy ve stránce.
 - Údaje o objednávkách jsou v Pohodě (mServer jen z kanceláře) – pomocník na KANCL bude aplikaci pravidelně posílat nutné minimum: e-shopové faktury s položkami.
 
 ## Otevřené
 
-- Ověřit v administraci Forpsi PHP, MySQL a správu DNS.
 - Cena zpětné zásilky podle ceníku Zásilkovny.
 - Verze pro počítač.
 - Zápis vratky do Pohody (dobropis) a upozornění pro prodejnu.
