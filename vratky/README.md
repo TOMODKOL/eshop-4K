@@ -1,0 +1,44 @@
+# Vratky a reklamace 4K
+
+Vlastní zákaznický portál pro vrácení, výměnu a reklamaci zboží z e-shopu 4kluciodkol.cz. Vzorem je Retino (uživatelsky příjemný průvodce), zpětná doprava jde přes zpětnou logistiku Zásilkovny.
+
+Stav: návrh obrazovek (19. 11. 2026), zatím se neprogramuje.
+
+## Klikací návrh
+
+Claude Design „Vratky a reklamace 4K“: https://claude.ai/artifact/XKAo9vJMXYc7yLpesTmtSF (soukromý, sdílí Tomáš).
+Mobilní verze, styl podle e-mailových šablon 4K (světle šedé pozadí, bílé karty, žlutá #ffc524 na hlavní akce, nadpisy FK Screamer, text Good Sans).
+
+## Průběh pro zákazníka
+
+1. Vyhledání objednávky: e-mail + číslo objednávky (8810…) nebo faktury.
+2. U každé položky volba: vrátit / vyměnit / reklamovat.
+3. Upřesnění:
+   - vrácení: důvod (nesedí velikost, nelíbí se…),
+   - výměna: jiná velikost (jen skladem), nebo jiné zboží z nabídky s doplatkem / vrácením rozdílu,
+   - reklamace: popis vady, datum zjištění, fotky.
+4. Doprava: Z-BOX nebo výdejní místo Zásilkovny (podací kód, nic se netiskne), nebo osobně na prodejně zdarma.
+5. Číslo účtu pro vrácení peněz (jen když se něco vrací).
+6. Souhrn a odeslání.
+7. Podací kód, postup zabalení a stav vratky.
+
+## Rozhodnutí
+
+- Poštovné u vrácení do 14 dnů platí zákazník (strhne se z vrácené částky), u reklamace firma.
+- Reklamace jdou přes stejný formulář (do 2 let od nákupu).
+- Výměna i za jiné zboží; dražší = doplatek QR platbou (Oberbank, páruje se v Pohodě), levnější = rozdíl se vrátí.
+- Hosting: Forpsi Webhosting Advanced pro 4kluciodkol.cz (zaplaceno do 8. 8. 2027), subdoména např. vratky.4kluciodkol.cz.
+- Kód aplikace v tomto repozitáři, složka `vratky/`.
+
+## Technické poznámky
+
+- Zásilkovna API: `createPacketClaimWithPassword` vrátí podací kód (password) a číslo zásilky; zpětná adresa podle fakturační adresy v klientské sekci. https://docs.packeta.com/docs/packet-creation/returns
+- Heslo k API jen na serveru (Forpsi), nikdy ve stránce.
+- Údaje o objednávkách jsou v Pohodě (mServer jen z kanceláře) – pomocník na KANCL bude aplikaci pravidelně posílat nutné minimum: e-shopové faktury s položkami.
+
+## Otevřené
+
+- Ověřit v administraci Forpsi PHP, MySQL a správu DNS.
+- Cena zpětné zásilky podle ceníku Zásilkovny.
+- Verze pro počítač.
+- Zápis vratky do Pohody (dobropis) a upozornění pro prodejnu.
