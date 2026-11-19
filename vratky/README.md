@@ -29,6 +29,11 @@ Mobilní verze, styl podle e-mailových šablon 4K (světle šedé pozadí, bíl
 - Výměna i za jiné zboží; dražší = doplatek QR platbou (Oberbank, páruje se v Pohodě), levnější = rozdíl se vrátí.
 - Hosting: Forpsi Webhosting Advanced pro 4kluciodkol.cz (zaplaceno do 8. 8. 2027), subdoména např. vratky.4kluciodkol.cz.
 - Kód aplikace v tomto repozitáři, složka `vratky/`.
+- Reklamace se v Pohodě už vedou v agendě Reklamace → portál je tam bude zapisovat přes mServer (schéma claim.xsd), stav se propisuje zpět do portálu (varianta B, později C – automatické spárování platby).
+- Přes portál jdou i reklamace zboží koupeného na prodejně (kolega vyplní formulář v přehledu vratek).
+- Reklamační protokol v PDF (potvrzení o uplatnění a o vyřízení), hlídání lhůty 30 dní.
+- Vrácení: po schválení se v Pohodě připraví dobropis k původní faktuře (zboží zpět na sklad, stržení poštovného).
+- Notifikace: stránka se stavem vratky + e-maily při každé změně, přehled vratek pro prodejnu (chráněný heslem).
 
 ## Technické poznámky
 
@@ -42,4 +47,5 @@ Mobilní verze, styl podle e-mailových šablon 4K (světle šedé pozadí, bíl
 
 - Cena zpětné zásilky podle ceníku Zásilkovny.
 - Verze pro počítač.
-- Zápis vratky do Pohody (dobropis) a upozornění pro prodejnu.
+- Zjistit, jak se dnes vyplňuje agenda Reklamace v Pohodě (pole, číselné řady, stavy) – přes mServer na KANCL.
+- Ukázky e-mailů a obrazovka Přehled vratek do návrhu.
