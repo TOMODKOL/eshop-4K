@@ -26,7 +26,9 @@ Mobilní verze, styl podle e-mailových šablon 4K (světle šedé pozadí, bíl
 
 - Poštovné u vrácení do 14 dnů platí zákazník (strhne se z vrácené částky), u reklamace firma.
 - Reklamace jdou přes stejný formulář (do 2 let od nákupu).
-- Výměna i za jiné zboží; dražší = doplatek QR platbou (Oberbank, páruje se v Pohodě), levnější = rozdíl se vrátí.
+- Výměna i za jiné zboží; dražší = doplatek QR platbou (Oberbank, páruje se v Pohodě), levnější = rozdíl se vrátí. Při výměně poštovné zdarma.
+- Výběr náhrady (návrh 19. 11. 2026): hlavně tlačítko „Vybrat na e-shopu“ → náš web v režimu výměny (žlutý pruh nahoře + na detailu „Vyměnit za tento produkt“, jen pro zákazníky z portálu; skript v Zápatí BSSHOP jen se souhlasem). Záloha: vložení odkazu na produkt – portál podle `-p{ID}` v adrese najde kartu ve feedu, cenu a sklad bere z feedu. V portálu jen pár podobných kousků ve velikosti zákazníka.
+- Kredit jako poukaz na e-shop (BSSHOP KB-50/51): „Peněžní poukaz“ jde založit ručně v BSADMIN; automatické generování jen z objednávky na e-shopu (ENTERPRISE + E1, placené nastavení). Otázky na BSSHOP: založení kupónu importem/API, zbytek u částečně použitého poukazu.
 - Hosting: Forpsi Webhosting Advanced pro 4kluciodkol.cz (zaplaceno do 8. 8. 2027), subdoména např. vratky.4kluciodkol.cz.
 - Kód aplikace v tomto repozitáři, složka `vratky/`.
 - Reklamace se v Pohodě už vedou v agendě Reklamace → portál je tam bude zapisovat přes mServer (schéma claim.xsd), stav se propisuje zpět do portálu (varianta B, později C – automatické spárování platby).
