@@ -1,0 +1,12 @@
+/* 4K – Black Friday v hlavním menu (počítač)
+   Rozbalovací panel pod položkou BLACK FRIDAY: černé pozadí, žluté odkazy, při najetí bílé.
+   Po akci stačí celý soubor (stylesheet) vypnout nebo smazat. */
+@media (min-width:768px){
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child{background:#0b0b0b!important;border-color:#0b0b0b!important}
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child li,
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child ul{background:transparent!important}
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child a,
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child a span{color:#ffc524!important}
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child a:hover,
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child a:hover span{color:#fff!important}
+}
