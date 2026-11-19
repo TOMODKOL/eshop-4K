@@ -123,11 +123,14 @@ footer.foot strong{color:var(--text)}
 .layout .main .col{max-width:none}
 .aside{display:none}
 .startgrid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
-.startgrid .col{max-width:none}
+.startgrid .col{max-width:none;margin:0}
+.donegrid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.donegrid .col{max-width:none;margin:0}
 @media (min-width:900px){
   .layout{grid-template-columns:minmax(0,1fr) 320px}
   .aside{display:flex;flex-direction:column;gap:12px;position:sticky;top:16px}
   .startgrid{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px;padding-top:24px}
+  .donegrid{grid-template-columns:minmax(0,1fr) 360px;gap:24px}
   .h1{font-size:76px}
   .h2{font-size:46px}
   .main .grid2{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -420,20 +423,23 @@ function sSummary(){
 }
 function sDone(){
   const d = st.done; const os = st.ship === 'osobne';
-  return `<div class="col">
+  return `<div class="donegrid"><div class="col">
   <div style="padding:0 4px;display:flex;flex-direction:column;gap:8px"><span class="kicker" style="color:var(--green)">✓ Vratka ${d.no} vytvořena</span><h2 class="h1" style="font-size:46px">HOTOVO, <span class="out">DÍKY!</span></h2></div>
   ${os?`<div class="card">Zboží přineste na prodejnu U Vlečky 726/5c, Brno (Po–Pá 9–17, So 9–13) a řekněte číslo vratky <strong>${d.no}</strong>.</div>`:
   `<div class="code"><span class="kicker" style="color:var(--ink)">Podací kód Zásilkovny</span><span class="v">UKÁZKA</span><span style="font-size:13px">V ostré verzi tu bude kód od Zásilkovny. Přijde i e-mailem.</span></div>
   <div class="card"><div class="steps dark"><div><b>1</b><span>Zboží zabalte, ideálně do původní krabice.</span></div><div><b>2</b><span>Na balík napište kód a „4 KLUCI OD KOL“.</span></div><div><b>3</b><span>${st.ship==='zbox'?'V Z-BOXu kód zadejte a balík vložte.':'Na výdejním místě kód nadiktujte obsluze.'}</span></div></div></div>`}
   ${d.net<0?`<div class="card"><strong>Doplatek ${fmt(-d.net)}</strong><div style="display:flex;gap:14px;align-items:center"><div style="width:96px;height:96px;flex-shrink:0;border:2px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-align:center">QR platba<br>(ukázka)</div><span style="font-size:13px;color:var(--text)">Naskenujte v bankovní aplikaci. Variabilní symbol je číslo vratky.</span></div></div>`:''}
+  </div><div class="col">
   <div class="card"><span class="kicker">Stav vratky ${d.no}</span><div class="tl">
     <div class="done"><i></i>Vratka vytvořena</div>
     <div class="now"><i></i>${os?'Čeká na předání na prodejně':'Čeká na podání u Zásilkovny'}</div>
     <div class="todo"><i></i>Dorazila k nám a kontrolujeme ji</div>
     <div class="todo"><i></i>${d.net>0?'Peníze odeslány':(d.hasSwap?'Nové zboží odesláno':'Vyřízeno')}</div></div>
     <span class="hint">O každé změně vám pošleme e-mail. Stav najdete i pod odkazem v e-mailu.</span></div>
+  <div class="card"><span class="kicker">Ve vratce</span>${d.lines.map(l=>`<div style="font-size:13px;line-height:1.4"><span class="kicker" style="font-size:10px">${LABEL[l.act]}</span><br><strong>${esc(l.name)}</strong><br><span style="color:var(--muted)">${esc(l.detail)}</span></div>`).join('')}</div>
   <div class="note">Podívejte se, jak vratku uvidí prodejna: <button class="link" style="padding:0;color:var(--ink);font-weight:700" data-a="view" data-v="pro">Přehled vratek →</button></div>
-  <button class="btn ghost" data-a="restart">Začít znovu (ukázka)</button></div>`;
+  <button class="btn ghost" data-a="restart">Začít znovu (ukázka)</button>
+  </div></div>`;
 }
 
 // ---------- PRODEJNA ----------
@@ -529,7 +535,7 @@ document.addEventListener('click', e => {
       const dl = new Date(today.getTime()+30*864e5);
       list.push({ no, date: dd, customer: ORDER.customer + ' (ukázka)', email: ORDER.email, ship: {zbox:'Z-BOX',vm:'Výdejní místo',osobne:'Osobně'}[st.ship], status:0, lines, total:c.net, postage:c.postage, mine:true, deadline: dl.getDate()+'. '+(dl.getMonth()+1)+'. '+dl.getFullYear() });
       store.set('vratky4k_list', list);
-      st.done = { no, net:c.net, hasSwap: c.ch.some(it=>st.act[it.id]==='vymenit') }; scroll = true; break; }
+      st.done = { no, lines, net:c.net, hasSwap: c.ch.some(it=>st.act[it.id]==='vymenit') }; scroll = true; break; }
     case 'restart': st = fresh(); scroll = true; break;
     case 'filter': filter = v; break;
     case 'next': { const x = list[+v]; if (x && x.status<3) { x.status++; store.set('vratky4k_list', list); } break; }
