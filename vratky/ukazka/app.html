@@ -1,0 +1,520 @@
+<title>Vratky 4K</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+@font-face{font-family:"FK Screamer";src:url("{{FONT_SCREAMER}}") format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:"FK Screamer Slanted";src:url("{{FONT_SLANTED}}") format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:"Good Sans";src:url("{{FONT_REGULAR}}") format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:"Good Sans";src:url("{{FONT_BOLD}}") format("truetype");font-weight:700;font-display:swap}
+:root{
+  --bg:#f2f2f2; --card:#ffffff; --ink:#111111; --muted:#777777; --text:#444444; --line:#dcdcd8; --line2:#ececea;
+  --yel:#ffc524; --yel-soft:#fff8e6; --yel-ink:#6b5a2a; --green:#2e9d4f; --off:#e6e6e2; --soft:#f7f7f7; --red:#c0392b;
+  color-scheme:light;
+}
+body{background:var(--bg);color:var(--ink);font-family:"Good Sans",Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5}
+*{box-sizing:border-box}
+button,input,textarea,select{font-family:inherit;color:var(--ink)}
+button{cursor:pointer}
+a{color:var(--ink)}
+.demo{background:var(--ink);color:#fff;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px}
+.demo strong{letter-spacing:1px;text-transform:uppercase}
+.demo .tabs{display:flex;gap:4px}
+.demo .tabs button{border:0;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;background:#2a2a2a;color:#fff}
+.demo .tabs button.on{background:var(--yel);color:var(--ink)}
+header.top{background:var(--card);border-bottom:4px solid var(--ink);padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top .in{max-width:1000px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+header.top img{width:170px;height:auto;display:block}
+header.top span{font-size:12px;color:var(--muted)}
+.wrap{padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.col{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.col.wide{max-width:1000px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.h1{margin:0;font-family:"FK Screamer",Impact,sans-serif;font-weight:400;font-size:52px;line-height:.92;text-wrap:balance}
+.h2{margin:0;font-family:"FK Screamer",Impact,sans-serif;font-weight:400;font-size:38px;line-height:1;text-wrap:balance}
+.out{font-family:"FK Screamer Slanted","FK Screamer",Impact,sans-serif;color:transparent;-webkit-text-stroke:1.2px var(--ink)}
+.card{background:var(--card);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.note{padding:12px 14px;background:var(--yel-soft);border-radius:10px;font-size:13px;line-height:1.55;color:var(--yel-ink)}
+.note strong{color:var(--ink)}
+.grey{padding:12px 14px;background:var(--soft);border:1px solid #e6e6e2;border-radius:10px;font-size:13px;color:var(--text)}
+label.l{font-size:13px;font-weight:700}
+input.f,textarea.f{width:100%;height:48px;border:1px solid var(--line);border-radius:10px;padding:0 14px;font-size:16px;background:#fff}
+textarea.f{height:auto;padding:10px 14px;resize:vertical}
+.field{display:flex;flex-direction:column;gap:6px}
+.hint{font-size:12px;color:var(--muted)}
+.btn{height:52px;border:0;border-radius:10px;background:var(--yel);font-size:16px;font-weight:700;padding:0 20px}
+.btn.dark{background:var(--ink);color:#fff}
+.btn.off{background:var(--off);color:#9a9a96;cursor:not-allowed}
+.btn.ghost{background:#fff;border:1px solid var(--line);height:46px;font-size:14px}
+.link{border:0;background:transparent;color:var(--text);font-size:14px;text-decoration:underline;padding:8px;align-self:center}
+.pill{white-space:nowrap;min-height:42px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13px;font-weight:700}
+.pill.on{background:var(--yel);border-color:var(--yel)}
+.pill.soft.on{background:#fff3cc}
+.pill.na{color:#9a9a96;text-decoration:line-through;cursor:not-allowed}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.seg .pill{height:44px}
+.prog{display:flex;flex-direction:column;gap:8px}
+.prog .bars{display:flex;gap:4px}
+.prog .bars i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.prog .bars i.on{background:var(--yel)}
+.item{display:flex;gap:12px;align-items:center}
+.ph{width:64px;height:64px;border-radius:8px;flex-shrink:0;display:flex;align-items:flex-end;justify-content:flex-start;padding:5px;font-size:10px;color:rgba(255,255,255,.8)}
+.item .t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.item .n{font-size:15px;font-weight:700;line-height:1.3}
+.item .m{font-size:13px;color:var(--muted)}
+.card.sel{outline:2px solid var(--yel)}
+.tag{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:var(--yel);padding:4px 10px;border-radius:999px}
+.opt{text-align:left;border:2px solid #fff;border-radius:12px;background:#fff;padding:16px;display:flex;gap:12px;align-items:flex-start;width:100%}
+.opt.on{border-color:var(--yel)}
+.opt .dot{width:20px;height:20px;flex-shrink:0;margin-top:1px;border-radius:10px;border:2px solid var(--ink);background:#fff}
+.opt.on .dot{background:var(--yel)}
+.opt .b{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.opt .r{display:flex;justify-content:space-between;gap:8px}
+.opt .d{font-size:13px;color:var(--muted);line-height:1.45}
+.free{color:var(--green);font-weight:700}
+.sumrow{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line2);font-size:14px;line-height:1.45}
+.sumrow:last-child{border-bottom:0}
+.total{background:var(--yel);border-radius:12px;padding:18px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.total .v{font-family:"FK Screamer",Impact,sans-serif;font-size:36px;line-height:1}
+.code{background:var(--yel);border-radius:12px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.code .v{font-family:"FK Screamer",Impact,sans-serif;font-size:64px;line-height:1;letter-spacing:.06em}
+.steps{display:flex;flex-direction:column;gap:12px}
+.steps div{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:var(--text)}
+.steps b{width:26px;height:26px;flex-shrink:0;border-radius:13px;background:var(--yel);font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.steps.dark b{background:var(--ink);color:#fff}
+.tl{display:flex;flex-direction:column;gap:10px}
+.tl div{display:flex;gap:12px;align-items:center;font-size:14px}
+.tl i{width:14px;height:14px;border-radius:7px;border:2px solid var(--line);background:#fff;flex-shrink:0}
+.tl .done i{background:var(--green);border-color:var(--green)}
+.tl .now i{background:var(--yel);border-color:var(--yel)}
+.tl .todo{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.prod{text-align:left;border:2px solid #fff;border-radius:12px;background:#fff;padding:8px 8px 12px;display:flex;flex-direction:column;gap:8px}
+.prod.on{border-color:var(--yel)}
+.prod .sw{width:100%;aspect-ratio:1/1;max-width:100%;border-radius:8px;display:flex;justify-content:flex-end;align-items:flex-start;padding:6px}
+.prod .n{font-size:13px;line-height:1.3;font-weight:700}
+.prod .p{display:flex;justify-content:space-between;align-items:baseline;gap:4px;font-size:14px}
+.prod .p span{font-size:11px;color:var(--muted);white-space:nowrap}
+.prod .p span.g{color:var(--green)}
+.badge{font-size:11px;font-weight:700;background:var(--yel);padding:3px 8px;border-radius:999px}
+.or{display:flex;align-items:center;gap:10px;color:#9a9a96;font-size:12px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--off)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.thumbs img{width:64px;height:64px;object-fit:cover;border-radius:8px}
+.upl{display:flex;align-items:center;justify-content:center;height:48px;border:1px dashed #b5b5b0;border-radius:10px;background:var(--soft);font-size:14px;cursor:pointer}
+.upl input{position:absolute;width:1px;height:1px;opacity:0}
+footer.foot{background:var(--soft);border-top:1px solid #e6e6e2;padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-size:12px;color:#888;text-align:center;line-height:1.7}
+footer.foot strong{color:var(--text)}
+/* web (simulace e-shopu) */
+.webbar{position:sticky;top:0;z-index:5;background:var(--yel);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.webbar .in{max-width:1000px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.webbar .t{display:flex;flex-direction:column;min-width:0}
+.webbar .t span{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.webbar button{border:0;background:transparent;font-size:13px;text-decoration:underline;flex-shrink:0}
+.webhead{background:var(--ink);padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.webhead .in{max-width:1000px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:13px;gap:10px}
+.webhead img{width:160px;height:auto;display:block}
+.webpage{background:#fff;min-height:70vh}
+.webgrid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+@media (min-width:760px){.webgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.bc{font-size:12px;color:var(--muted)}
+.webimg{aspect-ratio:1/1;max-width:100%;border-radius:4px;display:flex;align-items:flex-end;padding:10px;font-size:11px;color:rgba(255,255,255,.85)}
+/* prodejna */
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.vr{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+@media (min-width:760px){.vr{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.vcard{background:#fff;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;border-left:6px solid var(--line)}
+.vcard .hd{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.vcard .no{font-family:"FK Screamer",Impact,sans-serif;font-size:26px;line-height:1}
+.st{white-space:nowrap;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--off)}
+.st.s0{background:#fff3cc}.st.s1{background:#dbeafe}.st.s2{background:#ffc524}.st.s3{background:#d6f0de;color:#1d6b35}
+.vcard .li{font-size:14px;line-height:1.45}
+.vcard .li em{font-style:normal;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.vcard .meta{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.vcard .act{display:flex;gap:6px;flex-wrap:wrap}
+.vcard .act button{height:38px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:700}
+.vcard .act button.go{background:var(--ink);color:#fff;border-color:var(--ink)}
+.warn{color:var(--red);font-weight:700}
+.stat{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:520px){.stat{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat div{background:#fff;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column}
+.stat b{font-family:"FK Screamer",Impact,sans-serif;font-size:34px;line-height:1;font-weight:400}
+.stat span{font-size:12px;color:var(--muted)}
+</style>
+
+<div id="app"></div>
+
+<script>
+(function(){
+const LOGO_B = "{{LOGO_BLACK}}", LOGO_W = "{{LOGO_WHITE}}";
+const fmt = n => n.toLocaleString('cs-CZ').replace(/\s/g,' ') + ' Kč';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+
+// Ukázková objednávka (názvy a ceny z webu 19. 11. 2026)
+const ORDER = { no:'8810000123', email:'jana.novakova@email.cz', delivered:'12. 11. 2026', returnUntil:'26. 11. 2026', customer:'Jana Nováková' };
+const ITEMS = [
+  { id:'a', name:"dámský dres POC W's Cadence Jersey Uranium Black", size:'M', price:1990, sw:'#1f1f1f', sizes:['XS','S','M','L'], stock:{XS:true,S:true,M:true,L:false} },
+  { id:'b', name:'helma POC Ventral Air MIPS Uranium Black Matt', size:'M', price:4690, sw:'#2b2b2b', sizes:['S','M','L'], stock:{S:true,M:true,L:true} }
+];
+const CATALOG = [
+  { id:1, name:"dámský dres POC W's Cadence Jersey Hydrogen White", price:1990, sw:'#e4e4e0', stock:{XS:true,S:true,M:true,L:false} },
+  { id:2, name:"dámský dres POC W's Cadence Jersey Granite Grey", price:1990, sw:'#8a8d90', stock:{XS:false,S:true,M:true,L:true} },
+  { id:3, name:'dámský dres CASTELLI Corretto W Jersey Winter Sky/Hot Sauce', price:2790, sw:'#7fb0d6', stock:{XS:true,S:true,M:true,L:true} },
+  { id:4, name:'dámský dres Castelli Promessa Jacquard Agate Blue', price:1570, sw:'#4a6b8a', stock:{XS:false,S:true,M:true,L:false} },
+  { id:5, name:"dámský dres POC W's Cadence Jersey Bazzite Blue", price:1990, sw:'#3a7bd5', stock:{XS:true,S:false,M:true,L:true} },
+  { id:6, name:"dámský dres POC W's Cadence Jersey Apatite Navy", price:1990, sw:'#24324f', stock:{XS:false,S:true,M:false,L:true} }
+];
+const REASONS = ['Nesedí velikost','Nelíbí se mi','Jiné, než jsem čekal/a','Rozmyslel/a jsem si to'];
+const LABEL = { vratit:'Vrácení', vymenit:'Výměna', reklamovat:'Reklamace' };
+const STATUS = ['Čeká na podání','Na cestě k nám','Dorazilo – kontrola','Vyřízeno'];
+
+const SEED = [
+  { no:'V-2026-0139', date:'14. 11. 2026', customer:'Martin K. (ukázka)', email:'martin@email.cz', ship:'Z-BOX', status:2, deadline:'14. 12. 2026',
+    lines:[{ act:'reklamovat', name:'helma POC Omne Air MIPS Fluorescent Orange Matt M', detail:'Vada: praskla přezka na řemínku · 3 fotky' }], total:0 },
+  { no:'V-2026-0140', date:'16. 11. 2026', customer:'Lucie P. (ukázka)', email:'lucie@email.cz', ship:'Výdejní místo', status:1,
+    lines:[{ act:'vymenit', name:"dámský dres POC W's Cadence Jersey Granite Grey S", detail:'Za velikost M (rezervováno)' }], total:0 },
+  { no:'V-2026-0141', date:'18. 11. 2026', customer:'Tomáš H. (ukázka)', email:'tomas.h@email.cz', ship:'Z-BOX', status:0,
+    lines:[{ act:'vratit', name:'dámský dres Castelli Promessa Jacquard Agate Blue M', detail:'Nesedí velikost' }], total:1570, postage:true }
+];
+
+const fresh = () => ({ step:0, act:{}, mode:{}, reason:{}, size:{}, swap:{}, defect:{}, photos:{}, ship:'zbox', ucet:'', pozn:'', swapFor:null, web:false, webSize:'M', linkOk:false, linkErr:'', picked:null, pickSize:null, done:null });
+let view = 'zak';
+let st = fresh();
+let list = store.get('vratky4k_list', null) || SEED.slice();
+let filter = 'all';
+try { const h = location.hash.replace('#',''); if (h === 'prodejna') view = 'pro'; } catch(e){}
+
+function chosen(){ return ITEMS.filter(i => st.act[i.id]); }
+function calc(){
+  const ch = chosen();
+  let refund = 0, extra = 0;
+  ch.forEach(i => {
+    const a = st.act[i.id];
+    if (a === 'vratit') refund += i.price;
+    if (a === 'vymenit' && st.mode[i.id] === 'jine' && st.swap[i.id]) extra += st.swap[i.id].price - i.price;
+  });
+  const onlyReturn = ch.length > 0 && ch.every(i => st.act[i.id] === 'vratit');
+  const postage = onlyReturn && st.ship !== 'osobne';
+  const net = refund - extra;
+  return { ch, refund, extra, net, postage, anyReturn: ch.some(i => st.act[i.id]==='vratit') };
+}
+function itemReady(i){
+  const a = st.act[i.id];
+  if (a === 'vratit') return !!st.reason[i.id];
+  if (a === 'vymenit') return st.mode[i.id] === 'jine' ? !!st.swap[i.id] : !!st.size[i.id];
+  if (a === 'reklamovat') return (st.defect[i.id]||'').trim().length > 2;
+  return false;
+}
+const steps = ['Objednávka','Položky','Upřesnění','Doprava','Peníze','Souhrn'];
+
+function shell(inner){
+  return `<div class="demo"><span><strong>Ukázka pro kolegy</strong> · data nejsou skutečná, nic se neodesílá</span>
+  <div class="tabs"><button data-a="view" data-v="zak" class="${view==='zak'?'on':''}">Zákazník</button><button data-a="view" data-v="pro" class="${view==='pro'?'on':''}">Prodejna</button></div></div>` + inner;
+}
+function head(sub){
+  return `<header class="top"><div class="in"><img src="${LOGO_B}" alt="4 KLUCI OD KOL" width="170" height="26"><span>${sub||'4kluciodkol.cz'}</span></div></header>`;
+}
+function foot(){
+  return `<footer class="foot"><strong>Poradíme na 604 998 800</strong> · Po–Pá 9–17, So 9–13<br>4 KLUCI OD KOL s.r.o. · U Vlečky 726/5c · 617 00 Brno</footer>`;
+}
+function prog(){
+  const n = Math.min(st.step+1, 6);
+  return `<div class="prog"><div class="bars">${steps.map((x,i)=>`<i class="${i<=st.step?'on':''}"></i>`).join('')}</div><span class="kicker">Krok ${n} z 6 · ${steps[n-1]}</span></div>`;
+}
+function itemHead(i, extra){
+  return `<div class="item"><div class="ph" style="background:${i.sw}">foto</div><div class="t"><span class="n">${esc(i.name)}</span><span class="m">Velikost ${i.size} · ${fmt(i.price)}${extra||''}</span></div></div>`;
+}
+
+// ---------- ZÁKAZNÍK ----------
+function sStart(){
+  return `<div class="col">
+  <div style="display:flex;flex-direction:column;gap:10px;padding:0 4px">
+    <span class="kicker">Vrácení, výměna a reklamace</span>
+    <h1 class="h1">4 KLUCI → <span class="out">VRACÍ</span></h1>
+    <p style="margin:0;color:var(--text)">Vrácení, výměna velikosti i reklamace na pár kliknutí. Balík odnesete na výdejní místo Zásilkovny nebo do Z-BOXu, tisknout nic nemusíte.</p>
+  </div>
+  <div class="card">
+    <div class="field"><label class="l" for="em">E-mail z objednávky</label><input class="f" id="em" type="email" value="${ORDER.email}" autocomplete="off"></div>
+    <div class="field"><label class="l" for="ob">Číslo objednávky nebo faktury</label><input class="f" id="ob" type="text" value="${ORDER.no}" autocomplete="off"><span class="hint">Najdete ho v potvrzení objednávky nebo na faktuře. V ukázce je vyplněná vzorová objednávka.</span></div>
+    <button class="btn" data-a="go" data-v="1">Najít objednávku →</button>
+  </div>
+  <div class="card"><strong>Jak to funguje</strong><div class="steps">
+    <div><b>1</b><span>Vyberete zboží a co s ním chcete udělat.</span></div>
+    <div><b>2</b><span>Dostanete podací kód Zásilkovny.</span></div>
+    <div><b>3</b><span>Balík odnesete, ozveme se, jakmile k nám dorazí.</span></div></div></div>
+  <div class="note">Kupovali jste na prodejně? Stačí přijít s účtenkou: U Vlečky 726/5c, Brno, Po–Pá 9–17, So 9–13.</div>
+  </div>`;
+}
+function sItems(){
+  const any = chosen().length > 0;
+  return `<div class="col">${prog()}
+  <div style="padding:0 4px;display:flex;flex-direction:column;gap:6px"><h2 class="h2">CO CHCETE UDĚLAT?</h2><span class="hint" style="font-size:13px">Objednávka ${ORDER.no} · doručeno ${ORDER.delivered}</span></div>
+  <div class="grey">Vrátit můžete do <strong style="color:var(--ink)">${ORDER.returnUntil}</strong>. Reklamovat do 2 let od nákupu. <strong style="color:var(--ink)">Výměna je s poštovným zdarma.</strong></div>
+  ${ITEMS.map(i => `<div class="card ${st.act[i.id]?'sel':''}">${itemHead(i)}
+    <div class="seg">${['vratit','vymenit','reklamovat'].map(a=>`<button class="pill ${st.act[i.id]===a?'on':''}" data-a="act" data-i="${i.id}" data-v="${a}">${{vratit:'Vrátit',vymenit:'Vyměnit',reklamovat:'Reklamovat'}[a]}</button>`).join('')}</div></div>`).join('')}
+  <button class="btn ${any?'':'off'}" data-a="go" data-v="2">Pokračovat →</button>
+  <button class="link" data-a="go" data-v="0">Zpět</button></div>`;
+}
+function swapBlock(i){
+  const sw = st.swap[i.id];
+  if (sw) {
+    const d = sw.price - i.price;
+    return `<div class="card" style="background:var(--soft);padding:14px">
+      <div class="item"><div class="ph" style="background:${sw.sw}">foto</div><div class="t"><span class="n">${esc(sw.name)}</span><span class="m">Velikost ${sw.size} · ${fmt(sw.price)}</span>
+      <span style="font-size:13px;font-weight:700;color:${d>0?'var(--ink)':'var(--green)'}">${d>0?'Doplatíte '+fmt(d):(d<0?'Vrátíme vám '+fmt(-d):'Vychází přesně')}</span></div></div>
+      <button class="link" style="align-self:flex-start;padding:0" data-a="pick" data-i="${i.id}">Vybrat jinou náhradu</button></div>`;
+  }
+  return `<button class="btn" data-a="pick" data-i="${i.id}">Vybrat náhradu →</button>`;
+}
+function sDetail(){
+  const ch = chosen();
+  const ok = ch.every(itemReady);
+  return `<div class="col">${prog()}<h2 class="h2" style="padding:0 4px">UPŘESNĚTE</h2>
+  ${ch.map(i => { const a = st.act[i.id]; let body = '';
+    if (a==='vratit') body = `<label class="l">Proč vracíte?</label><div class="pills">${REASONS.map(r=>`<button class="pill soft ${st.reason[i.id]===r?'on':''}" data-a="reason" data-i="${i.id}" data-v="${esc(r)}">${r}</button>`).join('')}</div>
+      <div class="note">Nesedí velikost? <strong>Vyměňte ji – poštovné je pak zdarma.</strong> <button class="link" style="padding:0;color:var(--ink);font-weight:700" data-a="act" data-i="${i.id}" data-v="vymenit">Změnit na výměnu →</button></div>`;
+    if (a==='vymenit') {
+      const m = st.mode[i.id] || 'size';
+      body = `<div class="pills"><button class="pill ${m==='size'?'on':''}" data-a="mode" data-i="${i.id}" data-v="size">Jiná velikost</button><button class="pill ${m==='jine'?'on':''}" data-a="mode" data-i="${i.id}" data-v="jine">Jiné zboží</button></div>`;
+      if (m==='size') body += `<label class="l">Za jakou velikost?</label><div class="pills">${i.sizes.filter(z=>z!==i.size).map(z=>`<button class="pill ${st.size[i.id]===z?'on':''} ${i.stock[z]?'':'na'}" data-a="size" data-i="${i.id}" data-v="${z}">${z}</button>`).join('')}</div>
+        <span style="font-size:13px;color:${st.size[i.id]?'var(--green)':'var(--muted)'}">${st.size[i.id]?'✓ Velikost '+st.size[i.id]+' je skladem, rezervujeme ji pro vás.':'Vyberte velikost. Přeškrtnuté nejsou skladem.'}</span>`;
+      else body += swapBlock(i);
+      body += `<div class="note"><strong>Poštovné zdarma</strong> – při výměně neplatíte zpáteční ani novou zásilku.</div>`;
+    }
+    if (a==='reklamovat') {
+      const ph = st.photos[i.id] || [];
+      body = `<div class="field"><label class="l" for="vada-${i.id}">Popište vadu</label><textarea class="f" rows="3" id="vada-${i.id}" data-in="defect" data-i="${i.id}" placeholder="Např. praskla přezka na řemínku">${esc(st.defect[i.id]||'')}</textarea></div>
+      <div class="field"><span class="l">Fotky vady</span>${ph.length?`<div class="thumbs">${ph.map(s=>`<img src="${s}" alt="Fotka vady">`).join('')}</div>`:''}
+      <label class="upl">+ Přidat fotky<input type="file" accept="image/*" multiple data-file="${i.id}"></label></div>
+      <div class="note">Poštovné u reklamace hradíme my. Reklamaci vyřídíme nejpozději do 30 dnů.</div>`;
+    }
+    return `<div class="card"><span class="tag">${LABEL[a]}</span>${itemHead(i)}${body}</div>`; }).join('')}
+  <button class="btn ${ok?'':'off'}" data-a="go" data-v="3">Pokračovat →</button>
+  ${ok?'':'<span class="hint" style="text-align:center">Doplňte u každé položky, co je potřeba.</span>'}
+  <button class="link" data-a="go" data-v="1">Zpět</button></div>`;
+}
+function sPicker(){
+  const i = ITEMS.find(x => x.id === st.swapFor);
+  const sim = CATALOG.filter(p => p.stock.M && p.id !== 3).slice(0,4);
+  if (st.linkOk) sim.unshift(CATALOG.find(p=>p.id===3));
+  const pk = st.picked ? CATALOG.find(p=>p.id===st.picked) : null;
+  return `<div class="col">
+  <div style="padding:0 4px;display:flex;flex-direction:column;gap:6px"><span class="kicker">Výměna za</span><h2 class="h2">VYBERTE NÁHRADU</h2></div>
+  <div class="card" style="padding:12px 14px">${itemHead(i, ' · kredit')}</div>
+  <div class="card"><strong>Vyberte si na našem e-shopu</strong>
+    <span style="font-size:13px;color:var(--text)">Otevře se 4kluciodkol.cz. U každého produktu uvidíte žluté tlačítko <strong style="color:var(--ink)">Vyměnit za tento produkt</strong> a vrátíte se sem.</span>
+    <button class="btn" data-a="web">Vybrat na e-shopu →</button>
+    <div class="or">nebo</div>
+    <label class="l" for="odkaz">Máte už vyhlédnuto? Vložte odkaz</label>
+    <div style="display:flex;gap:8px"><input class="f" id="odkaz" type="url" placeholder="Vložte odkaz z 4kluciodkol.cz" style="flex:1;min-width:0;height:46px;font-size:14px;${st.linkOk?'border-color:var(--green)':''}"><button class="btn ghost" data-a="link" style="flex-shrink:0">Načíst</button></div>
+    ${st.linkOk?'<span style="font-size:12px;color:var(--green);font-weight:700">✓ Produkt načten z odkazu – vyberte velikost níže</span>':''}
+    ${st.linkErr?`<span style="font-size:12px;color:var(--red)">${st.linkErr}</span>`:''}
+    <span class="hint">V ukázce se z jakéhokoli odkazu na náš web načte vzorový dres CASTELLI Corretto.</span>
+  </div>
+  <span class="kicker" style="padding:0 4px">Nebo podobné ve vaší velikosti (M)</span>
+  <div class="grid2">${sim.map(p => { const d = p.price - i.price; return `<button class="prod ${st.picked===p.id?'on':''}" data-a="prod" data-v="${p.id}">
+    <div class="sw" style="background:${p.sw}"></div><span class="n">${esc(p.name)}</span>
+    <span class="p"><strong>${fmt(p.price)}</strong><span class="${d<=0?'g':''}">${d===0?'beze změny':(d>0?'+'+fmt(d):'vrátíme '+fmt(-d))}</span></span>
+    <span style="font-size:11px;color:var(--green)">M skladem</span></button>`; }).join('')}</div>
+  ${pk?`<div class="card" style="outline:2px solid var(--ink)"><div class="item"><div class="ph" style="background:${pk.sw}"></div><div class="t"><span class="n">${esc(pk.name)}</span><span class="m">${fmt(pk.price)}</span></div></div>
+    <label class="l">Velikost</label><div class="pills">${Object.keys(pk.stock).map(z=>`<button class="pill ${st.pickSize===z?'on':''} ${pk.stock[z]?'':'na'}" data-a="psize" data-v="${z}">${z}</button>`).join('')}</div>
+    <button class="btn ${st.pickSize?'':'off'}" data-a="confirm">Vyměnit za tento produkt</button></div>`:''}
+  <button class="link" data-a="back2">Zpět bez výběru</button></div>`;
+}
+function sWeb(){
+  const i = ITEMS.find(x => x.id === st.swapFor);
+  const p = CATALOG.find(x=>x.id===3);
+  const d = p.price - i.price;
+  return `<div class="webbar"><div class="in"><div class="t"><span class="kicker" style="color:var(--ink);font-size:11px">Vyměňujete</span><span>${esc(i.name)} · ${i.size} · kredit ${fmt(i.price)}</span></div><button data-a="webcancel">Zpět do vratky</button></div></div>
+  <div class="webhead"><div class="in"><img src="${LOGO_W}" alt="4 KLUCI OD KOL" width="160" height="24"><span>simulace e-shopu</span></div></div>
+  <div class="webpage wrap"><div class="webgrid">
+    <div class="webimg" style="background:${p.sw}">foto produktu</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span class="bc">Oblečení → Dámské → Dresy</span>
+      <h1 style="margin:0;font-size:22px;line-height:1.3">${esc(p.name)}</h1>
+      <span style="font-size:26px;font-weight:700">${fmt(p.price)}</span>
+      <span class="l">Velikost</span>
+      <div class="pills">${Object.keys(p.stock).map(z=>`<button class="pill ${st.webSize===z?'on':''}" data-a="wsize" data-v="${z}">${z}</button>`).join('')}</div>
+      <span style="color:var(--green);font-weight:700">Skladem</span>
+      <button class="btn" data-a="wswap">Vyměnit za tento produkt →</button>
+      <span style="font-size:13px;color:var(--text);text-align:center">${d>0?'Doplatíte '+fmt(d):'Vrátíme vám '+fmt(-d)} · poštovné zdarma</span>
+      <div style="height:1px;background:var(--off)"></div>
+      <button class="btn ghost" style="color:var(--muted)">Do košíku</button>
+      <span class="hint">Žlutý pruh a tlačítko výměny vidí jen zákazník, který přišel z vratkového portálu. Ostatním se web nemění.</span>
+    </div></div></div>`;
+}
+function sShip(){
+  const c = calc();
+  const paid = c.postage ? 'dle ceníku Zásilkovny' : 'zdarma';
+  const opts = [
+    { id:'zbox', t:'Z-BOX Zásilkovny', d:'Kód zadáte do Z-BOXu, nic netisknete. Nonstop.', p: paid },
+    { id:'vm', t:'Výdejní místo Zásilkovny', d:'Kód nadiktujete obsluze na kterémkoli výdejním místě.', p: paid },
+    { id:'osobne', t:'Osobně na prodejně', d:'U Vlečky 726/5c, Brno · Po–Pá 9–17, So 9–13', p:'zdarma' }
+  ];
+  return `<div class="col">${prog()}<h2 class="h2" style="padding:0 4px">JAK NÁM TO POŠLETE?</h2>
+  ${opts.map(o=>`<button class="opt ${st.ship===o.id?'on':''}" data-a="ship" data-v="${o.id}"><span class="dot"></span><span class="b"><span class="r"><strong>${o.t}</strong><strong style="font-size:13px;white-space:nowrap" class="${o.p==='zdarma'?'free':''}">${o.p}</strong></span><span class="d">${o.d}</span></span></button>`).join('')}
+  ${c.postage?'<div class="grey">Poštovné za vrácení odečteme z vrácené částky. Při výměně nebo reklamaci je zdarma.</div>':''}
+  <button class="btn" data-a="go" data-v="${c.net>0?4:5}">Pokračovat →</button>
+  <button class="link" data-a="go" data-v="2">Zpět</button></div>`;
+}
+function sMoney(){
+  const ok = /^\d{0,6}-?\d{2,10}\/\d{4}$/.test(st.ucet.replace(/\s/g,''));
+  return `<div class="col">${prog()}<h2 class="h2" style="padding:0 4px">KAM VRÁTÍME PENÍZE?</h2>
+  <div class="card"><div class="field"><label class="l" for="ucet">Číslo účtu</label><input class="f" id="ucet" data-in="ucet" inputmode="numeric" placeholder="např. 123456789/0800" value="${esc(st.ucet)}"></div>
+  <div class="field"><label class="l" for="pozn">Poznámka pro nás <span style="font-weight:400;color:var(--muted)">(nepovinné)</span></label><textarea class="f" id="pozn" rows="3" data-in="pozn">${esc(st.pozn)}</textarea></div></div>
+  <div class="grey">Peníze pošleme nejpozději do 14 dnů od doručení vratky, obvykle mnohem dřív.</div>
+  <button class="btn" data-a="go" data-v="5" id="moneyGo">Pokračovat →</button>
+  <span class="hint" style="text-align:center" id="moneyHint">${st.ucet && !ok ? 'Zkontrolujte číslo účtu (formát 123456789/0800).' : ''}</span>
+  <button class="link" data-a="go" data-v="3">Zpět</button></div>`;
+}
+function shipName(){ return {zbox:'Z-BOX Zásilkovny', vm:'Výdejní místo Zásilkovny', osobne:'Osobně na prodejně'}[st.ship]; }
+function lineDetail(i){
+  const a = st.act[i.id];
+  if (a==='vratit') return st.reason[i.id];
+  if (a==='vymenit') return (st.mode[i.id]==='jine' && st.swap[i.id]) ? 'Za: '+st.swap[i.id].name+' '+st.swap[i.id].size : 'Za velikost '+st.size[i.id];
+  if (a==='reklamovat') { const n = (st.photos[i.id]||[]).length; return 'Vada: '+(st.defect[i.id]||'')+(n?' · '+n+' foto':''); }
+}
+function lineAmount(i){
+  const a = st.act[i.id];
+  if (a==='vratit') return fmt(i.price);
+  if (a==='vymenit' && st.mode[i.id]==='jine' && st.swap[i.id]) { const d = st.swap[i.id].price - i.price; return d>0?'+'+fmt(d):(d<0?'−'+fmt(-d):'0 Kč'); }
+  return '0 Kč';
+}
+function sSummary(){
+  const c = calc();
+  const lbl = c.net > 0 ? 'Vrátíme vám' : (c.net < 0 ? 'Doplatíte' : 'Vychází přesně');
+  return `<div class="col">${prog()}<h2 class="h2" style="padding:0 4px">SOUHRN</h2>
+  <div class="card" style="padding:4px 18px;gap:0">${c.ch.map(i=>`<div class="sumrow"><span><span class="kicker" style="font-size:11px">${LABEL[st.act[i.id]]}</span><br><strong>${esc(i.name)} ${i.size}</strong><br><span style="color:var(--muted)">${esc(lineDetail(i))}</span></span><strong style="white-space:nowrap">${lineAmount(i)}</strong></div>`).join('')}
+  <div class="sumrow"><span>Doprava: ${shipName()}</span><strong class="${c.postage?'':'free'}" style="white-space:nowrap">${c.postage?'− poštovné':'zdarma'}</strong></div></div>
+  <div class="total"><strong>${lbl}</strong><span class="v">${c.net===0?'0 Kč':fmt(Math.abs(c.net))}${c.postage?' <span style="font-family:Good Sans,Arial;font-size:14px">− poštovné</span>':''}</span></div>
+  ${c.net<0?'<div class="grey">Doplatek zaplatíte QR platbou hned po odeslání. Nové zboží odešleme, jakmile platba dorazí.</div>':''}
+  <span class="hint" style="padding:0 4px">Odesláním souhlasíte s podmínkami vrácení a reklamace. Potvrzení přijde na ${ORDER.email}.</span>
+  <button class="btn dark" data-a="submit">Odeslat a získat kód →</button>
+  <button class="link" data-a="go" data-v="${c.net>0?4:3}">Zpět</button></div>`;
+}
+function sDone(){
+  const d = st.done; const os = st.ship === 'osobne';
+  return `<div class="col">
+  <div style="padding:0 4px;display:flex;flex-direction:column;gap:8px"><span class="kicker" style="color:var(--green)">✓ Vratka ${d.no} vytvořena</span><h2 class="h1" style="font-size:46px">HOTOVO, <span class="out">DÍKY!</span></h2></div>
+  ${os?`<div class="card">Zboží přineste na prodejnu U Vlečky 726/5c, Brno (Po–Pá 9–17, So 9–13) a řekněte číslo vratky <strong>${d.no}</strong>.</div>`:
+  `<div class="code"><span class="kicker" style="color:var(--ink)">Podací kód Zásilkovny</span><span class="v">UKÁZKA</span><span style="font-size:13px">V ostré verzi tu bude kód od Zásilkovny. Přijde i e-mailem.</span></div>
+  <div class="card"><div class="steps dark"><div><b>1</b><span>Zboží zabalte, ideálně do původní krabice.</span></div><div><b>2</b><span>Na balík napište kód a „4 KLUCI OD KOL“.</span></div><div><b>3</b><span>${st.ship==='zbox'?'V Z-BOXu kód zadejte a balík vložte.':'Na výdejním místě kód nadiktujte obsluze.'}</span></div></div></div>`}
+  ${d.net<0?`<div class="card"><strong>Doplatek ${fmt(-d.net)}</strong><div style="display:flex;gap:14px;align-items:center"><div style="width:96px;height:96px;flex-shrink:0;border:2px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-align:center">QR platba<br>(ukázka)</div><span style="font-size:13px;color:var(--text)">Naskenujte v bankovní aplikaci. Variabilní symbol je číslo vratky.</span></div></div>`:''}
+  <div class="card"><span class="kicker">Stav vratky ${d.no}</span><div class="tl">
+    <div class="done"><i></i>Vratka vytvořena</div>
+    <div class="now"><i></i>${os?'Čeká na předání na prodejně':'Čeká na podání u Zásilkovny'}</div>
+    <div class="todo"><i></i>Dorazila k nám a kontrolujeme ji</div>
+    <div class="todo"><i></i>${d.net>0?'Peníze odeslány':(d.hasSwap?'Nové zboží odesláno':'Vyřízeno')}</div></div>
+    <span class="hint">O každé změně vám pošleme e-mail. Stav najdete i pod odkazem v e-mailu.</span></div>
+  <div class="note">Podívejte se, jak vratku uvidí prodejna: <button class="link" style="padding:0;color:var(--ink);font-weight:700" data-a="view" data-v="pro">Přehled vratek →</button></div>
+  <button class="btn ghost" data-a="restart">Začít znovu (ukázka)</button></div>`;
+}
+
+// ---------- PRODEJNA ----------
+function sStaff(){
+  const counts = [0,1,2,3].map(s => list.filter(v=>v.status===s).length);
+  const shown = list.filter(v => filter==='all' || v.status===+filter).slice().reverse();
+  const chip = (k,t) => `<button class="pill ${filter===k?'on':''}" data-a="filter" data-v="${k}">${t}</button>`;
+  return `<div class="col wide">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:0 4px">
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="kicker">Prodejna · chráněno heslem</span><h2 class="h2">PŘEHLED VRATEK</h2></div>
+    <button class="btn ghost" data-a="reset" style="height:40px">Obnovit ukázková data</button></div>
+  <div class="stat">${STATUS.map((s,i)=>`<div><b>${counts[i]}</b><span>${s}</span></div>`).join('')}</div>
+  <div class="chips">${chip('all','Vše')}${STATUS.map((s,i)=>chip(String(i),s)).join('')}</div>
+  <div class="vr">${shown.map(v => {
+    const idx = list.indexOf(v);
+    const border = ['#ffc524','#7fb0e6','#111111','#2e9d4f'][v.status];
+    const hasRekl = v.lines.some(l=>l.act==='reklamovat');
+    return `<div class="vcard" style="border-left-color:${border}">
+      <div class="hd"><span class="no">${v.no}</span><span class="st s${v.status}">${STATUS[v.status]}</span></div>
+      <div class="meta"><span>${v.date}</span><span>${esc(v.customer)}</span><span>${v.ship}</span>${v.mine?'<span style="color:var(--green);font-weight:700">nová z ukázky</span>':''}</div>
+      ${v.lines.map(l=>`<div class="li"><em>${LABEL[l.act]}</em><br><strong>${esc(l.name)}</strong><br><span style="color:var(--muted)">${esc(l.detail)}</span></div>`).join('')}
+      ${hasRekl?`<div style="font-size:13px">Lhůta na vyřízení: <span class="${v.status<3?'warn':''}">do ${v.deadline||'30 dnů'}</span> · zapíše se do Pohody (Reklamace)</div>`:''}
+      <div style="font-size:14px">${v.total>0?'Vrátit zákazníkovi: <strong>'+fmt(v.total)+'</strong>'+(v.postage?' − poštovné':''):(v.total<0?'Zákazník doplácí: <strong>'+fmt(-v.total)+'</strong>':'Bez peněz')}</div>
+      <div class="act">${v.status<3?`<button class="go" data-a="next" data-v="${idx}">${['Označit: na cestě','Označit: dorazilo','Vyřídit'][v.status]} →</button>`:''}
+        ${v.status===2?'<button>Dobropis do Pohody</button>':''}<button>Napsat zákazníkovi</button></div>
+    </div>`; }).join('') || '<div class="card">V tomto stavu nic není.</div>'}</div>
+  <div class="grey">V ostré verzi: stav „na cestě“ a „dorazilo“ se nastaví sám podle Zásilkovny, zákazník dostane e-mail při každé změně a reklamace i dobropisy se zapíšou do Pohody. Tady se stav mění tlačítky a vše se ukládá jen ve vašem prohlížeči.</div>
+  </div>`;
+}
+
+function render(){
+  let body;
+  if (view === 'pro') body = head('Přehled vratek') + `<div class="wrap">${sStaff()}</div>`;
+  else if (st.web) body = sWeb();
+  else {
+    let s;
+    if (st.done) s = sDone();
+    else if (st.swapFor) s = sPicker();
+    else s = [sStart,sItems,sDetail,sShip,sMoney,sSummary][st.step]();
+    body = head() + `<div class="wrap">${s}</div>` + foot();
+  }
+  document.getElementById('app').innerHTML = shell(body);
+}
+function top(){ try { window.scrollTo(0,0); } catch(e){} }
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-a]'); if (!b) return;
+  const a = b.dataset.a, v = b.dataset.v, i = b.dataset.i;
+  let scroll = false;
+  switch(a){
+    case 'view': view = v; try { history.replaceState(null,'',v==='pro'?'#prodejna':'#zakaznik'); } catch(err){} scroll = true; break;
+    case 'go': {
+      const n = +v;
+      if (n===2 && !chosen().length) return;
+      if (n===3 && st.step===2 && !chosen().every(itemReady)) return;
+      if (n===5 && st.step===4) { const ok = /^\d{0,6}-?\d{2,10}\/\d{4}$/.test(st.ucet.replace(/\s/g,'')); if (!ok) { const h = document.getElementById('moneyHint'); if (h) h.textContent = 'Vyplňte číslo účtu ve formátu 123456789/0800.'; return; } }
+      st.step = n; scroll = true; break; }
+    case 'act': st.act[i] = (st.act[i]===v && st.step===1) ? null : v; if (v==='vymenit' && !st.mode[i]) st.mode[i]='size'; break;
+    case 'reason': st.reason[i] = v; break;
+    case 'mode': st.mode[i] = v; break;
+    case 'size': { const it = ITEMS.find(x=>x.id===i); if (it.stock[v]) st.size[i] = v; break; }
+    case 'pick': st.swapFor = i; st.picked = null; st.pickSize = null; st.linkOk = false; st.linkErr=''; scroll = true; break;
+    case 'back2': st.swapFor = null; scroll = true; break;
+    case 'prod': { const p = CATALOG.find(x=>x.id===+v); st.picked = p.id; st.pickSize = p.stock.M ? 'M' : null; break; }
+    case 'psize': { const p = CATALOG.find(x=>x.id===st.picked); if (p.stock[v]) st.pickSize = v; break; }
+    case 'confirm': { if (!st.pickSize) return; const p = CATALOG.find(x=>x.id===st.picked); st.swap[st.swapFor] = { ...p, size: st.pickSize }; st.swapFor = null; scroll = true; break; }
+    case 'link': { const val = (document.getElementById('odkaz')||{}).value || '';
+      if (!/4kluciodkol\.cz/i.test(val)) { st.linkErr = 'Vložte odkaz na produkt z 4kluciodkol.cz.'; st.linkOk = false; }
+      else { st.linkErr = ''; st.linkOk = true; st.picked = 3; st.pickSize = 'M'; }
+      break; }
+    case 'web': st.web = true; st.webSize = 'M'; scroll = true; break;
+    case 'wsize': st.webSize = v; break;
+    case 'webcancel': st.web = false; scroll = true; break;
+    case 'wswap': { const p = CATALOG.find(x=>x.id===3); st.swap[st.swapFor] = { ...p, size: st.webSize }; st.web = false; st.swapFor = null; scroll = true; break; }
+    case 'ship': st.ship = v; break;
+    case 'submit': {
+      const c = calc();
+      const nums = list.map(x => +x.no.split('-')[2]);
+      const no = 'V-2026-' + String(Math.max(141, ...nums) + 1).padStart(4,'0');
+      const lines = c.ch.map(it => ({ act: st.act[it.id], name: it.name + ' ' + it.size, detail: lineDetail(it) }));
+      const today = new Date(); const dd = today.getDate()+'. '+(today.getMonth()+1)+'. '+today.getFullYear();
+      const dl = new Date(today.getTime()+30*864e5);
+      list.push({ no, date: dd, customer: ORDER.customer + ' (ukázka)', email: ORDER.email, ship: {zbox:'Z-BOX',vm:'Výdejní místo',osobne:'Osobně'}[st.ship], status:0, lines, total:c.net, postage:c.postage, mine:true, deadline: dl.getDate()+'. '+(dl.getMonth()+1)+'. '+dl.getFullYear() });
+      store.set('vratky4k_list', list);
+      st.done = { no, net:c.net, hasSwap: c.ch.some(it=>st.act[it.id]==='vymenit') }; scroll = true; break; }
+    case 'restart': st = fresh(); scroll = true; break;
+    case 'filter': filter = v; break;
+    case 'next': { const x = list[+v]; if (x && x.status<3) { x.status++; store.set('vratky4k_list', list); } break; }
+    case 'reset': list = SEED.map(x=>({...x})); store.set('vratky4k_list', list); filter='all'; break;
+    default: return;
+  }
+  render(); if (scroll) top();
+});
+document.addEventListener('input', e => {
+  const t = e.target; const k = t.dataset && t.dataset.in; if (!k) return;
+  if (k==='defect') { st.defect[t.dataset.i] = t.value; const ok = chosen().every(itemReady); /* bez překreslení kvůli kurzoru */ const btn = document.querySelector('[data-a="go"][data-v="3"]'); if (btn) btn.classList.toggle('off', !ok); }
+  if (k==='ucet') st.ucet = t.value;
+  if (k==='pozn') st.pozn = t.value;
+});
+document.addEventListener('change', e => {
+  const t = e.target; if (!t.dataset || !t.dataset.file) return;
+  const id = t.dataset.file; const files = Array.from(t.files||[]).slice(0,6);
+  files.forEach(f => { const r = new FileReader(); r.onload = () => { (st.photos[id] = st.photos[id]||[]).push(r.result); render(); }; r.readAsDataURL(f); });
+});
+render();
+})();
+</script>

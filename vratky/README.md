@@ -45,6 +45,10 @@ Mobilní verze, styl podle e-mailových šablon 4K (světle šedé pozadí, bíl
 - Heslo k API jen na serveru (Forpsi), nikdy ve stránce.
 - Údaje o objednávkách jsou v Pohodě (mServer jen z kanceláře) – pomocník na KANCL bude aplikaci pravidelně posílat nutné minimum: e-shopové faktury s položkami.
 
+## Ukázka pro kolegy
+
+Klikací ukázka (19. 11. 2026): https://claude.ai/artifact/FBNQFKmE2XDRg9yTAHqb9p. Zdroj je `vratky/ukazka/app.html`, písma a loga do něj vkládá `build.py`. Data jsou vymyšlená, nic se neodesílá a stav vratek se ukládá jen v prohlížeči.
+
 ## Otevřené
 
 - Cena zpětné zásilky podle ceníku Zásilkovny.
