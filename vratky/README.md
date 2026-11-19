@@ -51,6 +51,8 @@ Klikací ukázka (19. 11. 2026): https://claude.ai/artifact/FBNQFKmE2XDRg9yTAHqb
 
 ## Otevřené
 
+- Platba doplatku kartou: GP smlouva má e-commerce obchodní místo 684240002 pro www.4kluciodkol.cz (karty, Apple/Google Pay, platební tlačítka). Dotaz na GP, zda ho smí použít i portál na vratky.4kluciodkol.cz s vlastním klíčem GP webpay, odeslal Tomáš 20. 11. 2026, čeká se na odpověď. Do té doby doplatek QR platbou.
+
 - Cena zpětné zásilky podle ceníku Zásilkovny.
 - Verze pro počítač.
 - Zjistit, jak se dnes vyplňuje agenda Reklamace v Pohodě (pole, číselné řady, stavy) – přes mServer na KANCL.
