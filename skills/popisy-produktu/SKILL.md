@@ -185,7 +185,7 @@ Barvy jsou na webu samostatné produkty se stejným textem, což Google bere jak
 
 ## Postup výroby sady popisů
 
-1. Zjistit kódy a stránky: z exportu BSADMIN (ne hromadným procházením webu). Kód masteru na stránce: `code value"><span>KÓD`, kódy variant z JSON-LD `"sku":"…"`. Pozor na stejný kód na více kartách (SKLAD, KOMIS, Cyklospeci), viz bsadmin.
+1. Zjistit kódy a stránky: z exportu BSADMIN (ne hromadným procházením webu). Do CSV vždy kód masteru I všech jeho variant – master si popis z variant nepřevezme (viz bsadmin). Na stránce webu je `code value"><span>KÓD` někdy kód varianty, ne masteru (Topstone 00100033-54), proto kódy brát z BSADMIN a ne jen ze stránky; kódy variant jsou v JSON-LD `"sku":"…"`. Pozor na stejný kód na více kartách (SKLAD, KOMIS, Cyklospeci), viz bsadmin.
 2. Vzít aktuální popis z webu (raw_desc), ne starý soubor. Měnit jen to, co je potřeba.
 3. Připravit CSV pro import (bsadmin → Importy): `"Kod";"Popis"`, ASCII s HTML entitami (`&#233;`), oddělovač `;`, vše v uvozovkách, CRLF, jeden soubor do 4,5 MB. Kód masteru i všech variant dostane stejný popis. Krátký popis jen ve sloupci KratkyPopis, nikdy prázdný (prázdný by smazal stávající).
 4. Náhled `NAHLED-<značka>.html` a zkontrolovat ho na šířce 390 px i 1440 px.

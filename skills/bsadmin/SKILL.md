@@ -47,12 +47,12 @@ Podklady jsou ve firemním OneDrive `4 KLUCI OD KOL\AI\Podklady pro Claude`, na 
 - **Tvorba masteru.** Master vytváří uživatel sám: označí karty → **Seskupit položky**. Já pomáhám hlavně se **správným filtrem** karet.
 - **Přidání karet k existujícímu masteru.** Označit existující master (i se skupinou) a nové karty → Seskupit. Jinak vznikne nový master.
 - **Checkbox Internet** je v detailu karty (záložka Hlavní, dole), ne v gridu.
-- **Popis masteru.** Seskupení popis do masteru nezkopíruje. Master potřebuje vlastní import popisu (Kod = kód masteru).
+- **Importy textu jdou do masteru I do všech variant.** Popis, krátký popis, názvy i tabulka velikostí: CSV obsahuje řádek pro kód masteru a řádek pro každou variantu, všechny se stejným textem (názvy variant s velikostí). Master si text z variant NEPřevezme a stránka webu často zobrazuje právě master (18. 11. 2026: Topstone Carbon 1 Lefty AXS zůstal bez videa, protože v CSV byla jen varianta 00100033-54). Platí i obráceně: jen master nestačí, varianty mají vlastní stránky.
 - **Chyba s kategorií Archiv.** Po seskupení někdy master spadne do „Sklad pro vyřazené produkty\Archiv“. Na webu pak chybí drobečková navigace a master není v sitemapě. Oprava: v Zásobách přetáhnout master do stejné kategorie jako varianty a zkontrolovat, že Umístění ukazuje [hlavní karta].
 - **Výběr velikosti.** Když varianta nemá parametr Velikost (nebo ho má jinak než ostatní), web místo výběru velikosti ukáže seznam celých názvů.
 - **„Související produkty“** nepoužíváme.
 - **Nové karty z feedů** padají do Import / !Importy. Popis připravit dřív, než je kolega přesune na e-shop.
-- **Fotky galerie** se dávají na varianty, master je převezme.
+- **Fotky galerie (pole Obrázky)** se dávají na varianty, master je převezme. To platí JEN pro fotky galerie, ne pro texty (viz výše).
 
 ### Filtry
 
@@ -152,7 +152,7 @@ Zápis a změna parametrů přes XML a fixace cen: viz skill pohoda. Tady jsou j
 Šablony, pořadí bloků podle typu produktu, HTML bloky, fotky, video a postup výroby sady popisů jsou ve skillu **popisy-produktu**. Tady zůstává jen to, co se týká karet a BSADMIN:
 - **Geometrie** jde do 2. popisu (rozměry anglicky: Reach, Stack…), **tabulka velikostí** do 3. popisu.
 - **Záložka Specifikace z feedu** se nemění. Whyte a Cannondale jdou z feedu, Amflow se plní ručně.
-- **Feedy a popisy:** Aspire nepřepíše popis, který byl jakkoli upraven. Varianty dostanou stejný popis jako master.
+- **Feedy a popisy:** Aspire nepřepíše popis, který byl jakkoli upraven. Při našem importu dostane master i každá varianta stejný popis (v CSV zvlášť řádek pro každý kód).
 - **Tabulka parametrů BSSHOP** pod popisem je skrytá přes CSS.
 
 ### Postup vložení popisu
