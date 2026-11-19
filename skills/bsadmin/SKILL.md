@@ -7,6 +7,11 @@ description: "E-shop 4kluciodkol.cz (BSSHOP/BSADMIN): karty a mastery, CSV impor
 
 E-shop běží na BSSHOP; BSADMIN je program na vzdáleném serveru iPodnik (ne webová administrace). Data karet pocházejí z Pohody (viz skill **pohoda**). Je jeden e-shop s jednou jazykovou mutací. Podpora BSSHOP je pomalá, takže co jde, řešíme sami.
 
+### Co patří sem a co do skillu pohoda
+- **Sem (bsadmin):** vše, co vidí zákazník na 4kluciodkol.cz a jak se tam dostane – názvy karet, kategorie (členění SKLAD/Eshop/… z pohledu webu), hodnoty parametrů a filtry, mastery, popisy, fotky a videa, CSV importy, ovládání BSADMIN, CSS a design, SEO, e-maily, vyhledávání, koš, cenovky (vycházejí z designu webu).
+- **Do pohoda:** doklady, banka, dodavatelé a jejich faktury/proformy, mServer, XML a SQL. I když jde o kartu pro web, technika zápisu do Pohody (XML pro kartu, členění, parametr, ID polí) je ve skillu pohoda.
+- **Překryv:** pravidlo je jen v jednom skillu, druhý na něj odkazuje jednou větou. Nové pravidlo zapsat podle toho, KDE se provádí (v BSADMIN / na webu vs. v Pohodě).
+
 **Než začneš pracovat na webu, přečti dokument „E-shop 4K – stav a rozhodnutí“** (https://claude.ai/artifact/7DcPoZeGC2Z7UcDWVkGNCu, Claude Docs). Je v něm aktuální stav, rozhodnutí a otevřené úkoly. Když se něco rozhodne, dopiš to tam.
 
 Podklady jsou ve firemním OneDrive `4 KLUCI OD KOL\AI\Podklady pro Claude`, na počítači KANCL v `D:\User\OneDrive - 4 KLUCI OD KOL s.r.o\4 KLUCI OD KOL\AI\Podklady pro Claude`:
@@ -29,7 +34,11 @@ Podklady jsou ve firemním OneDrive `4 KLUCI OD KOL\AI\Podklady pro Claude`, na 
 - **Nulový sklad** (náš ani dodavatele) neznamená, že výrobek skončil.
 - **Karty TEST…** jsou testovací sedla, která půjčujeme zákazníkům.
 - **Stejný kód na více kartách.** Kód bývá ve skladě SKLAD, KOMIS, SERVIS, Cyklospeci i Import. Přejmenování platí pro všechny karty. Kopie v „Koš-sklad“ se neřeší.
-- **Text do vzdálené plochy** se vkládá přes schránku: na Macu Cmd+C, ve Windows Ctrl+C, na serveru vždy Ctrl+V.
+- **Text do vzdálené plochy** se vkládá přes schránku: na Macu Cmd+C, ve Windows Ctrl+C, na serveru vždy Ctrl+V. Při ovládání počítače: zapsat text do schránky Macu a ve Windows App vložit Cmd+V (funguje, ověřeno 16. 11. 2026). Psaní po znacích je pomalé a dlouhá pole se zasekávají.
+- **Ovládání z KANCL (Připojení ke vzdálené ploše, 19. 11. 2026).** Text s diakritikou se při psaní posílá přes schránku a vzdálená plocha může vložit starý obsah schránky serveru (stalo se: do názvu se vložil celý popis). Do polí psát jen ASCII (bez háčků, „-“ místo „–“) a po vložení vždy zkontrolovat. Obsah z jedné karty do druhé kopírovat uvnitř serveru (Ctrl+A, Ctrl+C v editoru kódu, Ctrl+V v cílové kartě).
+- **Licence BSADMIN.** Najednou běží jen omezený počet instancí. Hláška „Je spuštěno příliš mnoho instancí aplikace BSADMIN“ (uvádí uživatele, např. 4KPavlO, 4KKrcalS) → požádat uživatele, ať jednu zavře. Po práci BSADMIN vždy zavřít. Přihlášení Ota Hliník je bez hesla (jen OK).
+- **Spuštění BSADMIN na serveru:** vyhledávání v liště vzdálené plochy → „BSADMIN SQL“ → Enter.
+- **Složka Pomocnik na serveru.** Ve Windows App (připojení 4K – Šárka, Folders) je přesměrovaná firemní OneDrive složka Pomocnik, čtení i zápis. Na serveru je jako `\\tsclient\Pomocnik` (Tento počítač → „Pomocnik na Tomas-MacBook“). CSV k importu a exporty z BSADMIN se ukládají přímo tam. Funguje jen v relaci připojené z jeho Macu.
 - **Export z BSADMIN.** V Zásobách pravé tlačítko → „Export zobrazených produktů“. Soubor se uloží do Stažených na serveru. Odtud se přenese přes sdílenou schránku nebo složku vzdálené plochy.
 - **Návody.** Příkazy a postupy psát pro Mac i Windows (kolega používá Windows).
 
@@ -79,14 +88,17 @@ Na co dát pozor:
 - **Tři pole.** Web bere **Název krátký CZ** ve výpisu a **Název CZ** na detailu. Název z Pohody použije jen tehdy, když jsou obě prázdná. Při přejmenování proto změnit všechna tři: Název POHODA CZ, Název krátký CZ a Název CZ. CSV import názvů je v UTF-8.
 - **Pořadí slov.** **typ – značka – model – barva – velikost**.
 - **Bez roku.** Roky byly v názvech jen kvůli Heurece. U helem a kol je odstranit, nové karty rok nemají.
-- **Kontrola při zpracování zboží.** Názvy vždy zkontrolovat a opravit, i u karet z feedů.
+- **Kontrola při zpracování zboží.** Názvy vždy zkontrolovat a opravit, i u karet z feedů (koš, !Importy mají název bez typu).
+- **Vzor:** „helma POC Kortal Race MIPS Hydrogen White/Uranium Black Matt M/L“, „vesta POC M's Enthral Gilet Uranium Black S“, „duše Mitas AV35 14x1,50-2,10“. Typ malými, ZNAČKA velkými.
+- **Typy:** helma, dětská helma, lyžařská helma, brýle, lyžařské brýle, vesta, chránič páteře, čepice…
+- **Velikosti z feedu:** MLG → M/L, XSS → XS/S, XLX → XL/XXL, SML → S, LXL → L/XL, ONE → vynechat.
 - **Model a barva** anglicky, jak je používá výrobce nebo dovozce. Názvy LAKE:
   - pánské: `tretry LAKE <model> <barva> <NARROW|REGULAR|WIDE> <velikost>`
   - dámské: `dámské tretry LAKE CX333 Women <barva> <velikost>`
   - master bez velikosti
-- **AMFLOW.** „AM…“ u KROSS je značka **AMFLOW**, nikdy ne KROSS.
+- **AMFLOW.** „AM…“ u KROSS je značka **AMFLOW**, nikdy ne KROSS. Název `kolo AMFLOW <model> <kolo> <barva> <velikost>`, např. „kolo AMFLOW TL Carbon 27,5 béžová S/M“. Kategorie: Elektrokola/Horská celoodpružená/Amflow/PX, PR, TL; Elektrokola/Městská/Amflow/UE (od 17. 11. 2026).
 - **POC VPD Air Vest** je „chránič páteře“.
-- **Ložiska a díly (Enduro):** typ výrobku česky, zbytek názvu stejnými hodnotami jako ve filtrech (anglicky). Ložiska se jmenují jen „ložisko ENDURO 6903 LLB 17x30x7 mm“, ne „ložisko do náboje“. Jedinou výjimkou je „ložisko do hlavového složení“.
+- **Ložiska a díly (Enduro):** typ výrobku česky, zbytek názvu stejnými hodnotami jako ve filtrech (anglicky). Název technologie výrobce (Maxhit, TorqTite, XD15, Directline…) do názvu patří, lidé podle ní hledají. Technologie se musí vysvětlit i v popisu (vlastní odstavec s obrázkem). Ložiska se jmenují jen „ložisko ENDURO 6903 LLB 17x30x7 mm“, ne „ložisko do náboje“. Jedinou výjimkou je „ložisko do hlavového složení“.
 - **Členění ložisek** (od 16. 11. 2026) je podle typu jako u Enduro:
   - Ložiska/: Ložiska do nábojů, Ložiska do odpružení, Jehlová ložiska do tlumičů, Ložiska do hlavového složení, Ložiska do středového složení, Miniaturní ložiska, Sady ložisek do středů, Kuličky, Díly ložisek
   - Středy/: Díly středového složení, Redukce středového složení
@@ -94,15 +106,18 @@ Na co dát pozor:
 - **URL** je název + `-p{ID}`. Přejmenování URL změní, ale stará adresa se přesměruje podle ID.
 - **Hledací slova** patří do **Klíčová slova pro hledání CZ**. Pole „SEO Klíčová slova CZ“ je jen meta tag.
 
-## Internetové parametry (Pohoda)
+## Internetové parametry (hodnoty pro web)
+
+Zápis a změna parametrů přes XML a fixace cen: viz skill pohoda. Tady jsou jen pravidla, jak mají hodnoty vypadat kvůli webu.
 
 - **barva, ID 3:** česky, jedna hlavní barva (kvůli filtru).
-- **Velikost, ID 5:** jen číslo, např. 42,5.
+- **Velikost, ID 5:** u obuvi jen číslo (42,5), jinak velikost jako na kartě (M, S/M, L/XL, Regular).
 - **Šířka, ID 52:** seznam Narrow / Regular / Wide.
-- **Změna existujícího parametru:** `intParameter actionType update` s `ftr:id` přiřazení. Prosté add jen varuje „lze přiřadit pouze jednou“ a nic nezmění.
 - **Seznamový parametr:** každá položka musí mít vyplněný Popis. Prázdný popis shodí celou Synchronizaci zásob. Kontrolovat log v Ovládání robotů (řádky Chyba).
-- **Fixace ceny:** `stk:fixation` jde jen exportovat. Fixaci Běžné ceny nastavuje uživatel ručně.
 - **Nové parametry raději jako textValue.** Stávající parametry (Velikost, Sezóna…) jsou textové a filtry na webu fungují. Textový parametr nemá problém s prázdným Popisem položek seznamu.
+- **Popis parametru = popisek na webu.** BSSHOP v tabulce parametrů i ve filtru ukazuje Popis z Pohody, ne název. Do Popisu jen čistý název parametru.
+- **Filtr v kategorii se nezapne sám.** Editor kategorií → kategorie → záložka Obsah na stránce → zaškrtnout „Zobrazit parametrický filtr“ → Nastavení parametrů → zaškrtnout „Zobrazit v parametrickém filtru“ u vybraných parametrů → OK. Každá kategorie zvlášť (dělalo se u plášťů i u Enduro). Po nových parametrech v Pohodě: BSADMIN → Internetové parametry → Načíst internetové parametry.
+- **Jednotné hodnoty.** Stejná hodnota musí být napsaná stejně (bez překlepů a předpon jako „Material:“), jinak je ve filtru dvakrát.
 - **Parametry pro ložiska a díly (Enduro, ID 56–76):** názvy česky, hodnoty anglicky přesně jako ve filtrech na endurobearings.com. Jsou to: Typ ložiska, Vnitřní průměr, Vnější průměr, Šířka ložiska, Materiál, Třída přesnosti (ABEC), Vůle ložiska, Kompatibilní označení, Použití, Osa kliky, Standard středového pouzdra, Typ středového složení, Typ nářadí, Typ dílu, Značka odpružení, Průměr nohou vidlice, Kompatibilita pohonu, Průměr kuliček, Třída kuliček (Grade), Počet zubů, Typ hlavového složení.
 
 ## Importy (Správce importů)
@@ -124,29 +139,21 @@ Na co dát pozor:
 | Obrazky | Obrázky |
 
 - **Aktivní pole.** Zaškrtnout Aktivní jen u polí, která CSV obsahuje.
+- **POZOR – Název POHODA CZ.** Když je pole aktivní a CSV nemá sloupec Nazev, import zapíše prázdný název a BSADMIN ho pošle do Pohody. 16. 11. 2026 tak zmizel název 1 108 kartám Enduro (opraveno XML). Proto: buď CSV vždy obsahuje sloupec Nazev, nebo je pole vypnuté. U každého CSV výslovně uvést, která pole mají být aktivní.
 - **Import Obrázků nahradí stávající obrázky.** Při doplňování musí CSV obsahovat i ty, které už na kartě jsou.
-- **Zdvojené karty.** Import podle Kódu zapíše jen do jedné z nich.
+- **Zdvojené karty.** Import podle Kódu zapíše jen do jedné z nich (první nalezené, např. do KOMIS) a web může ukazovat jinou (Cyklospeci). Před importem zjistit, jestli kód není na více kartách. Po importu ověřit web; kartu, kterou web ukazuje, opravit ručně: v Zásobách filtr Kód → u každé karty Umístění ukáže sklad → otevřít kartu s novým popisem, 1. popis → Zobrazit → Zdrojový kód → Ctrl+A, Ctrl+C → zavřít křížkem → otevřít druhou kartu → Zdrojový kód → Ctrl+A, Ctrl+V → Uložit → zavřít → pravé tlačítko v mřížce → **Uložit všechny změny** (ověřeno 19. 11. 2026 na 00100033-54). Tlačítko OK v okně karty okno nezavře, zavírá se křížkem. Řádek se změnou je kurzívou s červenou ikonou.
+- **Velikost CSV.** Soubor 21 MB se nenaimportoval, soubory do 5 MB prošly. Dělit na soubory do 4,5 MB (hranice mezi kartami jednoho masteru).
+- **Změna souboru po předání.** Když CSV po předání uživateli upravím, musí ho naimportovat znovu. Vždy to napsat do úkolu v Todoistu.
+- **Po importu** se změna na web dostane až robotem (viz Roboti). Ověřit na webu, ne jen v BSADMIN.
 - **Pohoda obrázky** jsou v BSADMIN jen pro čtení. Mění se v Pohodě.
 
 ## Popisy produktů
 
-### Obsah
-- **Cíl:** popisy lepší než u dovozce a konkurence (ASSOS má vlastní assos-shop.cz). Terminologii lze ověřit na kola-radotin.cz, ale nekopírovat.
-- **Zdroj spec:** specifikace v popisu se bere z webu výrobce.
-- **Záložka Specifikace z feedu** se nemění. Whyte a Cannondale jdou z feedu, Amflow se plní ručně. U Whyte má katalog 2026 přednost před webem výrobce.
-- **Uvést vše důležité.** Raději rozbalovací části než krátit. Jedno téma otevře celou sadu 4–6 dlaždic.
-- **Dlaždice parametrů u kol:** hodnota začíná velkým písmenem („Karbon“). U řazení se uvádí značka („Shimano Ultegra Di2“).
-- **Tabulka velikostí** patří na vlastní záložku (3. popis), **geometrie** do 2. popisu, ani jedno ne do hlavního popisu. U oblečení vždy připravit i tabulku velikostí.
-- **Velikostní tabulka značky** platí každou sezónu stejně. Žádné poznámky typu „padne o půl čísla menší“.
-- **Geometrie:** rozměry anglicky (Reach, Stack…). Na mobilu úzký sloupec popisků.
-- **Velikosti v textu:** uvádět výrobní rozsah, ne jen to, co máme skladem.
-- **Záruka:** nezmiňovat roční záruku výrobce. Uvést jen skutečné bonusy, např. doživotní záruku rámu.
-- **Velikost a posed:** žádné rady s velikostí po telefonu ani bike fitting. Velikost se vybírá na prodejně, e-shop dává 14 dní na výměnu.
-- **Velikost modelky či modelu** patří do popisu, ne jako popisek přes fotku.
-- **Názvy produktů v textu:** jak jsou na kartách e-shopu.
+Šablony, pořadí bloků podle typu produktu, HTML bloky, fotky, video a postup výroby sady popisů jsou ve skillu **popisy-produktu**. Tady zůstává jen to, co se týká karet a BSADMIN:
+- **Geometrie** jde do 2. popisu (rozměry anglicky: Reach, Stack…), **tabulka velikostí** do 3. popisu.
+- **Záložka Specifikace z feedu** se nemění. Whyte a Cannondale jdou z feedu, Amflow se plní ručně.
 - **Feedy a popisy:** Aspire nepřepíše popis, který byl jakkoli upraven. Varianty dostanou stejný popis jako master.
 - **Tabulka parametrů BSSHOP** pod popisem je skrytá přes CSS.
-- **Konec popisu:** žlutý box s poradenstvím (604 998 800, adresa, otevírací doba). Nadpisy FK Screamer.
 
 ### Postup vložení popisu
 
@@ -158,9 +165,7 @@ Na co dát pozor:
 Větší množství popisů najízdí importem CSV.
 
 ### Obrázky a videa
-- **Obrázky v popisech** jsou na vlastním FTP ve složce `Obrázky/Eshop/<Značka>`, ne odkazem na web výrobce.
-- **Formát:** vždy **WebP**, každý obrázek s vlastním českým **alt** textem a s **width/height** v kódu.
-- **Videa** výrobce zkomprimovat a dát na FTP.
+- **Obrázky a videa v popisech:** viz skill popisy-produktu (vlastní FTP `Obrázky/Eshop/<Značka>`, WebP, alt, video nahoře).
 - **Galerie produktu:** fotky leží na serveru v `C:\IPODNIK\BSSHOP\BSADMIN\Obrazky\<Značka>\<Sezóna>`. První fotka je pohled zepředu. Šedé pozadí z fotek výrobce opravit.
 - **Velikosti obrázků na CDN:**
   - `/3/` = 50 px
@@ -168,29 +173,15 @@ Větší množství popisů najízdí importem CSV.
   - `/1/` = 500 px (detail)
   - `/2/` ≈ 1 200 px
 
-### Terminologie
-- **šířka regular / wide** (nikdy „střih“)
-- **ponožkový návlek**
-- **horská / MTB** (ne „terénní“)
-- **uchycení pro 3šroubové kufry**
-- **Wahoo Speedplay**
-- **ližiny** (nikdy saně)
-- **výřez** (průchozí) / **středový kanál**
-- **závody** (ne granfondo)
-- **treter** (2. pád množného čísla)
-- nepoužívat „stabilní“ ani „temeno“
-- košík = držák na láhev; bidon = láhev
-
-### Oslovení
-- Slogan „Nasedni a jeď“ a krátké výzvy tykají.
-- Vše, co mluví k zákazníkovi, vyká. Text dodavatele s tykáním přepsat na vykání.
-- Kontakt: telefon 604 998 800, U Vlčky 726/5c, Brno, Po–Pá 9–17, So 9–13.
+Terminologie, oslovení a kontakt do popisů: skill popisy-produktu. Adresa prodejny je U Vlečky 726/5c, Brno-Komárov.
 
 ## Vzhled webu (CSS)
 
 Kde se co mění:
 - **Hlavní CSS:** Nastavení → Nastavení aplikace → expertní nastavení → Vlastní HTML → Všechny stránky → Vlastní CSS styly. Nic nemazat. Naše bloky označovat `/* 4K – … */`.
-- **Stylesheety:** Internetový obchod → Stylesheety („4K – detail produktu“ v8.2, „4K – výpis produktů“). Vypínají se odškrtnutím Aktivní.
+- **Stylesheety:** Internetový obchod → Stylesheety. Stav 19. 11. 2026: „4K – detail produktu“ (pořadí 0), „4K - Nový detail produktu“ (10), „4K - popisy na mobilu“ (20). Vypínají se odškrtnutím Aktivní. Nový styl raději jako samostatný stylesheet (Přidat → Pořadí, Název, Aktivní, CSS → Uložit a zavřít) než zásah do stávajícího; vrací se pouhým odškrtnutím.
+- **„4K - popisy na mobilu“** (19. 11. 2026): do šířky 600 px dá v rozbalovacích sadách popisů (.am4k/.wo4k details) samotné fotky (`div > img:only-child`, aspoň 2 vedle sebe) do 2 sloupců, lichou doprostřed. Kód: `web/css/4K-popisy-na-mobilu-v1.css` v repozitáři eshop-4K.
+- **Mobil** dělá přes 70 % přístupů. Boční okraj stránky na telefonu (10 px) zatím zůstává, mobilní zobrazení se bude řešit při redesignu webu (rozhodnuto 19. 11. 2026).
 - **Akční ikony:** Nastavení → Akční ikony.
 - **Typy plateb:** Nastavení typů plateb.
 - **Dostupnost:** Nastavení dostupnosti.
@@ -255,6 +246,11 @@ U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory
 - **Galerie `/2/` jako WebP:** tlačíme na BSSHOP.
 - **EANy 2220… (ASSOS) a 2345… (Cannondale lifestyle):** Google je hlásí, ale nechávají se.
 - **Texty kategorií:** bez značek Maloja, 7Mesh, Alé, Sportful, Rapha, GT, Sidi a Veloforte.
+- **SEO a text kategorie v BSADMIN:** Editor kategorií → kategorie (filtr nahoře vlevo, Enter) →
+  - záložka **SEO**: Titulek a Popis (meta description, do ~158 znaků);
+  - záložka **Obsah na stránce**: zaškrtnout „Povolit vlastní obsah“ → Upravit obsah → Zobrazit → Zdrojový kód → vložit HTML (formát kat-obsah) → OK.
+  - Ukládá se samo při přepnutí. Hláška „Ověření přepsání novějšího záznamu“ → Ne, pak Aktualizovat a zadat znovu.
+- **Kategorie se zboží i podkategoriemi:** když jsou karty přímo v nadřazené kategorii (např. Středy, Ložiska, Hlavové složení), musí mít v Obsahu na stránce zaškrtnuté „Zobrazit produkty“, jinak web ukáže jen podkategorie a 0 produktů.
 
 ## Sortiment a dodavatelé
 
@@ -269,6 +265,13 @@ U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory
 - **Bez feedu:** Paul Lange.
 - **Dovozci:** Cyklospeciality (Woom, Rascal, FÍHA), Bottico (DT Swiss).
 - **Data pro nové karty** se berou z B2B portálů. Přihlášení zadává uživatel.
+
+## Roboti a synchronizace na web
+
+- Změny z BSADMIN (popisy, názvy) přenáší na web robot **Eshop synchronizátor produktů** v úloze „Synchronizace zásob“ (fronta 2, zhruba každých 30 minut). Ceny a sklady mají vlastní roboty.
+- **Kontrola:** Roboti → Ovládání robotů → záložka 2. fronta. Odškrtnout Informace, zaškrtnout kompletní log → Filtrovat. Detail chyby je ve spodním panelu (Ctrl+End na konec). Vpravo je čas do dalšího běhu.
+- **OutOfMemoryException** (18. 11. 2026 ve 23:19 a 23:37, po velkých importech popisů): robot spadne a na web nejde nic z popisů ani názvů. V 0:08 prošel sám. Když se opakuje, je to pro podporu BSSHOP (paměť služby). Prevence: velké importy po dávkách a mezi nimi nechat robota doběhnout.
+- Chyba „Error reading item … Popis2/techspec“ v detailu není chyba konkrétní karty, ale důsledek nedostatku paměti.
 
 ## Úklid a automatizace
 

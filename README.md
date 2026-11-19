@@ -1,14 +1,16 @@
 # E-shop 4K
 
-Podklady pro práci na e-shopu 4kluciodkol.cz s Claude: instrukce, skill bsadmin s postupy pro BSADMIN a firemní písma.
+Podklady pro práci na e-shopu 4kluciodkol.cz s Claude: instrukce, skilly bsadmin a popisy-produktu a firemní písma.
 
 ## Co je kde
 
 | Soubor | K čemu je |
 | --- | --- |
 | `INSTRUKCE.md` | Pravidla pro Clauda: co číst před prací, zásady, kde co je |
-| `skills/bsadmin/SKILL.md` | Skill bsadmin: BSADMIN, importy, názvy, popisy produktů, CSS, SEO, e-maily |
+| `skills/bsadmin/SKILL.md` | Skill bsadmin: BSADMIN, importy, roboti, názvy, parametry, CSS, SEO, e-maily |
 | `bsadmin-skill.zip` | Tentýž skill zabalený k nahrání do Claude |
+| `skills/popisy-produktu/SKILL.md` | Skill popisy-produktu: šablony popisů podle typu produktu (kola, helmy, oblečení, tretry, sedla, pláště, ložiska), HTML bloky, fotky, video, postup |
+| `popisy-produktu-skill.zip` | Tentýž skill zabalený k nahrání do Claude |
 | `web/` | Kód webu: CSS, skripty, popisy, e-maily, texty kategorií (viz web/README.md) |
 | `fonty/` | Písma FK Screamer a Good Sans. Zakoupená licence, jen pro práci pro firmu |
 
@@ -21,7 +23,7 @@ Funguje to na Macu i ve Windows stejně, v aplikaci Claude nebo na claude.ai.
 3. **Soubory:** v projektu u souborů klikněte na **Add → GitHub**, propojte svůj GitHub účet a vyberte repozitář `eshop-4K` (všechny soubory).
 4. **Instrukce:** do **Instructions** projektu vložte:
    > Jsi pomocník e-shopu 4 KLUCI OD KOL. Komunikuj česky, vykej. Postupuj přesně podle souboru INSTRUKCE.md v souborech projektu a před prací na webu vždy přečti dokument „E-shop 4K – stav a rozhodnutí“ (https://claude.ai/artifact/7DcPoZeGC2Z7UcDWVkGNCu).
-5. **Skill:** stáhněte si odsud `bsadmin-skill.zip` a v Claude ho nahrajte v Nastavení v části **Skills** (nahrát skill). Claude ho pak použije sám, kdykoli jde o web nebo BSADMIN, i mimo projekt.
+5. **Skilly:** stáhněte si odsud `bsadmin-skill.zip` a `popisy-produktu-skill.zip` a v Claude je nahrajte: Customize → Skills → **+** → **Create skill** → **Upload a skill** (v Settings → Capabilities musí být zapnuté „Create and edit files“). Claude je pak použije sám, kdykoli jde o web, BSADMIN nebo popisy produktů, i mimo projekt.
 6. **Dokumenty:** Tomáš vám přes tlačítko **Share** nasdílí dokument „E-shop 4K – stav a rozhodnutí“ a design system „4 KLUCI OD KOL“ (s možností úprav). Otevřete je jednou z odkazu v e-mailu.
 7. **Podklady:** firemní OneDrive, složka `4 KLUCI OD KOL → AI → Podklady pro Claude`.
 
@@ -30,7 +32,7 @@ Funguje to na Macu i ve Windows stejně, v aplikaci Claude nebo na claude.ai.
 Pravidla mění Tomáš, nebo Claude na jeho pokyn, přímo tady v repozitáři. Po změně:
 
 - v projektu u souborů z GitHubu klikněte na **synchronizovat / obnovit**;
-- pokud se změnil skill, nahrajte nový `bsadmin-skill.zip` znovu (nahradí starý).
+- pokud se změnil skill, nahrajte nový ZIP znovu (nahradí starý). Nahrání se nesynchronizuje samo.
 
 Nová rozhodnutí o webu se píšou do dokumentu „E-shop 4K – stav a rozhodnutí“. Ten je sdílený, takže ho všichni vidí hned.
 
