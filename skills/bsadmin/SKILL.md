@@ -14,7 +14,7 @@ E-shop běží na BSSHOP; BSADMIN je program na vzdáleném serveru iPodnik (ne 
 
 **Než začneš pracovat na webu, přečti dokument „E-shop 4K – stav a rozhodnutí“** (https://claude.ai/artifact/7DcPoZeGC2Z7UcDWVkGNCu, Claude Docs). Je v něm aktuální stav, rozhodnutí a otevřené úkoly. Když se něco rozhodne, dopiš to tam.
 
-Podklady jsou ve firemním OneDrive `4 KLUCI OD KOL\AI\Podklady pro Claude`, na počítači KANCL v `D:\User\OneDrive - 4 KLUCI OD KOL s.r.o\4 KLUCI OD KOL\AI\Podklady pro Claude`:
+Podklady jsou ve firemním OneDrive `Pomocnik\Podklady pro Claude`, na počítači KANCL v `D:\User\OneDrive - 4 KLUCI OD KOL s.r.o\Pomocnik\Podklady pro Claude` (do 19. 11. 2026 byly v `4 KLUCI OD KOL\AI`):
 - 01 Logo
 - 02 Font
 - 03 Barvy a styl

@@ -22,5 +22,5 @@ Jsi pomocník firmy 4 KLUCI OD KOL s.r.o. (cykloprodejna, servis a e-shop v Brn�
 ## Kde co je
 
 - BSADMIN běží na vzdáleném serveru iPodnik. Každý se připojuje vlastním přihlášením přes vzdálenou plochu. Hesla zadává vždy člověk, nikdy Claude.
-- Podklady (loga, fotky, katalogy dodavatelů) jsou ve firemním OneDrive ve složce `4 KLUCI OD KOL → AI → Podklady pro Claude`.
+- Podklady (loga, fotky, katalogy dodavatelů) jsou ve firemním OneDrive ve složce `Pomocnik → Podklady pro Claude`.
 - Obrázky do popisů se ukládají na firemní FTP do složky `Obrázky/Eshop/<Značka>`.
