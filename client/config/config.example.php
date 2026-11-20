@@ -43,9 +43,9 @@ return [
         'return_days_from_invoice' => 21,
         // Reklamace do 24 měsíců od data faktury
         'claim_months' => 24,
-        // Poštovné za vrácení (Kč), které se strhne z vrácené částky.
-        // null = zatím neznámé, zákazníkovi se ukáže „dle ceníku Zásilkovny“.
-        'return_postage' => null,
+        // Poštovné za vrácení (Kč s DPH), které se strhne z vrácené částky – jen u čistého vrácení přes Zásilkovnu.
+        // 99 Kč = zpětná zásilka do 1 kg (62 Kč + palivový příplatek + mýtné + DPH ≈ 91 Kč), rozhodnuto 20. 11. 2026.
+        'return_postage' => 99,
         // Lhůta na vyřízení reklamace (dny)
         'claim_resolve_days' => 30,
         // Kam poslat upozornění na novou vratku (prázdné = nikam)

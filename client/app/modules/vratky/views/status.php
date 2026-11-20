@@ -37,7 +37,8 @@ $last = $ret['refund_total'] > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nová veli
         <span style="color:var(--muted)"><?= e($l['action'] === 'vratit' ? $l['reason'] : ($l['action'] === 'vymenit' ? 'Za velikost ' . $l['size_to'] : $l['defect_text'])) ?></span></div>
     <?php endforeach; ?>
     <?php if ($ret['refund_total'] > 0): ?>
-      <div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Vrátíme na účet <?= e($ret['bank_account']) ?></span><strong><?= e(money($ret['refund_total'])) ?><?= $ret['postage_applies'] ? ' − poštovné' : '' ?></strong></div>
+      <?php if ($ret['postage_applies'] && $ret['postage'] !== null): ?><div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Poštovné za vrácení</span><span>−<?= e(money($ret['postage'])) ?></span></div><?php endif; ?>
+      <div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Vrátíme na účet <?= e($ret['bank_account']) ?></span><strong><?= e(money($ret['postage_applies'] && $ret['postage'] !== null ? max(0, $ret['refund_total'] - $ret['postage']) : $ret['refund_total'])) ?></strong></div>
     <?php endif; ?>
   </div>
 </div>
