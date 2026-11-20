@@ -132,6 +132,44 @@ t($w2['pohoda_state'] === 'propojeno' && $w2['pohoda_no'] === '26RZ00048' && $w2
 t(count($res) === 1 && $res[0]['kind'] === 'created' && (int) $res[0]['ret']['id'] === (int) $web['id'], 'zákazník dostane potvrzení s číslem z Pohody');
 t((int) \App\Core\Db::value("SELECT COUNT(*) FROM returns WHERE pohoda_no = '26RZ00048'") === 1, 'nevznikla duplicitní reklamace');
 
+// doklad k vratce v Pohodě
+$r = Sync::import(['orders' => [['invoice_no' => '260102200', 'order_no' => '8810009000', 'invoice_date' => date('Y-m-d'), 'email' => 'd@e.cz',
+    'items' => [['code' => 'D-M', 'name' => 'dres Castelli Entrata M', 'qty' => 1, 'unit_price' => 2000], ['code' => 'K-L', 'name' => 'kraťasy Castelli L', 'qty' => 1, 'unit_price' => 3000],
+                ['name' => 'GLS ČR - výdejní místo', 'qty' => 1, 'unit_price' => 59], ['name' => 'Dobírka GLS ČR - výdejní místo', 'qty' => 1, 'unit_price' => 59]]]]]);
+$od = Service::findOrder('d@e.cz', '8810009000');
+$it = Service::items((int) $od['id']);
+t(count($it) === 2, 'GLS a dobírka se nenabízí k vrácení');
+$mk = fn($i, $a, $extra = []) => array_merge(['item' => $i, 'action' => $a, 'qty' => 1, 'reason' => 'Nesedí velikost', 'size_to' => '', 'defect_text' => '', 'photos' => []], $extra);
+$lines = [$mk($it[0], 'vratit'), $mk($it[1], 'vratit')];
+$v = Service::create($od, ['lines' => $lines, 'ship' => 'zbox', 'account' => '123456789/0800', 'note' => '', 'phone' => '',
+    'calc' => Service::calc($lines, 'zbox')]);
+t(Service::requestDoc($v, [], 1) !== null, 'doklad nejde, dokud zboží nedorazí');
+Service::setStatus($v, 'dorazilo', '', false, 1);
+t(Service::requestDoc(Service::get((int) $v['id']), [], 1) === null, 'zboží dorazilo → doklad zadán');
+$v = Service::get((int) $v['id']);
+$plan = Service::docPlan($v);
+t($v['doc_state'] === 'ceka' && $plan['type'] === 'odd' && (float) $v['ship_refund'] === 59.0, 'celá objednávka vrácena → vrací se doprava 59 Kč, dobírka ne');
+t(abs($plan['total'] - (-5000 + 79 - 59)) < 0.01, 'opravný doklad: zboží − poštovné + doprava = ' . $plan['total']);
+t(Service::payout($v) == 4980.0, 'zákazník dostane 4 980 Kč');
+$pend = Service::docPending();
+t(count($pend) === 1 && $pend[0]['invoice_no'] === '260102200' && count($pend[0]['items']) === 4, 'pomocník dostane vratku k vystavení');
+t(Service::docResult(['no' => $v['no'], 'state' => 'hotovo', 'doc_no' => '260400261']) && Service::get((int) $v['id'])['doc_no'] === '260400261', 'číslo dokladu z Pohody uloženo');
+t(Service::docPending() === [], 'vystavený doklad se znovu neposílá');
+
+// výměna → faktura za 0 Kč
+$r = Sync::import(['orders' => [['invoice_no' => '260102201', 'order_no' => '8810009001', 'invoice_date' => date('Y-m-d'), 'email' => 'd@e.cz',
+    'items' => [['code' => 'T-43', 'name' => 'tretry LAKE CX239 REGULAR 43', 'qty' => 1, 'unit_price' => 5990]]]]]);
+$o2 = Service::findOrder('d@e.cz', '8810009001');
+$i2 = Service::items((int) $o2['id']);
+$l2 = [$mk($i2[0], 'vymenit', ['size_to' => '44'])];
+$x = Service::create($o2, ['lines' => $l2, 'ship' => 'zbox', 'account' => '', 'note' => '', 'phone' => '', 'calc' => Service::calc($l2, 'zbox')]);
+Service::setStatus($x, 'dorazilo', '', false, 1);
+t(str_contains((string) Service::requestDoc(Service::get((int) $x['id']), [], 1), 'kód zásoby nové velikosti'), 'výměna chce kód nové velikosti');
+$lid = (int) Service::lines((int) $x['id'])[0]['id'];
+t(Service::requestDoc(Service::get((int) $x['id']), [$lid => 'T-44'], 1) === null, 'výměna s kódem zadána');
+$p2 = Service::docPlan(Service::get((int) $x['id']));
+t($p2['type'] === 'fv' && $p2['total'] == 0 && $p2['items'][1]['name'] === 'tretry LAKE CX239 REGULAR 44' && $p2['items'][1]['code'] === 'T-44', 'výměna = faktura za 0 Kč s novou velikostí');
+
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
 exit($fail ? 1 : 0);

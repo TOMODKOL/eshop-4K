@@ -172,6 +172,17 @@ Http::post('/admin/vratky/{no}', function (string $no) {
         }
         Http::redirect('/admin/vratky/' . $no);
     }
+    if ($act === 'doklad') {
+        $err = Service::requestDoc($ret, (array) ($_POST['new_code'] ?? []), (int) $u['id']);
+        Session::flash($err ?? 'Doklad se vystaví v Pohodě do pár minut.', $err ? 'err' : 'ok');
+        Http::redirect('/admin/vratky/' . $no);
+    }
+    if ($act === 'doklad_znovu' && ($ret['doc_state'] ?? '') === 'chyba') {
+        Db::exec("UPDATE returns SET doc_state = '', doc_error = NULL WHERE id = ?", [$ret['id']]);
+        $err = Service::requestDoc(Service::get((int) $ret['id']), (array) ($_POST['new_code'] ?? []), (int) $u['id']);
+        Session::flash($err ?? 'Zkusí se to znovu do pár minut.', $err ? 'err' : 'ok');
+        Http::redirect('/admin/vratky/' . $no);
+    }
     $status = Http::input('status');
     if ($status !== '' && !isset(Service::STATUS[$status])) $status = '';
     $note = mb_substr(Http::input('note'), 0, 3000);
@@ -217,4 +228,17 @@ Http::post('/api/sync/reklamace', function () use ($syncAuth) {
         $mails++;
     }
     Http::json(['ok' => true, 'claims' => count((array) ($d['claims'] ?? [])), 'notified' => $mails]);
+});
+
+// doklady k vratkám: GET = co vystavit (?navrhy=1 i návrhy čekající na schválení), POST {"results":[{"no":"V-2026-0001","state":"hotovo","doc_no":"260400261"}]}
+Http::get('/api/sync/doklady', function () use ($syncAuth) {
+    $syncAuth();
+    Http::json(['ok' => true, 'returns' => Service::docPending(Http::input('navrhy') === '1')]);
+});
+
+Http::post('/api/sync/doklady', function () use ($syncAuth) {
+    $d = $syncAuth();
+    $n = 0;
+    foreach ((array) ($d['results'] ?? []) as $x) if (is_array($x) && Service::docResult($x)) $n++;
+    Http::json(['ok' => true, 'updated' => $n]);
 });

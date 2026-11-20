@@ -3,6 +3,8 @@ use App\Modules\Vratky\Service;
 use App\Modules\Vratky\Packeta;
 /** @var array $ret @var ?array $order @var array $lines @var array $events */
 $claim = Service::hasAction($lines, 'reklamovat');
+$docState = (string) ($ret['doc_state'] ?? '');
+$plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => Service::shippingRefund($ret)] : []), $lines);
 ?>
 <div class="col wide">
   <a class="link" href="<?= url('/admin/vratky') ?>" style="align-self:flex-start;padding:0">← Přehled vratek</a>
@@ -89,10 +91,41 @@ $claim = Service::hasAction($lines, 'reklamovat');
         <?php else: ?><span class="hint">Zásilkovna zatím není zapnutá – kód vytvořte v klientské sekci a pošlete zákazníkovi poznámkou.</span><?php endif; ?>
       <?php endif; ?>
     </div>
+    <?php if ($plan['type']): ?>
+    <div class="card"<?= $docState === 'chyba' ? ' style="border:2px solid var(--red,#d33)"' : '' ?>><span class="kicker">Doklad v Pohodě</span>
+      <?php if ($docState === 'hotovo'): ?>
+        <div style="font-size:14px"><?= e(Service::DOC_TYPE[$ret['doc_type']] ?? 'Doklad') ?> <strong style="user-select:all"><?= e((string) $ret['doc_no']) ?></strong> je vystavený.</div>
+        <span class="hint"><?= $ret['doc_type'] === 'odd' ? 'Peníze pošlete příkazem k úhradě z Pohody, zákazníkovi pošlete doklad svou šablonou a pak změňte stav na Vyřízeno.' : 'Novou velikost odešlete a změňte stav na Vyřízeno.' ?></span>
+      <?php elseif ($docState === 'ceka'): ?>
+        <div style="font-size:14px"><?= e(Service::DOC_TYPE[$ret['doc_type']] ?? 'Doklad') ?> čeká na vystavení. Pomocník na KANCL ho vystaví do pár minut.</div>
+      <?php elseif ($docState === 'navrh'): ?>
+        <div style="font-size:14px">Návrh dokladu je připravený a čeká na schválení, než se zapíše do Pohody.</div>
+      <?php else: ?>
+        <div style="font-size:14px;line-height:1.55"><strong><?= e(Service::DOC_TYPE[$plan['type']]) ?></strong> na <strong><?= e(money($plan['total'])) ?></strong></div>
+        <?php foreach ($plan['items'] as $i): ?>
+          <div style="font-size:13px;display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line2);padding-top:6px"><span><?= e($i['name']) ?><?= $i['code'] !== '' ? ' <span class="hint">(' . e($i['code']) . ')</span>' : '' ?></span><span style="white-space:nowrap"><?= (int) $i['qty'] ?> × <?= e(money($i['unit_price'])) ?></span></div>
+        <?php endforeach; ?>
+        <?php if ($docState === 'chyba'): ?><div class="warn" style="font-size:13px"><?= e((string) $ret['doc_error']) ?></div><?php endif; ?>
+        <?php if (in_array($ret['status'], ['dorazilo', 'v_reseni'], true)): ?>
+        <form method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
+          <input type="hidden" name="act" value="<?= $docState === 'chyba' ? 'doklad_znovu' : 'doklad' ?>">
+          <?php foreach ($lines as $l): if ($l['action'] !== 'vymenit') continue; ?>
+            <div class="field" style="margin:0"><label class="l" for="nc<?= (int) $l['id'] ?>">Kód zásoby nové velikosti <?= e($l['size_to']) ?></label>
+              <input class="f" id="nc<?= (int) $l['id'] ?>" name="new_code[<?= (int) $l['id'] ?>]" value="<?= e((string) ($l['new_code'] ?? '')) ?>" placeholder="kód z Pohody" required></div>
+          <?php endforeach; ?>
+          <button class="btn" style="align-self:flex-start"><?= $docState === 'chyba' ? 'Zkusit znovu' : 'Zboží je v pořádku – vystavit doklad' ?></button>
+        </form>
+        <?php else: ?><span class="hint">Doklad půjde vystavit, až zboží dorazí a zkontrolujete ho.</span><?php endif; ?>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
     <div class="card"><span class="kicker">Peníze</span>
-      <?php if ($ret['refund_total'] > 0): ?>
-        <div style="font-size:14px">Vrátit: <strong><?= e(money($ret['refund_total'])) ?></strong><?php if ($ret['postage_applies']): ?> − poštovné<?= $ret['postage'] !== null ? ' ' . e(money($ret['postage'])) : '' ?><?php endif; ?></div>
-        <div style="font-size:14px">Na účet: <strong><?= e($ret['bank_account']) ?></strong></div>
+      <?php if (Service::payout($ret) > 0 || $ret['refund_total'] > 0): ?>
+        <div style="font-size:14px;line-height:1.6">Zboží: <?= e(money($ret['refund_total'])) ?>
+          <?php if ($ret['postage_applies'] && $ret['postage'] !== null): ?><br>Poštovné za vrácení: −<?= e(money($ret['postage'])) ?><?php endif; ?>
+          <?php if ((float) $ret['ship_refund'] > 0): ?><br>Vrácení dopravy: +<?= e(money($ret['ship_refund'])) ?><?php endif; ?>
+          <br>Vrátit: <strong><?= e(money(Service::payout($ret))) ?></strong></div>
+        <div style="font-size:14px">Na účet: <strong style="user-select:all"><?= e($ret['bank_account']) ?></strong></div>
       <?php else: ?><span class="hint">Nic se nevrací.</span><?php endif; ?>
     </div>
     <?php if ($claim && $ret['claim_deadline']): ?><div class="card"><span class="kicker">Reklamace</span><div style="font-size:14px">Vyřídit nejpozději do <strong><?= e(date_cz($ret['claim_deadline'])) ?></strong></div></div><?php endif; ?>

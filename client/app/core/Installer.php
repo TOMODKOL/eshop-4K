@@ -25,7 +25,7 @@ final class Installer
     }
 
     /** Doplnění sloupců do už nainstalované databáze (na Forpsi). Značka v storage/ zajistí, že se to spustí jen jednou. */
-    public const SCHEMA = 2;
+    public const SCHEMA = 3;
     public static function migrate(): void
     {
         $mark = APP_ROOT . '/storage/schema_v' . self::SCHEMA;
@@ -38,6 +38,13 @@ final class Installer
             "ALTER TABLE returns ADD COLUMN pohoda_status VARCHAR(60) NOT NULL DEFAULT ''",
             'ALTER TABLE returns ADD COLUMN pohoda_error TEXT NULL',
             'ALTER TABLE returns ADD COLUMN notify_pending TINYINT(1) NOT NULL DEFAULT 0',
+            // v3: doklady k vratkám v Pohodě (opravný daňový doklad / faktura), vrácení dopravy
+            'ALTER TABLE returns ADD COLUMN ship_refund DECIMAL(12,2) NOT NULL DEFAULT 0',
+            "ALTER TABLE returns ADD COLUMN doc_state VARCHAR(20) NOT NULL DEFAULT ''",
+            "ALTER TABLE returns ADD COLUMN doc_type VARCHAR(20) NOT NULL DEFAULT ''",
+            'ALTER TABLE returns ADD COLUMN doc_no VARCHAR(30) NULL',
+            'ALTER TABLE returns ADD COLUMN doc_error TEXT NULL',
+            "ALTER TABLE return_lines ADD COLUMN new_code VARCHAR(60) NOT NULL DEFAULT ''",
         ];
         foreach ($cols as $sql) {
             try { Db::exec($sql); } catch (\Throwable $e) {

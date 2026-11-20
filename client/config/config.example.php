@@ -46,6 +46,9 @@ return [
         // Poštovné za vrácení (Kč s DPH), které se strhne z vrácené částky – jen u čistého vrácení přes Zásilkovnu.
         // 79 Kč = zpětná zásilka Zásilkovny stojí 75,02 Kč s DPH (62 Kč bez paliva a mýta), rozhodnuto 20. 11. 2026.
         'return_postage' => 79,
+        // Při vrácení celé objednávky vracíme i dopravu, ale nejvýš cenu nejlevnějšího způsobu dopravy z obchodních podmínek (Kč s DPH).
+        // Dobírka se nevrací. Po změně ceníku dopravy upravit.
+        'refund_shipping_max' => 59,
         // Lhůta na vyřízení reklamace (dny)
         'claim_resolve_days' => 30,
         // Kam poslat upozornění na novou vratku (prázdné = nikam)

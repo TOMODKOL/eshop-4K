@@ -78,10 +78,20 @@ final class Service
     public static function isServiceLine(array $i): bool
     {
         $n = mb_strtolower($i['name']);
-        foreach (['doprava', 'dopravné', 'poštovné', 'zásilkovna', 'ppl', 'dobírka', 'platba', 'zaokrouhlení', 'sleva', 'poukaz'] as $w) {
+        foreach (['doprava', 'dopravné', 'poštovné', 'zásilkovna', 'gls', 'ppl', 'dpd', 'balíkovna', 'česká pošta', 'osobní odběr', 'dobírka', 'platba', 'zaokrouhlení', 'sleva', 'poukaz'] as $w) {
             if (str_starts_with($n, $w)) return true;
         }
         return (float) $i['unit_price'] <= 0;
+    }
+
+    /** Řádek faktury za dopravu (ne dobírka, ne platba). */
+    public static function isShippingLine(array $i): bool
+    {
+        $n = mb_strtolower($i['name']);
+        foreach (['doprava', 'dopravné', 'poštovné', 'zásilkovna', 'gls', 'ppl', 'dpd', 'balíkovna', 'česká pošta'] as $w) {
+            if (str_starts_with($n, $w)) return true;
+        }
+        return false;
     }
 
     /** Lhůty z data faktury. */
@@ -276,6 +286,150 @@ final class Service
     public static function displayNo(array $ret): string
     {
         return (string) ($ret['pohoda_no'] ?? '') !== '' ? (string) $ret['pohoda_no'] : (string) $ret['no'];
+    }
+
+    /** Kolik zákazníkovi skutečně pošleme: zboží − poštovné za vrácení + vrácená doprava. */
+    public static function payout(array $ret): float
+    {
+        $p = (float) $ret['refund_total'];
+        if ($ret['postage_applies'] && $ret['postage'] !== null) $p -= (float) $ret['postage'];
+        return round(max(0, $p + (float) ($ret['ship_refund'] ?? 0)), 2);
+    }
+
+    // ---------- Pohoda: doklad k vratce (opravný daňový doklad / faktura) ----------
+
+    public const DOC_STATE = ['ceka' => 'Čeká na vystavení v Pohodě', 'navrh' => 'Návrh čeká na schválení', 'hotovo' => 'Vystaveno v Pohodě', 'chyba' => 'Doklad se nepodařilo vystavit'];
+    public const DOC_TYPE = ['odd' => 'Opravný daňový doklad', 'fv' => 'Faktura'];
+
+    /**
+     * Vrácení dopravy: vrací se celá objednávka (všechno zboží v nezamítnutých vratkách) → doprava,
+     * kterou zákazník zaplatil, nejvýš nejlevnější způsob dopravy (vratky.refund_shipping_max). Jen jednou na objednávku.
+     */
+    public static function shippingRefund(array $ret): float
+    {
+        if (!$ret['order_id']) return 0.0;
+        $all = Db::all('SELECT * FROM order_items WHERE order_id = ? AND qty > 0 ORDER BY line_no, id', [$ret['order_id']]);
+        $paid = 0.0;
+        foreach ($all as $i) if (self::isShippingLine($i) && (float) $i['unit_price'] > 0) $paid += (float) $i['unit_price'] * (float) $i['qty'];
+        if ($paid <= 0) return 0.0;
+        foreach ($all as $i) {
+            if (self::isServiceLine($i)) continue;
+            $back = (int) Db::value("SELECT COALESCE(SUM(l.qty),0) FROM return_lines l JOIN returns r ON r.id = l.return_id
+                WHERE l.item_id = ? AND l.action = 'vratit' AND r.status <> 'zamitnuto'", [$i['id']]);
+            if ($back < (int) floor((float) $i['qty'])) return 0.0;
+        }
+        $already = (float) Db::value("SELECT COALESCE(SUM(ship_refund),0) FROM returns WHERE order_id = ? AND id <> ? AND status <> 'zamitnuto'", [$ret['order_id'], $ret['id']]);
+        if ($already > 0) return 0.0;
+        $max = Config::get('vratky.refund_shipping_max');
+        return round($max === null ? $paid : min($paid, (float) $max), 2);
+    }
+
+    /**
+     * Co bude na dokladu v Pohodě. Ceny s DPH. Záporný součet = opravný daňový doklad (vracíme peníze),
+     * 0 a víc = faktura (výměna, doplatek). Reklamované položky se řeší v agendě Reklamace, sem nepatří.
+     */
+    public static function docPlan(array $ret, ?array $lines = null): array
+    {
+        $lines ??= self::lines((int) $ret['id']);
+        $items = [];
+        foreach ($lines as $l) {
+            if ($l['action'] === 'vratit') {
+                $items[] = ['kind' => 'zbozi', 'code' => $l['item_code'], 'name' => $l['item_name'], 'qty' => -(int) $l['qty'], 'unit_price' => (float) $l['unit_price']];
+            } elseif ($l['action'] === 'vymenit') {
+                $items[] = ['kind' => 'zbozi', 'code' => $l['item_code'], 'name' => $l['item_name'], 'qty' => -(int) $l['qty'], 'unit_price' => (float) $l['unit_price']];
+                $items[] = ['kind' => 'nove', 'code' => (string) ($l['new_code'] ?? ''), 'name' => self::swapSize($l['item_name'], (string) $l['size_to']),
+                    'qty' => (int) $l['qty'], 'unit_price' => (float) $l['unit_price'], 'for_code' => $l['item_code']];
+            }
+        }
+        if (!$items) return ['type' => null, 'total' => 0.0, 'items' => []];
+        if ($ret['postage_applies'] && $ret['postage'] !== null && (float) $ret['postage'] > 0) {
+            $items[] = ['kind' => 'postovne', 'code' => '', 'name' => 'Poštovné za vrácení zboží', 'qty' => 1, 'unit_price' => (float) $ret['postage']];
+        }
+        if ((float) ($ret['ship_refund'] ?? 0) > 0) {
+            $items[] = ['kind' => 'doprava', 'code' => '', 'name' => 'Vrácení dopravy', 'qty' => -1, 'unit_price' => (float) $ret['ship_refund']];
+        }
+        $total = 0.0;
+        foreach ($items as $i) $total += $i['qty'] * $i['unit_price'];
+        return ['type' => $total < 0 ? 'odd' : 'fv', 'total' => round($total, 2), 'items' => $items];
+    }
+
+    /** Název nové velikosti: velikost na konci názvu nahradí za novou. */
+    public static function swapSize(string $name, string $size): string
+    {
+        $name = trim($name);
+        if ($size === '') return $name;
+        return preg_match('/^(.*\s)\S+$/u', $name, $m) ? $m[1] . $size : $name . ' ' . $size;
+    }
+
+    /** Lze požádat o doklad? Vrací chybu nebo null. */
+    public static function docCheck(array $ret, array $lines): ?string
+    {
+        if (!in_array($ret['status'], ['dorazilo', 'v_reseni'], true)) return 'Doklad jde vystavit, až zboží dorazí (stav „Dorazilo“).';
+        if (in_array((string) ($ret['doc_state'] ?? ''), ['ceka', 'navrh', 'hotovo'], true)) return 'Doklad už je zadaný.';
+        if (!$ret['order_id']) return 'Vratka nemá doklad nákupu.';
+        $plan = self::docPlan($ret, $lines);
+        if (!$plan['type']) return 'Ve vratce není nic k vrácení ani výměně (reklamace se řeší v Pohodě v agendě Reklamace).';
+        foreach ($plan['items'] as $i) {
+            if ($i['kind'] === 'zbozi' && $i['code'] === '') return 'Položka „' . $i['name'] . '“ nemá kód zásoby – doklad vystavte ručně v Pohodě.';
+            if ($i['kind'] === 'nove' && $i['code'] === '') return 'Doplňte kód zásoby nové velikosti u „' . $i['name'] . '“.';
+        }
+        if ($plan['type'] === 'odd' && !self::validAccount((string) $ret['bank_account'])) return 'Chybí číslo účtu zákazníka pro vrácení peněz.';
+        return null;
+    }
+
+    /** Prodejna potvrdila, že zboží je v pořádku → pomocník na KANCL vystaví doklad v Pohodě. $newCodes = [line_id => kód nové velikosti]. */
+    public static function requestDoc(array $ret, array $newCodes, ?int $userId): ?string
+    {
+        $lines = self::lines((int) $ret['id']);
+        foreach ($lines as &$l) {
+            if ($l['action'] === 'vymenit' && isset($newCodes[$l['id']])) $l['new_code'] = mb_substr(trim((string) $newCodes[$l['id']]), 0, 60);
+        }
+        unset($l);
+        $ret['ship_refund'] = self::shippingRefund($ret);
+        $err = self::docCheck($ret, $lines);
+        if ($err) return $err;
+        $plan = self::docPlan($ret, $lines);
+        Db::tx(function () use ($ret, $lines, $plan, $userId) {
+            foreach ($lines as $l) if ($l['action'] === 'vymenit') Db::exec('UPDATE return_lines SET new_code = ? WHERE id = ?', [$l['new_code'], $l['id']]);
+            Db::exec("UPDATE returns SET ship_refund = ?, doc_state = 'ceka', doc_type = ?, doc_error = NULL, updated_at = ? WHERE id = ?",
+                [$ret['ship_refund'], $plan['type'], Db::now(), $ret['id']]);
+            Db::insert('return_events', ['return_id' => $ret['id'], 'status' => null,
+                'note' => 'Zboží v pořádku – ' . mb_strtolower(self::DOC_TYPE[$plan['type']]) . ' na ' . money($plan['total']) . ' se vystaví v Pohodě.',
+                'public' => 0, 'user_id' => $userId, 'created_at' => Db::now()]);
+        });
+        return null;
+    }
+
+    /** Vratky čekající na doklad – pro pomocníka na KANCL. */
+    public static function docPending(bool $withDrafts = false): array
+    {
+        $out = [];
+        $states = $withDrafts ? "('ceka','navrh')" : "('ceka')";
+        foreach (Db::all("SELECT r.*, o.invoice_no, o.order_no FROM returns r JOIN orders o ON o.id = r.order_id WHERE r.doc_state IN $states ORDER BY r.id") as $r) {
+            $plan = self::docPlan($r);
+            $out[] = ['no' => $r['no'], 'invoice_no' => $r['invoice_no'], 'order_no' => $r['order_no'], 'type' => $plan['type'], 'total' => $plan['total'],
+                'bank_account' => $r['bank_account'], 'customer_name' => $r['customer_name'], 'email' => $r['email'], 'items' => $plan['items']];
+        }
+        return $out;
+    }
+
+    /** Výsledek z KANCL: {no, state: hotovo|navrh|chyba, doc_no, error}. */
+    public static function docResult(array $x): bool
+    {
+        $r = self::byNo((string) ($x['no'] ?? ''));
+        if (!$r || !in_array($r['doc_state'], ['ceka', 'navrh'], true)) return false;
+        $state = (string) ($x['state'] ?? '');
+        if (!in_array($state, ['hotovo', 'navrh', 'chyba'], true)) return false;
+        $docNo = mb_substr(trim((string) ($x['doc_no'] ?? '')), 0, 30);
+        $err = mb_substr(trim((string) ($x['error'] ?? '')), 0, 2000);
+        Db::exec('UPDATE returns SET doc_state = ?, doc_no = ?, doc_error = ?, updated_at = ? WHERE id = ?',
+            [$state, $docNo ?: null, $state === 'chyba' ? ($err ?: 'neznámá chyba') : null, Db::now(), $r['id']]);
+        if ($state !== 'navrh') {
+            Db::insert('return_events', ['return_id' => $r['id'], 'status' => null,
+                'note' => $state === 'hotovo' ? (self::DOC_TYPE[$r['doc_type']] ?? 'Doklad') . ' ' . $docNo . ' vystaven v Pohodě.' : 'Doklad v Pohodě se nepodařilo vystavit: ' . $err,
+                'public' => 0, 'user_id' => null, 'created_at' => Db::now()]);
+        }
+        return true;
     }
 
     // ---------- Pohoda: agenda Reklamace ----------

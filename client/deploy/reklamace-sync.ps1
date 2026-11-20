@@ -99,3 +99,6 @@ try {
     Zapis-Log $uloha ('CHYBA {0}' -f $_.Exception.Message)
     Write-Host ('CHYBA ' + $_.Exception.Message) -ForegroundColor Red
 }
+
+# doklady k vratkám (opravný daňový doklad / faktura) – stejná úloha, každých 5 minut
+try { & (Join-Path $PSScriptRoot 'vratky-doklady.ps1') } catch { Zapis-Log 'vratky_doklady' ('CHYBA ' + $_.Exception.Message) }
