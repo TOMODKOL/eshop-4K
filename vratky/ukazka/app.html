@@ -278,7 +278,7 @@ function shell(inner){
 function head(sub){
   const right = sub ? `<span class="staff">${sub} · prodejna</span>`
     : `<div class="r"><span class="help">Poradíme: <strong>604 998 800</strong></span><a class="back" href="https://www.4kluciodkol.cz/"><span class="arr">←</span> Zpět na e-shop</a></div>`;
-  return `<header class="top"><div class="in"><a class="logo" href="https://www.4kluciodkol.cz/"><img src="${LOGO_W}" alt="4 KLUCI OD KOL" width="187" height="28"></a>${right}</div></header>`;
+  return `<header class="top"><div class="in"><a class="logo" href="#zakaznik" data-a="home" aria-label="Na začátek vratky"><img src="${LOGO_W}" alt="4 KLUCI OD KOL" width="187" height="28"></a>${right}</div></header>`;
 }
 
 function foot(){
@@ -597,6 +597,9 @@ document.addEventListener('click', e => {
       if (n===5 && st.step===4) { const ok = /^\d{0,6}-?\d{2,10}\/\d{4}$/.test(st.ucet.replace(/\s/g,'')); if (!ok) { const h = document.getElementById('moneyHint'); if (h) h.textContent = 'Vyplňte číslo účtu ve formátu 123456789/0800.'; return; } }
       st.step = n; scroll = true; break; }
     case 'find': { if (v==='sent') { const f = document.getElementById('em2'); const val = f ? f.value.trim() : ''; if (!/^\S+@\S+\.\S+$/.test(val)) { if (f) { f.style.borderColor='var(--red)'; f.focus(); } return; } st.findEmail = val; } st.find = v; break; }
+    case 'home': e.preventDefault(); view = 'zak'; try { history.replaceState(null,'','#zakaznik'); } catch(err){}
+      if (st.done) st = fresh(); else { st.step = 0; st.swapFor = null; st.web = false; st.find = 'order'; }
+      scroll = true; break;
     case 'act': st.act[i] = (st.act[i]===v && st.step===1) ? null : v; if (v==='vymenit' && !st.mode[i]) st.mode[i]='size'; break;
     case 'reason': st.reason[i] = v; break;
     case 'mode': st.mode[i] = v; break;
