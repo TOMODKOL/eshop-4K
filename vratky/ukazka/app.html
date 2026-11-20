@@ -125,14 +125,28 @@ footer.foot strong{color:var(--text)}
 .layout{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start}
 .layout .main .col{max-width:none}
 .aside{display:none}
-.startgrid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
-.startgrid .col{max-width:none;margin:0}
+.starthero{max-width:720px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:8px 4px 28px}
+.starthero p{margin:0;color:var(--text);max-width:560px}
+.startgrid{max-width:920px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:stretch}
+.startgrid .col{max-width:none;margin:0;display:flex;flex-direction:column;gap:14px}
+.startgrid .col>.card{flex:1}
+.startgrid .note{text-align:left}
+.startgrid .steps{flex:1;justify-content:space-evenly}
+.findcard .link{align-self:flex-start;padding:4px 0}
+.findcard .sub{margin:0;font-size:14px;color:var(--text);line-height:1.5}
+.ordrow{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font:inherit;color:var(--ink)}
+.ordrow:not([disabled]):hover{border-color:var(--ink)}
+.ordrow[disabled]{background:var(--soft);color:var(--muted);cursor:default}
+.ordrow .t{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--text)}
+.ordrow .t strong{font-size:15px;color:inherit}
+.ordrow[disabled] .t{color:var(--muted)}
 .donegrid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
 .donegrid .col{max-width:none;margin:0}
 @media (min-width:900px){
   .layout{grid-template-columns:minmax(0,1fr) 320px}
   .aside{display:flex;flex-direction:column;gap:12px;position:sticky;top:16px}
-  .startgrid{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px;padding-top:24px}
+  .startgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+  .starthero{padding:32px 4px 40px}
   .donegrid{grid-template-columns:minmax(0,1fr) 360px;gap:24px}
   .h1{font-size:76px}
   .h2{font-size:46px}
@@ -207,7 +221,7 @@ const SEED = [
     lines:[{ act:'vratit', name:'dámský dres Castelli Promessa Jacquard Agate Blue M', detail:'Nesedí velikost' }], total:1570, postage:true }
 ];
 
-const fresh = () => ({ step:0, act:{}, mode:{}, reason:{}, size:{}, swap:{}, rq:{}, defect:{}, photos:{}, ship:'zbox', ucet:'', pozn:'', swapFor:null, web:false, webSize:'M', linkOk:false, linkErr:'', picked:null, pickSize:null, done:null });
+const fresh = () => ({ step:0, act:{}, mode:{}, reason:{}, size:{}, swap:{}, rq:{}, defect:{}, photos:{}, ship:'zbox', ucet:'', pozn:'', swapFor:null, web:false, webSize:'M', linkOk:false, linkErr:'', picked:null, pickSize:null, done:null, find:'order', findEmail:'' });
 let view = 'zak';
 let st = fresh();
 let list = store.get('vratky4k_list', null) || SEED.slice();
@@ -267,26 +281,70 @@ function itemHead(i, extra){
 }
 
 // ---------- ZÁKAZNÍK ----------
-function sStart(){
-  return `<div class="startgrid">
-  <div class="col">
-  <div style="display:flex;flex-direction:column;gap:10px;padding:0 4px">
-    <span class="kicker">Vrácení, výměna a reklamace</span>
-    <h1 class="h1">4 KLUCI → <span class="out">VRACÍ</span></h1>
-    <p style="margin:0;color:var(--text)">Vrácení, výměna velikosti i reklamace na pár kliknutí. Balík odnesete na výdejní místo Zásilkovny nebo do Z-BOXu, tisknout nic nemusíte.</p>
-  </div>
-  <div class="card"><strong>Jak to funguje</strong><div class="steps">
-    <div><b>1</b><span>Vyberete zboží a co s ním chcete udělat.</span></div>
-    <div><b>2</b><span>Dostanete podací kód Zásilkovny.</span></div>
-    <div><b>3</b><span>Balík odnesete, ozveme se, jakmile k nám dorazí.</span></div></div></div>
-  </div>
-  <div class="col">
-  <div class="card" style="padding:24px">
+function findCard(){
+  const em = st.findEmail || ORDER.email;
+  if (st.find === 'email') return `<div class="card findcard" style="padding:24px">
+    <strong style="font-size:17px">Najděte objednávku podle e-mailu</strong>
+    <p class="sub">Pošleme vám odkaz, přes který uvidíte všechny své objednávky a vyberete tu, které se vratka týká.</p>
+    <div class="field"><label class="l" for="em2">E-mail, se kterým jste objednávali</label><input class="f" id="em2" type="email" value="${esc(em)}" autocomplete="off"></div>
+    <div style="flex:1"></div>
+    <button class="btn" data-a="find" data-v="sent">Poslat odkaz e-mailem →</button>
+    <button class="link" data-a="find" data-v="order">Mám číslo objednávky</button>
+  </div>`;
+  if (st.find === 'sent') return `<div class="card findcard" style="padding:24px">
+    <strong style="font-size:17px">Zkontrolujte svůj e-mail</strong>
+    <p class="sub">Na adresu <strong>${esc(em)}</strong> jsme poslali odkaz. Po kliknutí na něj uvidíte všechny své objednávky. Odkaz platí 24 hodin.</p>
+    <p class="sub" style="color:var(--muted);font-size:13px">E-mail nepřišel? Podívejte se i do složky Hromadné nebo Spam.</p>
+    <div style="flex:1"></div>
+    <button class="btn ghost" data-a="find" data-v="mail">Otevřít e-mail (ukázka) →</button>
+    <button class="link" data-a="find" data-v="email">Změnit e-mailovou adresu</button>
+  </div>`;
+  if (st.find === 'mail') return `<div class="card findcard" style="padding:0;gap:0;overflow:hidden">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.6">
+      <span class="kicker" style="font-size:10px">Ukázka e-mailu</span><br>
+      <strong style="color:var(--ink)">Od:</strong> 4 KLUCI OD KOL &lt;vratky@4kluciodkol.cz&gt;<br>
+      <strong style="color:var(--ink)">Komu:</strong> ${esc(em)}<br>
+      <strong style="color:var(--ink)">Předmět:</strong> Odkaz na vaše objednávky
+    </div>
+    <div style="padding:22px 20px;display:flex;flex-direction:column;gap:14px;background:var(--soft);flex:1">
+      <strong style="font-size:17px">Dobrý den,</strong>
+      <p class="sub">požádali jste o vrácení, výměnu nebo reklamaci zboží. Kliknutím na tlačítko ověříte svůj e-mail a uvidíte všechny své objednávky z 4kluciodkol.cz.</p>
+      <button class="btn" data-a="find" data-v="list">Zobrazit moje objednávky →</button>
+      <p class="sub" style="font-size:12px;color:var(--muted)">Odkaz platí 24 hodin. Pokud jste o nic nežádali, e-mail ignorujte.<br>Poradíme na 604 998 800 · Po–Pá 9–17, So 9–13</p>
+    </div>
+  </div>`;
+  if (st.find === 'list') return `<div class="card findcard" style="padding:24px">
+    <strong style="font-size:17px">Vaše objednávky</strong>
+    <p class="sub">${esc(em)} · vyberte objednávku, které se vratka týká.</p>
+    <button class="ordrow" data-a="go" data-v="1"><span class="t"><strong>Objednávka ${ORDER.no}</strong>Doručeno ${ORDER.delivered} · vrátit lze do ${ORDER.returnUntil}</span><span>→</span></button>
+    <button class="ordrow" disabled><span class="t"><strong>Objednávka 8810000087</strong>Doručeno 2. 9. 2026 · lhůta pro vrácení uplynula. Reklamaci vyřídíte na prodejně nebo na 604 998 800.</span></button>
+    <div style="flex:1"></div>
+    <button class="link" data-a="find" data-v="order">Zpět na vyhledání</button>
+  </div>`;
+  return `<div class="card findcard" style="padding:24px">
     <strong style="font-size:17px">Najděte svou objednávku</strong>
     <div class="field"><label class="l" for="em">E-mail z objednávky</label><input class="f" id="em" type="email" value="${ORDER.email}" autocomplete="off"></div>
     <div class="field"><label class="l" for="ob">Číslo objednávky nebo faktury</label><input class="f" id="ob" type="text" value="${ORDER.no}" autocomplete="off"><span class="hint">Najdete ho v potvrzení objednávky nebo na faktuře. V ukázce je vyplněná vzorová objednávka.</span></div>
+    <button class="link" data-a="find" data-v="email">Nepamatuji si číslo objednávky</button>
+    <div style="flex:1"></div>
     <button class="btn" data-a="go" data-v="1">Najít objednávku →</button>
+  </div>`;
+}
+function sStart(){
+  return `<div class="starthero">
+    <span class="kicker">Vrácení, výměna a reklamace</span>
+    <h1 class="h1">4 KLUCI → <span class="out">VRACÍ</span></h1>
+    <p>Vrácení, výměna velikosti i reklamace na pár kliknutí. Balík odnesete na výdejní místo Zásilkovny nebo do Z-BOXu, tisknout nic nemusíte.</p>
   </div>
+  <div class="startgrid">
+  <div class="col">
+  ${findCard()}
+  </div>
+  <div class="col">
+  <div class="card" style="padding:24px"><strong style="font-size:17px">Jak to funguje</strong><div class="steps">
+    <div><b>1</b><span>Vyberete zboží a co s ním chcete udělat.</span></div>
+    <div><b>2</b><span>Dostanete podací kód Zásilkovny.</span></div>
+    <div><b>3</b><span>Balík odnesete, ozveme se, jakmile k nám dorazí.</span></div></div></div>
   <div class="note">Kupovali jste na prodejně? Stačí přijít s účtenkou: U Vlečky 726/5c, Brno, Po–Pá 9–17, So 9–13.</div>
   </div></div>`;
 }
@@ -526,6 +584,7 @@ document.addEventListener('click', e => {
       if (n===3 && st.step===2 && !chosen().every(itemReady)) return;
       if (n===5 && st.step===4) { const ok = /^\d{0,6}-?\d{2,10}\/\d{4}$/.test(st.ucet.replace(/\s/g,'')); if (!ok) { const h = document.getElementById('moneyHint'); if (h) h.textContent = 'Vyplňte číslo účtu ve formátu 123456789/0800.'; return; } }
       st.step = n; scroll = true; break; }
+    case 'find': { if (v==='sent') { const f = document.getElementById('em2'); const val = f ? f.value.trim() : ''; if (!/^\S+@\S+\.\S+$/.test(val)) { if (f) { f.style.borderColor='var(--red)'; f.focus(); } return; } st.findEmail = val; } st.find = v; break; }
     case 'act': st.act[i] = (st.act[i]===v && st.step===1) ? null : v; if (v==='vymenit' && !st.mode[i]) st.mode[i]='size'; break;
     case 'reason': st.reason[i] = v; break;
     case 'mode': st.mode[i] = v; break;
