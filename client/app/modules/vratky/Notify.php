@@ -15,9 +15,23 @@ final class Notify
         return rtrim((string) Config::get('app_url'), '/') . '/vratky/stav/' . $ret['token'];
     }
 
-    public static function created(array $ret): void
+    public static function created(array $ret, bool $byStaff = false): void
     {
         $lines = Service::lines((int) $ret['id']);
+        if ($byStaff) {
+            if ($ret['email'] === '') return;
+            $html = View::render('vratky:email', [
+                'kicker' => 'Reklamace ' . $ret['no'] . ' přijata',
+                'heading' => 'Reklamaci jsme přijali',
+                'ret' => $ret, 'lines' => $lines, 'showCode' => $ret['ship_method'] !== 'osobne',
+                'text' => $ret['ship_method'] === 'osobne'
+                    ? 'Reklamaci vyřídíme nejpozději do ' . date_cz((string) $ret['claim_deadline']) . '. O průběhu vám dáme vědět.'
+                    : self::nextStepText($ret),
+                'url' => self::statusUrl($ret),
+            ]);
+            Mailer::send($ret['email'], 'Reklamace ' . $ret['no'] . ' – potvrzení', $html);
+            return;
+        }
         $html = View::render('vratky:email', [
             'kicker' => 'Vratka ' . $ret['no'] . ' vytvořena',
             'heading' => 'Děkujeme, vratku máme',
@@ -38,6 +52,7 @@ final class Notify
 
     public static function statusChanged(array $ret, string $note): void
     {
+        if ($ret['email'] === '') return;
         $label = Service::STATUS[$ret['status']] ?? $ret['status'];
         $html = View::render('vratky:email', [
             'kicker' => 'Vratka ' . $ret['no'],

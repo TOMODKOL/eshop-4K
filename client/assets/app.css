@@ -204,6 +204,7 @@ table.t tr:last-child td{border-bottom:0}
 .adminnav a{color:#fff;text-decoration:none;font-weight:700}
 .adminnav a.on{color:var(--yel)}
 .adminnav span{color:#bdbdb8}
+@media (max-width:599px){header.top .in:has(.adminnav){flex-wrap:wrap}.adminnav{flex-wrap:wrap;gap:4px 14px}.adminnav>span{display:none}}
 .photos{display:flex;gap:8px;flex-wrap:wrap}
 .photos a img{width:96px;height:96px;object-fit:cover;border-radius:8px;display:block}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}

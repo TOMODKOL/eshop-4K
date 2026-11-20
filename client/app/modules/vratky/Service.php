@@ -41,9 +41,40 @@ final class Service
         $num = self::normalizeNumber($number);
         if ($email === '' || $num === '') return null;
         return Db::one(
-            'SELECT * FROM orders WHERE LOWER(email) = ? AND (order_no = ? OR invoice_no = ?) ORDER BY invoice_date DESC LIMIT 1',
+            "SELECT * FROM orders WHERE source = 'eshop' AND LOWER(email) = ? AND (order_no = ? OR invoice_no = ?) ORDER BY invoice_date DESC LIMIT 1",
             [$email, $num, $num]
         );
+    }
+
+    /**
+     * Hledání dokladu v administraci: číslo faktury/prodejky/objednávky, jméno, telefon, e-mail,
+     * nebo název či kód zboží (u prodejek je to jediná stopa – zákazník na nich není).
+     */
+    public static function searchOrders(string $q, string $from = '', string $till = ''): array
+    {
+        $q = trim($q);
+        $where = [];
+        $p = [];
+        if ($q !== '') {
+            $num = self::normalizeNumber($q);
+            $like = '%' . $q . '%';
+            $digits = preg_replace('/\D+/', '', $q) ?? '';
+            $w = '(o.invoice_no LIKE ? OR o.order_no LIKE ? OR o.customer_name LIKE ? OR o.email LIKE ?'
+               . ' OR o.id IN (SELECT order_id FROM order_items WHERE name LIKE ? OR code LIKE ?)';
+            array_push($p, '%' . $num . '%', '%' . $num . '%', $like, $like, $like, $like);
+            if (strlen($digits) >= 6) { $w .= ' OR REPLACE(REPLACE(o.phone, \' \', \'\'), \'+420\', \'\') LIKE ?'; $p[] = '%' . substr($digits, -9) . '%'; }
+            $where[] = $w . ')';
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) { $where[] = 'o.invoice_date >= ?'; $p[] = $from; }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $till)) { $where[] = 'o.invoice_date <= ?'; $p[] = $till; }
+        if (!$where) return [];
+        $rows = Db::all('SELECT o.* FROM orders o WHERE ' . implode(' AND ', $where) . ' ORDER BY o.invoice_date DESC, o.id DESC LIMIT 40', $p);
+        foreach ($rows as &$r) {
+            $its = array_filter(Db::all('SELECT name, unit_price FROM order_items WHERE order_id = ? ORDER BY line_no, id LIMIT 8', [$r['id']]),
+                fn($i) => !self::isServiceLine($i));
+            $r['item_names'] = array_slice(array_column($its, 'name'), 0, 6);
+        }
+        return $rows;
     }
 
     public static function order(int $id): ?array
@@ -177,6 +208,31 @@ final class Service
         ]];
     }
 
+    /**
+     * Reklamace zakládaná prodejnou v administraci (zboží z prodejny i z e-shopu).
+     * Jen reklamace, bez souhlasu s podmínkami a bez čísla účtu. Kontakt zadá prodejna.
+     */
+    public static function validateAdmin(array $order, array $items, array $post, array $files): array
+    {
+        $acts = [];
+        foreach ((array) ($post['act'] ?? []) as $id => $a) if ($a === 'reklamovat') $acts[$id] = 'reklamovat';
+        $post['act'] = $acts;
+        $post['agree'] = '1';
+        $post['ship'] = isset(self::SHIP[(string) ($post['ship'] ?? '')]) ? $post['ship'] : 'osobne';
+        [$errors, $data] = self::validate($order, $items, $post, $files);
+        $errors = array_values(array_filter($errors, fn($e) => !str_starts_with($e, 'Vyberte aspoň jednu položku')));
+        if (!$data['lines']) $errors[] = 'Zaškrtněte aspoň jednu reklamovanou položku.';
+        $name = mb_substr(trim((string) ($post['customer_name'] ?? '')), 0, 190);
+        $email = mb_strtolower(trim((string) ($post['email'] ?? '')));
+        if ($name === '') $errors[] = 'Vyplňte jméno zákazníka.';
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'E-mail zákazníka nemá správný tvar.';
+        if ($email === '' && trim((string) ($post['phone'] ?? '')) === '') $errors[] = 'Vyplňte telefon nebo e-mail, ať se zákazníkovi můžeme ozvat.';
+        if ($post['ship'] !== 'osobne' && $email === '') $errors[] = 'Pro zaslání Zásilkovnou je potřeba e-mail (dostane na něj podací kód).';
+        $data['customer_name'] = $name;
+        $data['email'] = $email;
+        return [$errors, $data];
+    }
+
     /** Peníze: vracené zboží; poštovné jen u čistého vrácení zaslaného Zásilkovnou. */
     public static function calc(array $lines, string $ship): array
     {
@@ -213,19 +269,21 @@ final class Service
     }
 
     /** Uloží vratku. Vrací její řádek z databáze. */
-    public static function create(array $order, array $data): array
+    public static function create(array $order, array $data, ?array $byUser = null): array
     {
-        $id = Db::tx(function () use ($order, $data) {
+        $id = Db::tx(function () use ($order, $data, $byUser) {
             $hasClaim = (bool) array_filter($data['lines'], fn($l) => $l['action'] === 'reklamovat');
             $now = Db::now();
+            // reklamace převzatá na prodejně je rovnou u nás
+            $status = ($byUser && $data['ship'] === 'osobne') ? 'dorazilo' : 'novy';
             $rid = Db::insert('returns', [
                 'no' => self::nextNumber(),
                 'token' => bin2hex(random_bytes(20)),
                 'order_id' => $order['id'],
-                'email' => $order['email'],
-                'customer_name' => $order['customer_name'],
+                'email' => $data['email'] ?? $order['email'],
+                'customer_name' => $data['customer_name'] ?? $order['customer_name'],
                 'phone' => $data['phone'],
-                'status' => 'novy',
+                'status' => $status,
                 'ship_method' => $data['ship'],
                 'bank_account' => $data['account'],
                 'note' => $data['note'],
@@ -251,7 +309,9 @@ final class Service
                 ]);
                 foreach ($l['photos'] as $p) Photos::attach($lid, $p);
             }
-            Db::insert('return_events', ['return_id' => $rid, 'status' => 'novy', 'note' => 'Vratku vytvořil zákazník.', 'public' => 1, 'user_id' => null, 'created_at' => $now]);
+            Db::insert('return_events', ['return_id' => $rid, 'status' => $status,
+                'note' => $byUser ? ($status === 'dorazilo' ? 'Reklamaci jsme převzali na prodejně.' : 'Reklamaci založila prodejna.') : 'Vratku vytvořil zákazník.',
+                'public' => 1, 'user_id' => $byUser['id'] ?? null, 'created_at' => $now]);
             return $rid;
         });
         return self::get($id);
@@ -321,7 +381,7 @@ final class Service
     public static function ordersByEmail(string $email): array
     {
         $since = (new \DateTimeImmutable('today'))->modify('-' . (int) Config::get('vratky.claim_months', 24) . ' months')->format('Y-m-d');
-        return Db::all('SELECT * FROM orders WHERE LOWER(email) = ? AND invoice_date >= ? ORDER BY invoice_date DESC LIMIT 50',
+        return Db::all("SELECT * FROM orders WHERE source = 'eshop' AND LOWER(email) = ? AND invoice_date >= ? ORDER BY invoice_date DESC LIMIT 50",
             [mb_strtolower(trim($email)), $since]);
     }
 }

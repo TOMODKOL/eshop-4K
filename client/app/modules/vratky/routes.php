@@ -140,6 +140,45 @@ Http::get('/admin/vratky', function () {
         'stav' => $stav, 'q' => $q, 'lastSync' => $lastSync], 'admin');
 });
 
+// ---- nová reklamace zadaná prodejnou (zboží z prodejny i z e-shopu)
+Http::get('/admin/vratky/nova', function () {
+    Auth::require();
+    $q = Http::input('q'); $od = Http::input('od'); $do = Http::input('do');
+    View::page('vratky:admin_new', ['title' => 'Nová reklamace', 'active' => 'vratky', 'q' => $q, 'od' => $od, 'do' => $do,
+        'rows' => Service::searchOrders($q, $od, $do), 'searched' => ($q !== '' || $od !== '' || $do !== '')], 'admin');
+});
+
+$adminClaimPage = function (array $o, array $old, array $errors): void {
+    $items = Service::items((int) $o['id']);
+    View::page('vratky:admin_new_form', ['title' => 'Nová reklamace', 'active' => 'vratky', 'order' => $o, 'items' => $items,
+        'dl' => Service::deadlines($o), 'old' => $old, 'errors' => $errors], 'admin');
+};
+
+Http::get('/admin/vratky/nova/{id}', function (string $id) use ($adminClaimPage) {
+    Auth::require();
+    $o = Service::order((int) $id);
+    if (!$o) Http::redirect('/admin/vratky/nova');
+    $adminClaimPage($o, [], []);
+});
+
+Http::post('/admin/vratky/nova/{id}', function (string $id) use ($adminClaimPage) {
+    $u = Auth::require();
+    Session::checkCsrf();
+    $o = Service::order((int) $id);
+    if (!$o) Http::redirect('/admin/vratky/nova');
+    $items = Service::items((int) $o['id']);
+    [$errors, $data] = Service::validateAdmin($o, $items, $_POST, $_FILES);
+    if ($errors) { http_response_code(422); $adminClaimPage($o, $_POST, $errors); return; }
+    $ret = Service::create($o, $data, $u);
+    if (Packeta::enabled() && $ret['ship_method'] !== 'osobne') {
+        Packeta::createClaim($ret);
+        $ret = Service::get((int) $ret['id']);
+    }
+    if (!empty($_POST['notify'])) Notify::created($ret, true);
+    Session::flash('Reklamace ' . $ret['no'] . ' založena.' . (!empty($_POST['notify']) && $ret['email'] !== '' ? ' Zákazník dostal potvrzení e-mailem.' : ''));
+    Http::redirect('/admin/vratky/' . $ret['no']);
+});
+
 Http::get('/admin/vratky/foto/{id}', function (string $id) {
     Auth::require();
     Photos::output((int) $id);
@@ -178,7 +217,7 @@ Http::post('/admin/vratky/{no}', function (string $no) {
     $notify = !empty($_POST['notify']);
     if ($status === '' && $note === '') { Session::flash('Vyberte nový stav nebo napište poznámku.', 'err'); Http::redirect('/admin/vratky/' . $no); }
     Service::setStatus($ret, $status === $ret['status'] ? '' : $status, $note, $notify, (int) $u['id']);
-    if ($notify) {
+    if ($notify && $ret['email'] !== '') {
         Notify::statusChanged(Service::get((int) $ret['id']), $note);
         Session::flash('Uloženo a zákazník dostal e-mail.');
     } else {

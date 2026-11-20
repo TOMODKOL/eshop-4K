@@ -1,7 +1,10 @@
-﻿# Pošle e-shopové faktury z Pohody do portálu client.4kluciodkol.cz (vratky a reklamace).
-#  - čte vydané faktury přes mServer (jen čtení), bere jen ty s objednávkou z e-shopu (číslo 8810…)
+﻿# Pošle prodejní doklady z Pohody do portálu client.4kluciodkol.cz (vratky a reklamace).
+#  - čte přes mServer (jen čtení) vydané faktury a prodejky
+#      faktura s objednávkou z e-shopu (8810…)  -> zdroj eshop    (zákazník si vratku zadá sám na webu)
+#      ostatní vydané faktury                   -> zdroj faktura  (reklamaci zakládá prodejna v administraci)
+#      prodejky 26PH…                           -> zdroj prodejna (reklamaci zakládá prodejna v administraci)
 #  - posílá je na https://client.4kluciodkol.cz/api/sync/objednavky (klíč = sync_token z nasad-client.ps1)
-#  - první běh nahraje faktury od 1. 1. 2025 po měsících, další běhy jen posledních $Dni dní
+#  - první běh nahraje doklady od 1. 1. 2025 po měsících, další běhy jen posledních $Dni dní
 # Ručně:  cd D:\Pomocnik ; powershell -ExecutionPolicy Bypass -File .\client-sync.ps1 [-Od 2025-01-01]
 param([string]$Od = '', [int]$Dni = 4, [string]$Portal = 'https://client.4kluciodkol.cz')
 . (Join-Path $PSScriptRoot 'spolecne.ps1')
@@ -34,14 +37,14 @@ function Uzel($n, [string]$cesta) {
 function Text($n, [string]$cesta) { $u = Uzel $n $cesta; if ($u) { $u.InnerText.Trim() } else { '' } }
 function Cislo([string]$s) { if ($s) { [double]::Parse($s, $inv) } else { 0.0 } }
 
-function Nacti-Faktury([datetime]$d1, [datetime]$d2) {
+function Dotaz([string]$polozka) {
     $xml = @"
 <?xml version="1.0" encoding="Windows-1250"?>
-<dat:dataPack id="client_sync" ico="08576726" application="Pomocnik 4K" version="2.0" note="Faktury pro client.4kluciodkol.cz - jen cteni"
+<dat:dataPack id="client_sync" ico="08576726" application="Pomocnik 4K" version="2.0" note="Doklady pro client.4kluciodkol.cz - jen cteni"
   xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
   xmlns:lst="http://www.stormware.cz/schema/version_2/list.xsd"
   xmlns:ftr="http://www.stormware.cz/schema/version_2/filter.xsd">
-  <dat:dataPackItem id="fv" version="2.0"><lst:listInvoiceRequest version="2.0" invoiceType="issuedInvoice" invoiceVersion="2.0"><lst:requestInvoice><ftr:filter><ftr:dateFrom>$($d1.ToString('yyyy-MM-dd'))</ftr:dateFrom><ftr:dateTill>$($d2.ToString('yyyy-MM-dd'))</ftr:dateTill></ftr:filter></lst:requestInvoice></lst:listInvoiceRequest></dat:dataPackItem>
+  <dat:dataPackItem id="d" version="2.0">$polozka</dat:dataPackItem>
 </dat:dataPack>
 "@
     $odp = Invoke-WebRequest -Uri $url -Method Post -Body $cp1250.GetBytes($xml) -ContentType 'text/xml' -Headers $hlav -UseBasicParsing -TimeoutSec 900
@@ -49,20 +52,23 @@ function Nacti-Faktury([datetime]$d1, [datetime]$d2) {
     $doc.LoadXml($cp1250.GetString($odp.RawContentStream.ToArray()))
     $st = $doc.SelectSingleNode("//*[local-name()='responsePackItem']")
     if ($st -and $st.GetAttribute('state') -ne 'ok') { throw ('Pohoda vrátila stav ' + $st.GetAttribute('state') + ': ' + $st.GetAttribute('note')) }
+    return $doc
+}
+function Filtr([datetime]$d1, [datetime]$d2) { "<ftr:filter><ftr:dateFrom>$($d1.ToString('yyyy-MM-dd'))</ftr:dateFrom><ftr:dateTill>$($d2.ToString('yyyy-MM-dd'))</ftr:dateTill></ftr:filter>" }
+
+function Nacti-Faktury([datetime]$d1, [datetime]$d2) {
+    $doc = Dotaz ('<lst:listInvoiceRequest version="2.0" invoiceType="issuedInvoice" invoiceVersion="2.0"><lst:requestInvoice>' + (Filtr $d1 $d2) + '</lst:requestInvoice></lst:listInvoiceRequest>')
     return $doc.SelectNodes("//*[local-name()='invoice' and namespace-uri()='http://www.stormware.cz/schema/version_2/list.xsd']")
 }
+function Nacti-Prodejky([datetime]$d1, [datetime]$d2) {
+    $doc = Dotaz ('<lst:listProdejkaRequest version="2.0" prodejkaVersion="2.0"><lst:requestProdejka>' + (Filtr $d1 $d2) + '</lst:requestProdejka></lst:listProdejkaRequest>')
+    return $doc.SelectNodes("//*[local-name()='prodejka' and namespace-uri()='http://www.stormware.cz/schema/version_2/list.xsd']")
+}
 
-function Na-Objednavku($f) {
-    $h = Uzel $f 'invoiceHeader'
-    $obj = Text $h 'numberOrder'
-    if (-not $obj) { $obj = Text $h 'symVar' }
-    if ($obj -notmatch '^8810\d+$') { return $null }          # jen e-shop
-    $adr = Uzel $h 'partnerIdentity/address'
-    $email = Text $adr 'email'
-    if (-not $email) { $email = Text $h 'partnerIdentity/shipToAddress/email' }
-    $jmeno = Text $adr 'name'; if (-not $jmeno) { $jmeno = Text $adr 'company' }
+# Zboží z položek dokladu (bez dopravy, platby, poukazů a vratek se záporným množstvím)
+function Polozky($doklad, [string]$detail, [string]$polozka) {
     $polozky = New-Object System.Collections.ArrayList
-    foreach ($p in $f.SelectNodes("./*[local-name()='invoiceDetail']/*[local-name()='invoiceItem']")) {
+    foreach ($p in $doklad.SelectNodes("./*[local-name()='$detail']/*[local-name()='$polozka']")) {
         $nazev = Text $p 'text'
         $ks = Cislo (Text $p 'quantity')
         $celkem = Cislo (Text $p 'homeCurrency/priceSum')
@@ -71,17 +77,51 @@ function Na-Objednavku($f) {
         if ($nazev -match $NeniZbozi) { continue }
         [void]$polozky.Add([ordered]@{ code = (Text $p 'code'); name = $nazev; qty = $ks; unit_price = [math]::Round($celkem / $ks, 2) })
     }
+    return ,$polozky
+}
+function Soucet($s) {
+    return [math]::Round((Cislo (Text $s 'priceNone')) + (Cislo (Text $s 'priceLowSum')) + (Cislo (Text $s 'priceHighSum')) + (Cislo (Text $s 'round/priceRound')), 2)
+}
+
+function Z-Faktury($f) {
+    $h = Uzel $f 'invoiceHeader'
+    $obj = Text $h 'numberOrder'
+    if (-not $obj) { $obj = Text $h 'symVar' }
+    $eshop = $obj -match '^8810\d+$'
+    $adr = Uzel $h 'partnerIdentity/address'
+    $email = Text $adr 'email'
+    if (-not $email) { $email = Text $h 'partnerIdentity/shipToAddress/email' }
+    $jmeno = Text $adr 'name'; if (-not $jmeno) { $jmeno = Text $adr 'company' }
+    $polozky = Polozky $f 'invoiceDetail' 'invoiceItem'
     if ($polozky.Count -eq 0) { return $null }
-    $s = Uzel $f 'invoiceSummary/homeCurrency'
-    $total = (Cislo (Text $s 'priceNone')) + (Cislo (Text $s 'priceLowSum')) + (Cislo (Text $s 'priceHighSum')) + (Cislo (Text $s 'round/priceRound'))
     return [ordered]@{
         invoice_no    = (Text $h 'number/numberRequested')
-        order_no      = $obj
+        order_no      = $(if ($eshop) { $obj } else { '' })
+        source        = $(if ($eshop) { 'eshop' } else { 'faktura' })
         invoice_date  = (Text $h 'date')
         email         = $email
         customer_name = $jmeno
         phone         = (Text $adr 'phone')
-        total         = [math]::Round($total, 2)
+        total         = (Soucet (Uzel $f 'invoiceSummary/homeCurrency'))
+        items         = $polozky
+    }
+}
+
+function Z-Prodejky($p) {
+    $h = Uzel $p 'prodejkaHeader'
+    $polozky = Polozky $p 'prodejkaDetail' 'prodejkaItem'
+    if ($polozky.Count -eq 0) { return $null }
+    $adr = Uzel $h 'partnerIdentity/address'
+    $jmeno = Text $adr 'name'; if (-not $jmeno) { $jmeno = Text $adr 'company' }
+    return [ordered]@{
+        invoice_no    = (Text $h 'number/numberRequested')
+        order_no      = ''
+        source        = 'prodejna'
+        invoice_date  = (Text $h 'date')
+        email         = (Text $adr 'email')
+        customer_name = $jmeno
+        phone         = (Text $adr 'phone')
+        total         = (Soucet (Uzel $p 'prodejkaSummary/homeCurrency'))
         items         = $polozky
     }
 }
@@ -94,29 +134,36 @@ function Posli($davka) {
     return $odp
 }
 
+function Posli-Vse($doklady) {
+    $ulozeno = 0
+    for ($i = 0; $i -lt $doklady.Count; $i += 50) {
+        $davka = New-Object System.Collections.ArrayList
+        $doklady.GetRange($i, [math]::Min(50, $doklady.Count - $i)) | ForEach-Object { [void]$davka.Add($_) }
+        $r = Posli $davka
+        $ulozeno += [int]$r.saved
+        if ($r.errors) { $script:chyby += @($r.errors) }
+    }
+    return $ulozeno
+}
+
 try {
     $d = [datetime]::ParseExact($Od, 'yyyy-MM-dd', $null)
     $dnes = (Get-Date).Date
-    $celkemPoslano = 0; $celkemFaktur = 0; $chyby = @()
+    $celkemPoslano = 0; $pocty = @{ eshop = 0; faktura = 0; prodejna = 0 }; $script:chyby = @()
     while ($d -le $dnes) {
         $konec = $d.AddMonths(1).AddDays(-1); if ($konec -gt $dnes) { $konec = $dnes }
-        $faktury = Nacti-Faktury $d $konec
-        $celkemFaktur += $faktury.Count
-        $objednavky = New-Object System.Collections.ArrayList
-        foreach ($f in $faktury) { $o = Na-Objednavku $f; if ($o) { [void]$objednavky.Add($o) } }
-        for ($i = 0; $i -lt $objednavky.Count; $i += 50) {
-            $davka = New-Object System.Collections.ArrayList
-            $objednavky.GetRange($i, [math]::Min(50, $objednavky.Count - $i)) | ForEach-Object { [void]$davka.Add($_) }
-            $r = Posli $davka
-            $celkemPoslano += [int]$r.saved
-            if ($r.errors) { $chyby += @($r.errors) }
-        }
-        Zapis-Log $uloha ('{0:yyyy-MM-dd}–{1:yyyy-MM-dd}: faktur {2}, e-shopových {3}' -f $d, $konec, $faktury.Count, $objednavky.Count)
+        $doklady = New-Object System.Collections.ArrayList
+        foreach ($f in (Nacti-Faktury $d $konec))  { $o = Z-Faktury $f;   if ($o) { [void]$doklady.Add($o) } }
+        foreach ($p in (Nacti-Prodejky $d $konec)) { $o = Z-Prodejky $p;  if ($o) { [void]$doklady.Add($o) } }
+        foreach ($o in $doklady) { $pocty[$o.source]++ }
+        $celkemPoslano += Posli-Vse $doklady
+        Zapis-Log $uloha ('{0:yyyy-MM-dd}–{1:yyyy-MM-dd}: e-shop {2}, faktury {3}, prodejky {4}' -f $d, $konec,
+            @($doklady | Where-Object { $_.source -eq 'eshop' }).Count, @($doklady | Where-Object { $_.source -eq 'faktura' }).Count, @($doklady | Where-Object { $_.source -eq 'prodejna' }).Count)
         $d = $konec.AddDays(1)
     }
     Set-Content -LiteralPath $stavF -Value (@{ posledni = (Get-Date).ToString('s'); od = $Od } | ConvertTo-Json) -Encoding UTF8
-    $zprava = 'OK    od {0}: faktur {1}, uloženo objednávek v portálu {2}' -f $Od, $celkemFaktur, $celkemPoslano
-    if ($chyby) { $zprava += (' | portál odmítl: ' + (($chyby | Select-Object -First 5) -join '; ')) }
+    $zprava = 'OK    od {0}: e-shop {1}, faktury {2}, prodejky {3}; uloženo v portálu {4}' -f $Od, $pocty.eshop, $pocty.faktura, $pocty.prodejna, $celkemPoslano
+    if ($script:chyby) { $zprava += (' | portál odmítl ' + $script:chyby.Count + ': ' + (($script:chyby | Select-Object -First 5) -join '; ')) }
     Zapis-Log $uloha $zprava
     Write-Host $zprava -ForegroundColor Green
 } catch {

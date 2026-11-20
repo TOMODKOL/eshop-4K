@@ -12,6 +12,8 @@ use App\Core\Db;
  *   "email":"jana@email.cz","customer_name":"Jana Nováková","phone":"+420…","total":4749.23,
  *   "items":[{"code":"…","name":"…","qty":1,"unit_price":1990}]}]}
  * unit_price = cena za kus včetně DPH po slevě. Stejná faktura poslaná znovu se přepíše.
+ * source: eshop (faktura s objednávkou 8810…, výchozí), prodejna (prodejka 26PH…), faktura (ostatní vydané faktury).
+ * E-mail je povinný jen u e-shopu; prodejky ho nemají a reklamace k nim zakládá prodejna v administraci.
  */
 final class Sync
 {
@@ -28,13 +30,15 @@ final class Sync
             Db::tx(function () use ($o) {
                 $now = Db::now();
                 $inv = Service::normalizeNumber((string) $o['invoice_no']);
+                $email = mb_strtolower(trim((string) ($o['email'] ?? '')));
                 $row = [
                     'order_no' => isset($o['order_no']) && $o['order_no'] !== '' ? Service::normalizeNumber((string) $o['order_no']) : null,
                     'invoice_date' => substr((string) $o['invoice_date'], 0, 10),
-                    'email' => mb_strtolower(trim((string) $o['email'])),
+                    'email' => filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '',
                     'customer_name' => mb_substr(trim((string) ($o['customer_name'] ?? '')), 0, 190),
                     'phone' => mb_substr(trim((string) ($o['phone'] ?? '')), 0, 40),
                     'total' => (float) ($o['total'] ?? 0),
+                    'source' => self::source($o),
                     'updated_at' => $now,
                 ];
                 $id = Db::value('SELECT id FROM orders WHERE invoice_no = ?', [$inv]);
@@ -46,7 +50,7 @@ final class Sync
                     if ((int) $hasReturn > 0) return;
                     Db::exec('DELETE FROM order_items WHERE order_id = ?', [$id]);
                 } else {
-                    $id = Db::insert('orders', $row + ['invoice_no' => $inv, 'source' => 'eshop', 'created_at' => $now]);
+                    $id = Db::insert('orders', $row + ['invoice_no' => $inv, 'created_at' => $now]);
                 }
                 foreach (array_values($o['items']) as $n => $it) {
                     Db::insert('order_items', [
@@ -65,12 +69,20 @@ final class Sync
         return ['saved' => $saved, 'errors' => $errors];
     }
 
+    public const SOURCES = ['eshop' => 'E-shop', 'prodejna' => 'Prodejna', 'faktura' => 'Faktura'];
+
+    private static function source(array $o): string
+    {
+        $s = (string) ($o['source'] ?? 'eshop');
+        return isset(self::SOURCES[$s]) ? $s : 'eshop';
+    }
+
     private static function check(mixed $o): ?string
     {
         if (!is_array($o)) return 'není objekt';
         if (empty($o['invoice_no'])) return 'chybí invoice_no';
         if (empty($o['invoice_date']) || !preg_match('/^\d{4}-\d{2}-\d{2}/', (string) $o['invoice_date'])) return 'chybí invoice_date (RRRR-MM-DD)';
-        if (empty($o['email']) || !filter_var(trim((string) $o['email']), FILTER_VALIDATE_EMAIL)) return 'chybí platný email';
+        if (self::source($o) === 'eshop' && (empty($o['email']) || !filter_var(trim((string) $o['email']), FILTER_VALIDATE_EMAIL))) return 'chybí platný email';
         if (empty($o['items']) || !is_array($o['items'])) return 'chybí items';
         foreach ($o['items'] as $it) if (!is_array($it) || empty($it['name'])) return 'položka bez name';
         return null;

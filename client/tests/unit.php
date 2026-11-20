@@ -77,6 +77,32 @@ t($ok['ok'] && $ok['password'] === '123456789', 'odpověď Zásilkovny – kód'
 $bad = Packeta::parseResponse('<response><status>fault</status><fault>IncorrectApiPasswordFault</fault><string>Incorrect API password.</string></response>');
 t(!$bad['ok'] && str_contains($bad['error'], 'Incorrect'), 'chyba Zásilkovny se zapíše');
 
+// prodejky a ostatní faktury (reklamace zakládá prodejna)
+$r = Sync::import(['orders' => [
+    ['invoice_no' => '26PH03231', 'source' => 'prodejna', 'invoice_date' => date('Y-m-d'), 'total' => 2490,
+     'items' => [['code' => 'POC-1', 'name' => 'helma POC Ventral Air MIPS M/L', 'qty' => 1, 'unit_price' => 2490]]],
+    ['invoice_no' => '260102137', 'source' => 'faktura', 'invoice_date' => date('Y-m-d'), 'email' => 'x@y.cz', 'customer_name' => 'Dvořáček Miroslav', 'phone' => '+420 604 111 222',
+     'items' => [['name' => 'plášť Michelin Power Cup TLR 700x32C', 'qty' => 2, 'unit_price' => 1500]]],
+    ['invoice_no' => '1002', 'order_no' => '8810002', 'invoice_date' => date('Y-m-d'), 'items' => [['name' => 'x', 'qty' => 1, 'unit_price' => 1]]],
+]]);
+t($r['saved'] === 2 && count($r['errors']) === 1, 'prodejka bez e-mailu projde, e-shop bez e-mailu ne');
+$ph = \App\Core\Db::one("SELECT * FROM orders WHERE invoice_no = '26PH03231'");
+t($ph['source'] === 'prodejna' && $ph['email'] === '', 'prodejka uložena se zdrojem');
+t(Service::findOrder('x@y.cz', '260102137') === null, 'veřejný formulář nenajde neeshopový doklad');
+t(count(Service::searchOrders('Ventral')) === 1 && count(Service::searchOrders('26PH0323')) === 1, 'hledání podle zboží a čísla prodejky');
+t(count(Service::searchOrders('604111222')) === 1 && count(Service::searchOrders('dvořáček')) >= 1, 'hledání podle telefonu a jména');
+$items = Service::items((int) $ph['id']);
+[$err, $data] = Service::validateAdmin($ph, $items, ['act' => [$items[0]['id'] => 'vratit']], []);
+t((bool) $err, 'prodejna nemůže založit vrácení, jen reklamaci');
+[$err, $data] = Service::validateAdmin($ph, $items, ['act' => [$items[0]['id'] => 'reklamovat'], 'qty' => [$items[0]['id'] => 1],
+    'defect' => [$items[0]['id'] => 'prasklý skelet'], 'customer_name' => 'Jan Novák', 'phone' => '604 000 000'], []);
+t($err === [], 'reklamace z prodejny bez e-mailu projde');
+$ret = Service::create($ph, $data, ['id' => null]);
+t($ret['email'] === '' && $ret['customer_name'] === 'Jan Novák' && $ret['ship_method'] === 'osobne' && $ret['status'] === 'dorazilo' && $ret['claim_deadline'] !== null, 'reklamace uložena s kontaktem z prodejny');
+\App\Modules\Vratky\Notify::created($ret, true);
+\App\Modules\Vratky\Notify::statusChanged($ret, 'x');
+t(true, 'bez e-mailu se nic neposílá a nespadne to');
+
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
 exit($fail ? 1 : 0);

@@ -12,6 +12,7 @@ $open = ($counts['novy'] ?? 0) + ($counts['na_ceste'] ?? 0) + ($counts['dorazilo
       <label class="sr" for="q">Hledat</label>
       <input class="f" id="q" name="q" value="<?= e($q) ?>" placeholder="číslo, jméno, e-mail, objednávka" style="height:42px;width:260px;font-size:14px">
       <button class="pill">Hledat</button>
+      <a class="pill on" href="<?= url('/admin/vratky/nova') ?>" style="display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap">+ Nová reklamace</a>
     </form>
   </div>
   <div class="stat">
@@ -42,5 +43,5 @@ $open = ($counts['novy'] ?? 0) + ($counts['na_ceste'] ?? 0) + ($counts['dorazilo
     <?php endforeach; ?>
     <?php if (!$rows): ?><div class="card">Nic tu není.</div><?php endif; ?>
   </div>
-  <div class="hint">Poslední data z Pohody: <?= $lastSync ? e(date_cz($lastSync['received_at'], true)) . ' (' . (int) $lastSync['orders'] . ' faktur)' : 'zatím nepřišla' ?></div>
+  <div class="hint">Poslední data z Pohody: <?= $lastSync ? e(date_cz($lastSync['received_at'], true)) . ' (' . (int) $lastSync['orders'] . ' dokladů)' : 'zatím nepřišla' ?></div>
 </div>

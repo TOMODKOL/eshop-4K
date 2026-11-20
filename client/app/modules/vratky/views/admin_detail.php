@@ -34,7 +34,8 @@ $claim = Service::hasAction($lines, 'reklamovat');
       <div class="field"><label class="l" for="status">Stav</label>
         <select class="f" id="status" name="status"><?php foreach (Service::STATUS as $k => $lab): ?><option value="<?= $k ?>" <?= $k === $ret['status'] ? 'selected' : '' ?>><?= e($lab) ?></option><?php endforeach; ?></select></div>
       <div class="field"><label class="l" for="note">Poznámka</label><textarea class="f" id="note" name="note" rows="3" placeholder="Např. Peníze odeslány 21. 11. / Nová velikost M odeslána, sledování Z 123…"></textarea></div>
-      <label class="chk"><input type="checkbox" name="notify" value="1" checked><span>Poslat zákazníkovi e-mail (vidí stav i tuto poznámku)</span></label>
+      <?php if ($ret['email'] !== ''): ?><label class="chk"><input type="checkbox" name="notify" value="1" checked><span>Poslat zákazníkovi e-mail (vidí stav i tuto poznámku)</span></label>
+      <?php else: ?><span class="hint">Zákazník nemá e-mail – o změně ho informujte telefonem.</span><?php endif; ?>
       <button class="btn" style="align-self:flex-start">Uložit</button>
     </form>
 
@@ -52,7 +53,8 @@ $claim = Service::hasAction($lines, 'reklamovat');
   <aside style="display:flex;flex-direction:column;gap:12px">
     <div class="card"><span class="kicker">Zákazník</span>
       <div style="font-size:14px;line-height:1.6"><strong><?= e($ret['customer_name']) ?></strong><br><?= e($ret['email']) ?><br><?= e($ret['phone']) ?></div>
-      <?php if ($order): ?><div class="hint">Objednávka <?= e($order['order_no'] ?: '–') ?> · faktura <?= e($order['invoice_no']) ?> z <?= e(date_cz($order['invoice_date'])) ?></div><?php endif; ?>
+      <?php if ($order && $order['source'] === 'prodejna'): ?><div class="hint">Prodejka <?= e($order['invoice_no']) ?> z <?= e(date_cz($order['invoice_date'])) ?></div>
+      <?php elseif ($order): ?><div class="hint"><?= $order['order_no'] ? 'Objednávka ' . e($order['order_no']) . ' · ' : '' ?>faktura <?= e($order['invoice_no']) ?> z <?= e(date_cz($order['invoice_date'])) ?></div><?php endif; ?>
       <a class="link" style="padding:0;align-self:flex-start" href="<?= e(\App\Modules\Vratky\Notify::statusUrl($ret)) ?>" target="_blank" rel="noopener">Stránka, kterou vidí zákazník</a>
     </div>
     <div class="card"><span class="kicker">Doprava</span>
