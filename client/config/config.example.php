@@ -44,8 +44,8 @@ return [
         // Reklamace do 24 měsíců od data faktury
         'claim_months' => 24,
         // Poštovné za vrácení (Kč s DPH), které se strhne z vrácené částky – jen u čistého vrácení přes Zásilkovnu.
-        // 99 Kč = zpětná zásilka do 1 kg (62 Kč + palivový příplatek + mýtné + DPH ≈ 91 Kč), rozhodnuto 20. 11. 2026.
-        'return_postage' => 99,
+        // 79 Kč = zpětná zásilka Zásilkovny stojí 75,02 Kč s DPH (62 Kč bez paliva a mýta), rozhodnuto 20. 11. 2026.
+        'return_postage' => 79,
         // Lhůta na vyřízení reklamace (dny)
         'claim_resolve_days' => 30,
         // Kam poslat upozornění na novou vratku (prázdné = nikam)
@@ -56,7 +56,7 @@ return [
     'packeta' => [
         'enabled'      => false,
         'api_password' => '',
-        'eshop'        => '',      // označení odesílatele v klientské sekci Zásilkovny
+        'eshop'        => '4 KLUCI OD KOL',  // označení odesílatele v klientské sekci Zásilkovny (doplní nasad-client.ps1)
         'endpoint'     => 'https://www.zasilkovna.cz/api/rest',
     ],
 

@@ -6,6 +6,7 @@
 #   powershell -ExecutionPolicy Bypass -File .\nastav-udaj.ps1 ftp_client    (jméno = FTP login, heslo = FTP heslo)
 #   powershell -ExecutionPolicy Bypass -File .\nastav-udaj.ps1 db_client     (jméno = f204062, heslo = heslo k databázi)
 #   (volitelně) .\nastav-udaj.ps1 smtp_client  (jméno = schránka, ze které se posílá, např. info@4kluciodkol.cz, a její heslo) – zapne odesílání e-mailů
+#   (volitelně) .\nastav-udaj.ps1 packeta_client  (jen API heslo; odesílatel je v config.example.php) – zapne podací kódy
 param(
     [string]$Server   = 'ftpx.forpsi.com',
     [string]$Cil      = 'subdoms/client',
@@ -24,6 +25,8 @@ $ftp = Nacti-Udaj 'ftp_client'
 $db  = Nacti-Udaj 'db_client'
 $smtp = $null
 if (Test-Path -LiteralPath (Join-Path $TajneDir 'smtp_client.xml')) { $smtp = Nacti-Udaj 'smtp_client' }
+$packeta = $null
+if (Test-Path -LiteralPath (Join-Path $TajneDir 'packeta_client.xml')) { $packeta = Nacti-Udaj 'packeta_client' }
 
 # Tajné klíče aplikace: vytvoří se jednou a uloží šifrovaně (app_key = jméno, sync_token = heslo)
 $klicSoubor = Join-Path $TajneDir 'client_klice.xml'
@@ -58,6 +61,10 @@ if ($smtp) {
     $cfg = $cfg -replace "'smtp_user'\s*=>\s*'[^']*'", ("'smtp_user'   => " + (PhpStr $smtp.UserName))
     $cfg = $cfg -replace "'from'\s*=>\s*'[^']*'", ("'from'        => " + (PhpStr $smtp.UserName))
     $cfg = [regex]::Replace($cfg, "'smtp_pass'\s*=>\s*''", { param($m) "'smtp_pass'   => " + (PhpStr $smtp.GetNetworkCredential().Password) })
+}
+if ($packeta) {
+    $cfg = $cfg -replace "('packeta'\s*=>\s*\[\s*\r?\n\s*'enabled'\s*=>\s*)false", '$1true'
+    $cfg = [regex]::Replace($cfg, "'api_password'\s*=>\s*''", { param($m) "'api_password' => " + (PhpStr $packeta.GetNetworkCredential().Password) })
 }
 if ($cfg -match 'DOPLNIT') { throw 'V config.php zůstalo DOPLNIT – nasazení zastaveno.' }
 [IO.File]::WriteAllText((Join-Path $tmp 'config\config.php'), $cfg, (New-Object Text.UTF8Encoding($false)))
@@ -103,6 +110,7 @@ Get-ChildItem -LiteralPath $tmp -Recurse | Sort-Object FullName | ForEach-Object
 Remove-Item -LiteralPath $tmp -Recurse -Force
 Pis "Hotovo: nahráno $pocet souborů do $Cil." 'Green'
 Pis ("E-maily: " + $(if ($smtp) { ('zapnuté, odesílatel ' + $smtp.UserName) } else { 'vypnuté – jen do logu' }))
+Pis ("Zásilkovna: " + $(if ($packeta) { ('zapnutá, odesílatel ' + '4 KLUCI OD KOL') } else { 'vypnutá – podací kódy se nevytvářejí' }))
 
 if ($prvni -or $Klic) {
     Write-Host ''
