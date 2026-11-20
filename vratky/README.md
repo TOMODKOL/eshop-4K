@@ -51,7 +51,7 @@ Klikací ukázka (19. 11. 2026): https://claude.ai/artifact/FBNQFKmE2XDRg9yTAHqb
 
 ## Otevřené
 
-- Platba doplatku kartou: GP smlouva má e-commerce obchodní místo 684240002 pro www.4kluciodkol.cz (karty, Apple/Google Pay, platební tlačítka). Dotaz na GP, zda ho smí použít i portál na vratky.4kluciodkol.cz s vlastním klíčem GP webpay, odeslal Tomáš 20. 11. 2026, čeká se na odpověď. Do té doby doplatek QR platbou.
+- Platba doplatku kartou: GP smlouva má e-commerce obchodní místo (MID) 684240002 pro www.4kluciodkol.cz (karty, Apple/Google Pay, platební tlačítka). GP odpověděl 20. 11. 2026: jeden MID = jeden klíč; dva klíče by znamenaly nové obchodní místo. Doporučují použít stávající MID a klíč i pro subdoménu. Návrh: stávající MID a klíč pro client.4kluciodkol.cz, vlastní číselná řada objednávek pro bránu (nesmí se krýt s BSSHOP). Test: GP webpay má oddělené testovací prostředí – test e-shop 684240002 je aktivní z roku 2024 (zavádění BSSHOP), portál https://test.portal.gpwebpay.com, brána https://test.3dsecure.gpwebpay.com/pgw/order.do, vlastní testovací klíč (ostrý klíč BSSHOP se nemění). Testovací karta z roku 2024 má platnost 12/2023 – nová se vyžádá od GP. V testu je registrovaná URL www.4kluciodkol.cz – ověřit u GP, zda je potřeba přidat client.4kluciodkol.cz. Přihlašovací údaje a klíče zadává jen Tomáš. Do zavedení doplatek QR platbou.
 
 - Cena zpětné zásilky podle ceníku Zásilkovny.
 - Verze pro počítač.
