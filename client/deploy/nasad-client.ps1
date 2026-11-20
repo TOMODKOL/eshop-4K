@@ -10,7 +10,8 @@ param(
     [string]$Server   = 'ftpx.forpsi.com',
     [string]$Cil      = 'subdoms/client',
     [string]$Balicek  = 'D:\Pomocnik\client\client-app.zip',
-    [switch]$BezSsl
+    [switch]$BezSsl,
+    [switch]$Klic      # znovu vypsat instalační klíč
 )
 . (Join-Path $PSScriptRoot 'spolecne.ps1')
 $ErrorActionPreference = 'Stop'
@@ -103,7 +104,7 @@ Remove-Item -LiteralPath $tmp -Recurse -Force
 Pis "Hotovo: nahráno $pocet souborů do $Cil." 'Green'
 Pis ("E-maily: " + $(if ($smtp) { ('zapnuté, odesílatel ' + $smtp.UserName) } else { 'vypnuté – jen do logu' }))
 
-if ($prvni) {
+if ($prvni -or $Klic) {
     Write-Host ''
     Write-Host 'PRVNÍ NASAZENÍ – instalace:' -ForegroundColor Yellow
     Write-Host '1. Otevřete https://client.4kluciodkol.cz/admin/instalace'
