@@ -123,6 +123,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
       <?php if (Service::payout($ret) > 0 || $ret['refund_total'] > 0): ?>
         <div style="font-size:14px;line-height:1.6">Zboží: <?= e(money($ret['refund_total'])) ?>
           <?php if ($ret['postage_applies'] && $ret['postage'] !== null): ?><br>Poštovné za vrácení: −<?= e(money($ret['postage'])) ?><?php endif; ?>
+          <?php if ((float) ($ret['ship_charge'] ?? 0) > 0): ?><br>Doprava (pod hranicí dopravy zdarma): −<?= e(money($ret['ship_charge'])) ?><?php endif; ?>
           <?php if ((float) $ret['ship_refund'] > 0): ?><br>Vrácení dopravy: +<?= e(money($ret['ship_refund'])) ?><?php endif; ?>
           <br>Vrátit: <strong><?= e(money(Service::payout($ret))) ?></strong></div>
         <div style="font-size:14px">Na účet: <strong style="user-select:all"><?= e($ret['bank_account']) ?></strong></div>

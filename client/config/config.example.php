@@ -50,6 +50,17 @@ return [
         // Osobní odběr se nepočítá (není to doručení), doprava zdarma nad hranicí také ne. 69 Kč = GLS výdejní místo od 23. 11. 2026.
         // Dobírka se nevrací. Po změně ceníku dopravy upravit.
         'refund_shipping_max' => 69,
+        // Ceník dopravy podle obchodních podmínek (Kč s DPH) a hranice dopravy zdarma, platné od data objednávky.
+        // Klíč = začátek názvu dopravy na faktuře (malými písmeny); delší klíče mají přednost.
+        // Když po částečném vrácení klesne zbytek objednávky pod hranici, odečte se doprava podle ceníku (minus to, co zákazník za dopravu zaplatil).
+        'shipping_rules' => [
+            ['from' => '2014-01-01', 'free_from' => 2500, 'prices' => [
+                'zásilkovna na adresu' => 99, 'zásilkovna sk' => 99, 'zásilkovna' => 69, 'gls čr - výdejní' => 59, 'gls čr - na adresu' => 99,
+                'gls sk - výdejní' => 119, 'gls sk - na adresu' => 129, 'ppl' => 119]],
+            ['from' => '2026-11-23', 'free_from' => 3000, 'prices' => [
+                'zásilkovna na adresu' => 129, 'zásilkovna sk' => 99, 'zásilkovna' => 89, 'gls čr - výdejní' => 69, 'gls čr - na adresu' => 109,
+                'gls sk - výdejní' => 129, 'gls sk - na adresu' => 149, 'ppl' => 149]],
+        ],
         // Lhůta na vyřízení reklamace (dny)
         'claim_resolve_days' => 30,
         // Kam poslat upozornění na novou vratku (prázdné = nikam)

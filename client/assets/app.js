@@ -11,6 +11,9 @@
   var progText = form.querySelector('[data-progtext]');
   var postageCfg = form.getAttribute('data-postage');
   var postage = postageCfg === '' ? null : parseFloat(postageCfg);
+  var shipChargeCfg = parseFloat(form.getAttribute('data-ship-charge')) || 0;
+  var goodsLeft = parseFloat(form.getAttribute('data-goods-left')) || 0;
+  var freeFrom = parseFloat(form.getAttribute('data-free-from')) || 0;
   var current = 1;
   var LABEL = { vratit: 'Vrácení', vymenit: 'Výměna velikosti', reklamovat: 'Reklamace' };
   var nf = new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 2 });
@@ -40,7 +43,9 @@
     var ch = chosen(), refund = 0;
     ch.forEach(function (i) { if (i.act === 'vratit') refund += i.price * i.qty; });
     var onlyReturn = ch.length > 0 && ch.every(function (i) { return i.act === 'vratit'; });
-    return { ch: ch, refund: refund, onlyReturn: onlyReturn, postageApplies: onlyReturn && (ship() === 'zbox' || ship() === 'vm') };
+    var after = goodsLeft - refund;
+    var shipCharge = (shipChargeCfg > 0 && refund > 0 && after > 0.005 && after < freeFrom) ? shipChargeCfg : 0;
+    return { ch: ch, refund: refund, onlyReturn: onlyReturn, postageApplies: onlyReturn && (ship() === 'zbox' || ship() === 'vm'), shipCharge: shipCharge };
   }
   function detailText(i) {
     if (i.act === 'vratit') { var r = $('input[name="reason[' + i.id + ']"]:checked'); return r ? r.value : ''; }
@@ -95,13 +100,14 @@
     var shipEl = $('input[name="ship"]:checked');
     var shipName = shipEl ? shipEl.closest('label').querySelector('strong').textContent : '';
     var postTxt = ship() === 'vlastni' ? 'na vaše náklady' : (c.postageApplies ? (postage === null ? '− poštovné' : '− ' + money(postage)) : 'zdarma');
-    var net = c.refund - (c.postageApplies && postage !== null ? postage : 0);
+    var net = c.refund - (c.postageApplies && postage !== null ? postage : 0) - c.shipCharge;
+    var chargeRow = c.shipCharge ? '<div class="row"><span>Doprava objednávky – zbytek je pod ' + money(freeFrom) + ', doprava už není zdarma</span><strong style="white-space:nowrap">− ' + money(c.shipCharge) + '</strong></div>' : '';
 
     var aside = $('[data-aside]');
     if (aside) {
       aside.innerHTML = rows.length ? rows.map(function (r) {
         return '<div class="row"><span><span class="kicker" style="font-size:10px">' + esc(r.label) + '</span><br>' + esc(r.name) + '</span><strong style="white-space:nowrap">' + r.amount + '</strong></div>';
-      }).join('') + '<div class="row" style="border-top:1px solid var(--line2);padding-top:10px"><span>Doprava</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '">' + postTxt + '</strong></div>' +
+      }).join('') + '<div class="row" style="border-top:1px solid var(--line2);padding-top:10px"><span>Doprava</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '">' + postTxt + '</strong></div>' + chargeRow +
         '<div class="total" style="padding:14px"><strong style="font-size:14px">' + (c.refund > 0 ? 'Vrátíme vám' : 'Bez peněz') + '</strong><span class="v" style="font-size:28px">' + money(Math.max(0, net)) + '</span></div>'
         : '<span style="font-size:13px;color:var(--muted)">Zatím nic nevybráno.</span>';
     }
@@ -109,7 +115,8 @@
     if (sum) {
       sum.innerHTML = rows.map(function (r) {
         return '<div class="sumrow"><span><span class="kicker" style="font-size:11px">' + esc(r.label) + '</span><br><strong>' + esc(r.name) + '</strong>' + (r.detail ? '<br><span style="color:var(--muted)">' + esc(r.detail) + '</span>' : '') + '</span><strong style="white-space:nowrap">' + r.amount + '</strong></div>';
-      }).join('') + (shipName ? '<div class="sumrow"><span>Doprava: ' + esc(shipName) + '</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '" style="white-space:nowrap">' + postTxt + '</strong></div>' : '');
+      }).join('') + (shipName ? '<div class="sumrow"><span>Doprava: ' + esc(shipName) + '</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '" style="white-space:nowrap">' + postTxt + '</strong></div>' : '') +
+        (c.shipCharge ? '<div class="sumrow"><span>Doprava objednávky – zbytek objednávky je pod ' + esc(money(freeFrom)) + ', doprava už není zdarma</span><strong style="white-space:nowrap">− ' + money(c.shipCharge) + '</strong></div>' : '');
     }
     var tot = $('[data-total]');
     if (tot) {

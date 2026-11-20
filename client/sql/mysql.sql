@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS returns (
   pohoda_error TEXT NULL,
   notify_pending TINYINT(1) NOT NULL DEFAULT 0,
   ship_refund DECIMAL(12,2) NOT NULL DEFAULT 0,
+  ship_charge DECIMAL(12,2) NOT NULL DEFAULT 0,
   doc_state VARCHAR(20) NOT NULL DEFAULT '',
   doc_type VARCHAR(20) NOT NULL DEFAULT '',
   doc_no VARCHAR(30) NULL,

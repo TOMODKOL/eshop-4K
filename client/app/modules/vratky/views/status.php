@@ -40,6 +40,7 @@ $last = $ret['refund_total'] > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nová veli
     <?php endforeach; ?>
     <?php if ($ret['refund_total'] > 0): ?>
       <?php if ($ret['postage_applies'] && $ret['postage'] !== null): ?><div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Poštovné za vrácení</span><span>−<?= e(money($ret['postage'])) ?></span></div><?php endif; ?>
+      <?php if ((float) ($ret['ship_charge'] ?? 0) > 0): ?><div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Doprava (zbytek objednávky je pod hranicí dopravy zdarma)</span><span>−<?= e(money($ret['ship_charge'])) ?></span></div><?php endif; ?>
       <?php if ((float) ($ret['ship_refund'] ?? 0) > 0): ?><div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Vrácení dopravy</span><span>+<?= e(money($ret['ship_refund'])) ?></span></div><?php endif; ?>
       <div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Vrátíme na účet <?= e($ret['bank_account']) ?></span><strong><?= e(money(Service::payout($ret))) ?></strong></div>
     <?php endif; ?>

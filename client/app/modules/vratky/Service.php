@@ -179,7 +179,7 @@ final class Service
         $ship = (string) ($post['ship'] ?? '');
         if (!isset(self::SHIP[$ship])) $errors[] = 'Vyberte, jak nám zboží pošlete.';
 
-        $calc = self::calc($lines, $ship);
+        $calc = self::calc($lines, $ship, $order);
         $account = self::normalizeAccount((string) ($post['account'] ?? ''));
         if ($calc['refund'] > 0 && !self::validAccount($account)) $errors[] = 'Vyplňte číslo účtu pro vrácení peněz (např. 123456789/0800).';
 
@@ -195,8 +195,8 @@ final class Service
         ]];
     }
 
-    /** Peníze: vracené zboží; poštovné jen u čistého vrácení zaslaného Zásilkovnou. */
-    public static function calc(array $lines, string $ship): array
+    /** Peníze: vracené zboží; poštovné jen u čistého vrácení zaslaného Zásilkovnou; doprava, když zbytek objednávky klesne pod hranici dopravy zdarma. */
+    public static function calc(array $lines, string $ship, ?array $order = null): array
     {
         $refund = 0.0;
         foreach ($lines as $l) if ($l['action'] === 'vratit') $refund += (float) $l['item']['unit_price'] * $l['qty'];
@@ -207,7 +207,59 @@ final class Service
             'refund' => round($refund, 2),
             'postage_applies' => $postageApplies,
             'postage' => $postageApplies && $postage !== null ? (float) $postage : null,
+            'ship_charge' => $order ? self::freeShippingCharge($order, $refund) : 0.0,
         ];
+    }
+
+    /** Pravidla dopravy (ceník + hranice dopravy zdarma) platná k datu objednávky. */
+    public static function shippingRule(string $date): ?array
+    {
+        $pick = null;
+        foreach ((array) Config::get('vratky.shipping_rules', []) as $r) if ($r['from'] <= $date) $pick = $r;
+        return $pick;
+    }
+
+    /** Doprava na faktuře: [zaplaceno, název]. */
+    public static function orderShipping(int $orderId): array
+    {
+        $paid = 0.0; $name = '';
+        foreach (Db::all('SELECT * FROM order_items WHERE order_id = ? ORDER BY line_no, id', [$orderId]) as $i) {
+            if (!self::isShippingLine($i)) continue;
+            if ($name === '') $name = $i['name'];
+            $paid += max(0, (float) $i['unit_price']) * (float) $i['qty'];
+        }
+        return [$paid, $name];
+    }
+
+    /** Údaje pro formulář a výpočet: [cena dopravy navíc, zboží zbývající před touto vratkou, hranice]. */
+    public static function freeShippingInfo(array $order): array
+    {
+        $rule = self::shippingRule((string) $order['invoice_date']);
+        [$paid, $name] = self::orderShipping((int) $order['id']);
+        if (!$rule || $name === '') return [0.0, 0.0, 0.0];
+        $prices = (array) $rule['prices'];
+        uksort($prices, fn($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+        $price = null; $n = mb_strtolower($name);
+        foreach ($prices as $k => $v) if (str_starts_with($n, $k)) { $price = (float) $v; break; }
+        if ($price === null || $price <= $paid) return [0.0, 0.0, 0.0];
+        $total = 0.0;
+        foreach (Db::all('SELECT * FROM order_items WHERE order_id = ? AND qty > 0', [$order['id']]) as $i) {
+            if (!self::isServiceLine($i)) $total += (float) $i['unit_price'] * (float) $i['qty'];
+        }
+        if ($total < (float) $rule['free_from']) return [0.0, 0.0, 0.0];
+        if ((float) Db::value("SELECT COALESCE(SUM(ship_charge),0) FROM returns WHERE order_id = ? AND status <> 'zamitnuto'", [$order['id']]) > 0) return [0.0, 0.0, 0.0];
+        $back = (float) Db::value("SELECT COALESCE(SUM(l.unit_price * l.qty),0) FROM return_lines l JOIN returns r ON r.id = l.return_id
+            WHERE r.order_id = ? AND l.action = 'vratit' AND r.status <> 'zamitnuto'", [$order['id']]);
+        return [round($price - $paid, 2), round($total - $back, 2), (float) $rule['free_from']];
+    }
+
+    /** Zbytek objednávky po vrácení klesne pod hranici dopravy zdarma → doprava podle ceníku. Při vrácení všeho se neúčtuje. */
+    public static function freeShippingCharge(array $order, float $refundNow): float
+    {
+        [$charge, $left, $limit] = self::freeShippingInfo($order);
+        if ($charge <= 0 || $refundNow <= 0) return 0.0;
+        $after = $left - $refundNow;
+        return ($after > 0.005 && $after < $limit) ? $charge : 0.0;
     }
 
     public static function normalizeAccount(string $s): string
@@ -254,6 +306,7 @@ final class Service
                 'refund_total' => $data['calc']['refund'],
                 'postage' => $data['calc']['postage'],
                 'postage_applies' => $data['calc']['postage_applies'] ? 1 : 0,
+                'ship_charge' => (float) ($data['calc']['ship_charge'] ?? 0),
                 'claim_deadline' => $hasClaim ? date('Y-m-d', strtotime('+' . (int) Config::get('vratky.claim_resolve_days', 30) . ' days')) : null,
                 'pohoda_state' => $pohoda,
                 'created_at' => $now,
@@ -293,6 +346,7 @@ final class Service
     {
         $p = (float) $ret['refund_total'];
         if ($ret['postage_applies'] && $ret['postage'] !== null) $p -= (float) $ret['postage'];
+        $p -= (float) ($ret['ship_charge'] ?? 0);
         return round(max(0, $p + (float) ($ret['ship_refund'] ?? 0)), 2);
     }
 
@@ -344,6 +398,9 @@ final class Service
         if (!$items) return ['type' => null, 'total' => 0.0, 'items' => []];
         if ($ret['postage_applies'] && $ret['postage'] !== null && (float) $ret['postage'] > 0) {
             $items[] = ['kind' => 'postovne', 'code' => '', 'name' => 'Poštovné za vrácení zboží', 'qty' => 1, 'unit_price' => (float) $ret['postage']];
+        }
+        if ((float) ($ret['ship_charge'] ?? 0) > 0) {
+            $items[] = ['kind' => 'doprava_navic', 'code' => '', 'name' => 'Doprava – objednávka po vrácení nesplňuje dopravu zdarma', 'qty' => 1, 'unit_price' => (float) $ret['ship_charge']];
         }
         if ((float) ($ret['ship_refund'] ?? 0) > 0) {
             $items[] = ['kind' => 'doprava', 'code' => '', 'name' => 'Vrácení dopravy', 'qty' => -1, 'unit_price' => (float) $ret['ship_refund']];

@@ -3,10 +3,12 @@ use App\Modules\Vratky\Service;
 /** @var array $order @var array $items @var array $dl @var array $old @var array $errors */
 $o = fn(string $k, $id = null, $def = '') => $id === null ? ($old[$k] ?? $def) : ($old[$k][$id] ?? $def);
 $postage = cfg('vratky.return_postage');
+[$shipCharge, $goodsLeft, $freeFrom] = Service::freeShippingInfo($order);
 $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
 ?>
 <form id="vrform" class="layout" method="post" action="<?= url('/vratky/novy') ?>" enctype="multipart/form-data" novalidate
-      data-postage="<?= $postage === null ? '' : e((string) $postage) ?>">
+      data-postage="<?= $postage === null ? '' : e((string) $postage) ?>"
+      data-ship-charge="<?= e((string) $shipCharge) ?>" data-goods-left="<?= e((string) $goodsLeft) ?>" data-free-from="<?= e((string) $freeFrom) ?>">
 <?= csrf_field() ?>
 <div class="main"><div class="col">
 
