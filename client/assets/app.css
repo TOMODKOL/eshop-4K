@@ -177,7 +177,7 @@ footer.foot strong{color:var(--text)}
 .vcard .act button{height:38px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:700}
 .vcard .act button.go{background:var(--ink);color:#fff;border-color:var(--ink)}
 .warn{color:var(--red);font-weight:700}
-.stat{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stat{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 @media (max-width:520px){.stat{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .stat div{background:#fff;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column}
 .stat b{font-family:"FK Screamer",Impact,sans-serif;font-size:34px;line-height:1;font-weight:400}

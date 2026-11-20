@@ -21,7 +21,7 @@ final class Notify
         if ($byStaff) {
             if ($ret['email'] === '') return;
             $html = View::render('vratky:email', [
-                'kicker' => 'Reklamace ' . $ret['no'] . ' přijata',
+                'kicker' => 'Reklamace ' . Service::displayNo($ret) . ' přijata',
                 'heading' => 'Reklamaci jsme přijali',
                 'ret' => $ret, 'lines' => $lines, 'showCode' => $ret['ship_method'] !== 'osobne',
                 'text' => $ret['ship_method'] === 'osobne'
@@ -29,25 +29,25 @@ final class Notify
                     : self::nextStepText($ret),
                 'url' => self::statusUrl($ret),
             ]);
-            Mailer::send($ret['email'], 'Reklamace ' . $ret['no'] . ' – potvrzení', $html);
+            Mailer::send($ret['email'], 'Reklamace ' . Service::displayNo($ret) . ' – potvrzení', $html);
             return;
         }
         $w = Service::words($lines);
         $html = View::render('vratky:email', [
-            'kicker' => $w['N'] . ' ' . $ret['no'] . ' vytvořena',
+            'kicker' => $w['N'] . ' ' . Service::displayNo($ret) . ' vytvořena',
             'heading' => 'Děkujeme, ' . $w['a'] . ' máme',
             'ret' => $ret, 'lines' => $lines, 'showCode' => true,
             'text' => self::nextStepText($ret),
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], $w['N'] . ' ' . $ret['no'] . ' – ' . self::shortNext($ret), $html);
+        Mailer::send($ret['email'], $w['N'] . ' ' . Service::displayNo($ret) . ' – ' . self::shortNext($ret), $html);
 
         $staff = (string) Config::get('vratky.notify_staff', '');
         if ($staff !== '') {
             $admin = rtrim((string) Config::get('app_url'), '/') . '/admin/vratky/' . $ret['no'];
             $sum = implode("\n", array_map(fn($l) => Service::ACTIONS[$l['action']] . ': ' . $l['item_name'] . ' × ' . $l['qty'], $lines));
-            Mailer::send($staff, 'Nová ' . $w['n'] . ' ' . $ret['no'] . ' (' . $ret['customer_name'] . ')',
-                '<p>Nová ' . $w['n'] . ' ' . e($ret['no']) . ' od ' . e($ret['customer_name']) . ' (' . e($ret['email']) . ').</p><pre>' . e($sum) . '</pre><p><a href="' . e($admin) . '">Otevřít v administraci</a></p>');
+            Mailer::send($staff, 'Nová ' . $w['n'] . ' ' . Service::displayNo($ret) . ' (' . $ret['customer_name'] . ')',
+                '<p>Nová ' . $w['n'] . ' ' . e(Service::displayNo($ret)) . ' od ' . e($ret['customer_name']) . ' (' . e($ret['email']) . ').</p><pre>' . e($sum) . '</pre><p><a href="' . e($admin) . '">Otevřít v administraci</a></p>');
         }
     }
 
@@ -58,13 +58,13 @@ final class Notify
         $lines = Service::lines((int) $ret['id']);
         $w = Service::words($lines);
         $html = View::render('vratky:email', [
-            'kicker' => $w['N'] . ' ' . $ret['no'],
+            'kicker' => $w['N'] . ' ' . Service::displayNo($ret),
             'heading' => $label,
             'ret' => $ret, 'lines' => $lines, 'showCode' => false,
             'text' => $note !== '' ? $note : self::statusText($ret['status'], $w),
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], $w['N'] . ' ' . $ret['no'] . ': ' . $label, $html);
+        Mailer::send($ret['email'], $w['N'] . ' ' . Service::displayNo($ret) . ': ' . $label, $html);
     }
 
     public static function shortNext(array $ret): string
@@ -76,7 +76,7 @@ final class Notify
     public static function nextStepText(array $ret): string
     {
         if ($ret['ship_method'] === 'osobne') {
-            return 'Zboží přineste na prodejnu ' . Config::get('shop.address') . ' (' . Config::get('shop.hours') . ') a řekněte číslo ' . Service::words(Service::lines((int) $ret['id']))['g'] . ' ' . $ret['no'] . '.';
+            return 'Zboží přineste na prodejnu ' . Config::get('shop.address') . ' (' . Config::get('shop.hours') . ') a řekněte číslo ' . Service::words(Service::lines((int) $ret['id']))['g'] . ' ' . Service::displayNo($ret) . '.';
         }
         if ($ret['packeta_password']) {
             $where = $ret['ship_method'] === 'zbox' ? 'V Z-BOXu zadejte podací kód a balík vložte.' : 'Na výdejním místě Zásilkovny nadiktujte podací kód obsluze.';

@@ -5,3 +5,4 @@ storage/log/*
 storage/ratelimit/*
 storage/*.sqlite
 !storage/**/.gitkeep
+storage/schema_v*

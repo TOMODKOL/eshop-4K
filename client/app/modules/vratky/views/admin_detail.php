@@ -7,7 +7,7 @@ $claim = Service::hasAction($lines, 'reklamovat');
 <div class="col wide">
   <a class="link" href="<?= url('/admin/vratky') ?>" style="align-self:flex-start;padding:0">← Přehled vratek</a>
   <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
-    <h1 class="h2"><?= e(mb_strtoupper(Service::words($lines)['n'])) ?> <?= e($ret['no']) ?></h1>
+    <h1 class="h2"><?= e(mb_strtoupper(Service::words($lines)['n'])) ?> <?= e(Service::displayNo($ret)) ?></h1>
     <span class="st s<?= array_search($ret['status'], array_keys(Service::STATUS), true) ?>" style="font-size:13px"><?= e(Service::STATUS[$ret['status']] ?? $ret['status']) ?></span>
   </div>
   <div class="layout" style="max-width:none">
@@ -51,6 +51,27 @@ $claim = Service::hasAction($lines, 'reklamovat');
   </div></div>
 
   <aside style="display:flex;flex-direction:column;gap:12px">
+    <?php if ($ret['pohoda_state'] === 'cekame'): ?>
+    <div class="card" style="border:2px solid var(--yellow,#ffc524)"><span class="kicker">Založte v Pohodě – Reklamace</span>
+      <div style="font-size:14px;line-height:1.55">Pro každou reklamovanou položku jednu reklamaci. Do pole <strong>Text</strong> nebo <strong>Poznámka</strong> napište
+        <strong style="user-select:all"><?= e($ret['no']) ?></strong> – pomocník reklamaci do pár minut propojí a zákazník dostane potvrzení s číslem z Pohody.</div>
+      <?php foreach ($lines as $l): if ($l['action'] !== 'reklamovat' || (string) ($l['pohoda_no'] ?? '') !== '') continue; ?>
+        <div style="font-size:13px;line-height:1.5;border-top:1px solid var(--line2);padding-top:8px">
+          <div>Doklad: <strong style="user-select:all"><?= e($order['invoice_no'] ?? '') ?></strong><?= $order ? ' z ' . e(date_cz($order['invoice_date'])) : '' ?></div>
+          <div>Předmět: <span style="user-select:all"><?= e($l['item_name']) ?></span><?= $l['item_code'] ? ' (' . e($l['item_code']) . ')' : '' ?>, <?= (int) $l['qty'] ?> ks</div>
+          <div>Vada: <span style="user-select:all"><?= e((string) $l['defect_text']) ?></span></div>
+        </div>
+      <?php endforeach; ?>
+      <div style="font-size:13px">Zákazník: <span style="user-select:all"><?= e($ret['customer_name']) ?></span>, <span style="user-select:all"><?= e($ret['phone']) ?></span>, <span style="user-select:all"><?= e($ret['email']) ?></span></div>
+    </div>
+    <?php elseif ($ret['pohoda_state'] === 'propojeno'): ?>
+    <div class="card"><span class="kicker">Pohoda – Reklamace</span>
+      <?php foreach ($lines as $l): if ((string) ($l['pohoda_no'] ?? '') === '') continue; ?>
+        <div style="font-size:14px"><strong><?= e($l['pohoda_no']) ?></strong> · <?= e($l['pohoda_status'] ?: '–') ?></div>
+      <?php endforeach; ?>
+      <span class="hint">Stav měňte v Pohodě (záložka Stav reklamace). Zákazník změnu uvidí do pár minut.</span>
+    </div>
+    <?php endif; ?>
     <div class="card"><span class="kicker">Zákazník</span>
       <div style="font-size:14px;line-height:1.6"><strong><?= e($ret['customer_name']) ?></strong><br><?= e($ret['email']) ?><br><?= e($ret['phone']) ?></div>
       <?php if ($order && $order['source'] === 'prodejna'): ?><div class="hint">Prodejka <?= e($order['invoice_no']) ?> z <?= e(date_cz($order['invoice_date'])) ?></div>

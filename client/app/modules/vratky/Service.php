@@ -16,6 +16,7 @@ final class Service
         'novy'      => 'Čeká na odeslání',
         'na_ceste'  => 'Na cestě k nám',
         'dorazilo'  => 'Dorazilo – kontrolujeme',
+        'v_reseni'  => 'Posuzujeme u dodavatele',
         'vyrizeno'  => 'Vyřízeno',
         'zamitnuto' => 'Zamítnuto',
     ];
@@ -44,37 +45,6 @@ final class Service
             "SELECT * FROM orders WHERE source = 'eshop' AND LOWER(email) = ? AND (order_no = ? OR invoice_no = ?) ORDER BY invoice_date DESC LIMIT 1",
             [$email, $num, $num]
         );
-    }
-
-    /**
-     * Hledání dokladu v administraci: číslo faktury/prodejky/objednávky, jméno, telefon, e-mail,
-     * nebo název či kód zboží (u prodejek je to jediná stopa – zákazník na nich není).
-     */
-    public static function searchOrders(string $q, string $from = '', string $till = ''): array
-    {
-        $q = trim($q);
-        $where = [];
-        $p = [];
-        if ($q !== '') {
-            $num = self::normalizeNumber($q);
-            $like = '%' . $q . '%';
-            $digits = preg_replace('/\D+/', '', $q) ?? '';
-            $w = '(o.invoice_no LIKE ? OR o.order_no LIKE ? OR o.customer_name LIKE ? OR o.email LIKE ?'
-               . ' OR o.id IN (SELECT order_id FROM order_items WHERE name LIKE ? OR code LIKE ?)';
-            array_push($p, '%' . $num . '%', '%' . $num . '%', $like, $like, $like, $like);
-            if (strlen($digits) >= 6) { $w .= ' OR REPLACE(REPLACE(o.phone, \' \', \'\'), \'+420\', \'\') LIKE ?'; $p[] = '%' . substr($digits, -9) . '%'; }
-            $where[] = $w . ')';
-        }
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) { $where[] = 'o.invoice_date >= ?'; $p[] = $from; }
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $till)) { $where[] = 'o.invoice_date <= ?'; $p[] = $till; }
-        if (!$where) return [];
-        $rows = Db::all('SELECT o.* FROM orders o WHERE ' . implode(' AND ', $where) . ' ORDER BY o.invoice_date DESC, o.id DESC LIMIT 40', $p);
-        foreach ($rows as &$r) {
-            $its = array_filter(Db::all('SELECT name, unit_price FROM order_items WHERE order_id = ? ORDER BY line_no, id LIMIT 8', [$r['id']]),
-                fn($i) => !self::isServiceLine($i));
-            $r['item_names'] = array_slice(array_column($its, 'name'), 0, 6);
-        }
-        return $rows;
     }
 
     public static function order(int $id): ?array
@@ -208,31 +178,6 @@ final class Service
         ]];
     }
 
-    /**
-     * Reklamace zakládaná prodejnou v administraci (zboží z prodejny i z e-shopu).
-     * Jen reklamace, bez souhlasu s podmínkami a bez čísla účtu. Kontakt zadá prodejna.
-     */
-    public static function validateAdmin(array $order, array $items, array $post, array $files): array
-    {
-        $acts = [];
-        foreach ((array) ($post['act'] ?? []) as $id => $a) if ($a === 'reklamovat') $acts[$id] = 'reklamovat';
-        $post['act'] = $acts;
-        $post['agree'] = '1';
-        $post['ship'] = isset(self::SHIP[(string) ($post['ship'] ?? '')]) ? $post['ship'] : 'osobne';
-        [$errors, $data] = self::validate($order, $items, $post, $files);
-        $errors = array_values(array_filter($errors, fn($e) => !str_starts_with($e, 'Vyberte aspoň jednu položku')));
-        if (!$data['lines']) $errors[] = 'Zaškrtněte aspoň jednu reklamovanou položku.';
-        $name = mb_substr(trim((string) ($post['customer_name'] ?? '')), 0, 190);
-        $email = mb_strtolower(trim((string) ($post['email'] ?? '')));
-        if ($name === '') $errors[] = 'Vyplňte jméno zákazníka.';
-        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'E-mail zákazníka nemá správný tvar.';
-        if ($email === '' && trim((string) ($post['phone'] ?? '')) === '') $errors[] = 'Vyplňte telefon nebo e-mail, ať se zákazníkovi můžeme ozvat.';
-        if ($post['ship'] !== 'osobne' && $email === '') $errors[] = 'Pro zaslání Zásilkovnou je potřeba e-mail (dostane na něj podací kód).';
-        $data['customer_name'] = $name;
-        $data['email'] = $email;
-        return [$errors, $data];
-    }
-
     /** Peníze: vracené zboží; poštovné jen u čistého vrácení zaslaného Zásilkovnou. */
     public static function calc(array $lines, string $ship): array
     {
@@ -273,6 +218,8 @@ final class Service
     {
         $id = Db::tx(function () use ($order, $data, $byUser) {
             $hasClaim = (bool) array_filter($data['lines'], fn($l) => $l['action'] === 'reklamovat');
+            // reklamaci od zákazníka z webu založí prodejna v Pohodě (agenda Reklamace) a pomocník je propojí podle čísla V-…
+            $pohoda = $hasClaim ? 'cekame' : '';
             $now = Db::now();
             // reklamace převzatá na prodejně je rovnou u nás
             $status = ($byUser && $data['ship'] === 'osobne') ? 'dorazilo' : 'novy';
@@ -291,6 +238,7 @@ final class Service
                 'postage' => $data['calc']['postage'],
                 'postage_applies' => $data['calc']['postage_applies'] ? 1 : 0,
                 'claim_deadline' => $hasClaim ? date('Y-m-d', strtotime('+' . (int) Config::get('vratky.claim_resolve_days', 30) . ' days')) : null,
+                'pohoda_state' => $pohoda,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
@@ -310,11 +258,179 @@ final class Service
                 foreach ($l['photos'] as $p) Photos::attach($lid, $p);
             }
             Db::insert('return_events', ['return_id' => $rid, 'status' => $status,
-                'note' => $byUser ? ($status === 'dorazilo' ? 'Reklamaci jsme převzali na prodejně.' : 'Reklamaci založila prodejna.') : 'Vratku vytvořil zákazník.',
+                'note' => 'Vytvořil zákazník na webu.',
                 'public' => 1, 'user_id' => $byUser['id'] ?? null, 'created_at' => $now]);
             return $rid;
         });
         return self::get($id);
+    }
+
+    /** Číslo, které vidí lidé: u reklamace zapsané v Pohodě její číslo (26RZ…), jinak číslo z portálu. */
+    public static function displayNo(array $ret): string
+    {
+        return (string) ($ret['pohoda_no'] ?? '') !== '' ? (string) $ret['pohoda_no'] : (string) $ret['no'];
+    }
+
+    // ---------- Pohoda: agenda Reklamace ----------
+
+    public const POHODA_STATE = ['cekame' => 'Čeká na založení v Pohodě', 'propojeno' => 'V Pohodě'];
+
+    /**
+     * Reklamace z Pohody (agenda Reklamace, posílá pomocník z KANCL). Každá reklamace v Pohodě = jedna položka.
+     *  1. známé číslo 26RZ… → jen stav,
+     *  2. v textu/poznámce je číslo požadavku V-RRRR-NNNN → propojí s požadavkem zákazníka z webu,
+     *  3. jinak založí novou reklamaci (zboží převzaté na prodejně), doklad nákupu dohledá podle pole Doklad.
+     * $initial = první načtení: nic se neposílá zákazníkům.
+     * Vrací seznam ['ret' => …, 'kind' => 'created'|'status', 'text' => …] pro e-maily.
+     */
+    public static function importPohodaClaims(array $claims, bool $initial = false): array
+    {
+        $out = []; $touched = []; $now = Db::now();
+        foreach ($claims as $c) {
+            $num = trim((string) ($c['number'] ?? '')); $st = trim((string) ($c['status'] ?? ''));
+            if ($num === '') continue;
+            $line = Db::one('SELECT * FROM return_lines WHERE pohoda_no = ?', [$num]);
+            if ($line) {
+                if ($st !== '' && $line['pohoda_status'] !== $st) {
+                    Db::exec('UPDATE return_lines SET pohoda_status = ? WHERE id = ?', [$st, $line['id']]);
+                    Db::insert('return_events', ['return_id' => $line['return_id'], 'status' => null, 'note' => 'Stav v Pohodě (' . $num . '): ' . $st,
+                        'public' => 0, 'user_id' => null, 'created_at' => $now]);
+                    $touched[(int) $line['return_id']] = true;
+                }
+                continue;
+            }
+            $received = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($c['received'] ?? '')) ? $c['received'] : date('Y-m-d');
+            $fresh = !$initial && $received >= date('Y-m-d', strtotime('-3 days'));
+            $settle = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($c['settle_until'] ?? '')) ? $c['settle_until'] : null;
+            $hay = implode(' ', [(string) ($c['text'] ?? ''), (string) ($c['note'] ?? ''), (string) ($c['int_note'] ?? ''), (string) ($c['defect'] ?? '')]);
+            $rid = null;
+            if (preg_match('/\bV-\d{4}-\d{3,5}\b/u', $hay, $m)) {
+                $r = Db::one('SELECT * FROM returns WHERE no = ?', [$m[0]]);
+                $cands = $r ? Db::all("SELECT * FROM return_lines WHERE return_id = ? AND action = 'reklamovat' AND (pohoda_no IS NULL OR pohoda_no = '') ORDER BY id", [$r['id']]) : [];
+                if ($cands) {
+                    $pick = $cands[0]; $best = -1;
+                    foreach ($cands as $cl) {
+                        $score = ($cl['item_code'] !== '' && $cl['item_code'] === (string) ($c['code'] ?? '')) ? 1000 : similar_text(mb_strtolower($cl['item_name']), mb_strtolower((string) ($c['text'] ?? '')));
+                        if ($score > $best) { $best = $score; $pick = $cl; }
+                    }
+                    Db::exec('UPDATE return_lines SET pohoda_no = ?, pohoda_status = ? WHERE id = ?', [$num, $st, $pick['id']]);
+                    $rid = (int) $r['id'];
+                    if (in_array($r['status'], ['novy', 'na_ceste'], true)) self::setStatus($r, 'dorazilo', '', false, null);
+                    if ($settle) Db::exec('UPDATE returns SET claim_deadline = ? WHERE id = ?', [$settle, $rid]);
+                    Db::insert('return_events', ['return_id' => $rid, 'status' => null, 'note' => 'Propojeno s reklamací ' . $num . ' v Pohodě.',
+                        'public' => 0, 'user_id' => null, 'created_at' => $now]);
+                }
+            }
+            if ($rid === null) $rid = self::createFromPohoda($c, $num, $st, $received, $settle);
+            self::refreshPohodaNo($rid);
+            $ret = self::get($rid);
+            if ($fresh && $ret['email'] !== '') $out[] = ['ret' => $ret, 'kind' => 'created', 'text' => ''];
+            $touched[$rid] = true;
+        }
+        foreach (array_keys($touched) as $rid) {
+            $ch = self::recomputeFromPohoda($rid);
+            if ($ch && !$initial) $out[] = ['ret' => $ch['ret'], 'kind' => 'status', 'text' => $ch['text']];
+        }
+        return $out;
+    }
+
+    /** Reklamace zadaná jen v Pohodě (zboží převzaté na prodejně) → nová reklamace v portálu. */
+    private static function createFromPohoda(array $c, string $num, string $st, string $received, ?string $settle): int
+    {
+        $docNo = trim((string) ($c['document_no'] ?? ''));
+        $order = $docNo !== '' ? Db::one('SELECT * FROM orders WHERE invoice_no = ? OR order_no = ? ORDER BY id LIMIT 1', [$docNo, $docNo]) : null;
+        $item = null;
+        if ($order) {
+            $best = -1;
+            foreach (self::items((int) $order['id']) as $it) {
+                $score = ($it['code'] !== '' && $it['code'] === (string) ($c['code'] ?? '')) ? 1000 : similar_text(mb_strtolower($it['name']), mb_strtolower((string) ($c['text'] ?? '')));
+                if ($score > $best) { $best = $score; $item = $it; }
+            }
+            if ($best < 10) $item = null;
+        }
+        $email = mb_strtolower(trim((string) ($c['email'] ?? '')));
+        $name = trim((string) ($c['name'] ?? '')) ?: ($order['customer_name'] ?? '');
+        $now = Db::now();
+        return (int) Db::tx(function () use ($c, $num, $st, $received, $settle, $order, $item, $email, $name, $now) {
+            $rid = Db::insert('returns', [
+                'no' => self::nextNumber(), 'token' => bin2hex(random_bytes(20)), 'order_id' => $order['id'] ?? null,
+                'email' => filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '',
+                'customer_name' => mb_substr($name, 0, 190), 'phone' => mb_substr(trim((string) ($c['phone'] ?? '')), 0, 40),
+                'status' => 'dorazilo', 'ship_method' => 'osobne', 'bank_account' => '', 'note' => '',
+                'refund_total' => 0, 'postage' => null, 'postage_applies' => 0,
+                'claim_deadline' => $settle ?? date('Y-m-d', strtotime($received . ' +30 days')),
+                'pohoda_state' => 'propojeno', 'created_at' => $received . ' 12:00:00', 'updated_at' => $now,
+            ]);
+            Db::insert('return_lines', [
+                'return_id' => $rid, 'item_id' => $item['id'] ?? null,
+                'item_code' => mb_substr((string) ($item['code'] ?? ($c['code'] ?? '')), 0, 60),
+                'item_name' => mb_substr((string) ($item['name'] ?? (($c['text'] ?? '') ?: 'Reklamované zboží')), 0, 255),
+                'unit_price' => (float) ($item['unit_price'] ?? 0), 'action' => 'reklamovat', 'qty' => max(1, (int) round((float) ($c['qty'] ?? 1))),
+                'reason' => '', 'size_to' => '', 'defect_text' => (string) ($c['defect'] ?? ''),
+                'pohoda_no' => $num, 'pohoda_status' => $st,
+            ]);
+            Db::insert('return_events', ['return_id' => $rid, 'status' => 'dorazilo', 'note' => 'Reklamaci jsme převzali na prodejně.',
+                'public' => 1, 'user_id' => null, 'created_at' => $received . ' 12:00:00']);
+            return $rid;
+        });
+    }
+
+    /** Souhrnné číslo z Pohody na vratce a stav propojení. */
+    private static function refreshPohodaNo(int $rid): void
+    {
+        $lines = array_filter(self::lines($rid), fn($l) => $l['action'] === 'reklamovat');
+        $nums = array_values(array_filter(array_map(fn($l) => (string) ($l['pohoda_no'] ?? ''), $lines)));
+        $state = $lines ? (count($nums) === count($lines) ? 'propojeno' : 'cekame') : '';
+        Db::exec('UPDATE returns SET pohoda_no = ?, pohoda_state = ?, updated_at = ? WHERE id = ?',
+            [$nums ? mb_substr(implode(', ', $nums), 0, 120) : null, $state, Db::now(), $rid]);
+    }
+
+    /**
+     * Stav reklamace v Pohodě → stav v portálu. Serv_… je interní výsledek od dodavatele (zákazník nic nevidí),
+     * Servis = předáno dodavateli/do servisu, Zák_… = předáno zákazníkovi (vyřízeno).
+     * Vrací [stav portálu nebo null, text pro zákazníka].
+     */
+    public static function fromPohodaStatus(string $s): array
+    {
+        $vyrizeni = [
+            'Zák_oprava' => 'zboží jsme opravili', 'Zák_výměna' => 'zboží jsme vyměnili za nové',
+            'Zák_dobropis' => 'vystavili jsme opravný daňový doklad (dobropis) a peníze vám vrátíme',
+            'Zák_opr.daň.dokl.' => 'vystavili jsme opravný daňový doklad a peníze vám vrátíme',
+            'Zák_převod' => 'peníze vám vracíme převodem na účet', 'Zák_hotovost' => 'peníze jsme vám vrátili v hotovosti',
+        ];
+        if ($s === 'Servis') return ['v_reseni', 'reklamaci jsme předali k posouzení dodavateli'];
+        if ($s === 'Zák_neuznaná') return ['zamitnuto', 'reklamace bohužel nebyla uznána'];
+        if (isset($vyrizeni[$s])) return ['vyrizeno', $vyrizeni[$s]];
+        return [null, ''];
+    }
+
+    /** Stav pro zákazníka spočítaný ze stavů všech reklamovaných položek v Pohodě. Vrací ['ret','text'] při změně, jinak null. */
+    private static function recomputeFromPohoda(int $rid): ?array
+    {
+            $r = self::get($rid);
+            $lines = array_values(array_filter(self::lines($rid), fn($l) => $l['action'] === 'reklamovat'));
+            $parts = []; $states = [];
+            foreach ($lines as $l) {
+                [$st, $txt] = self::fromPohodaStatus((string) $l['pohoda_status']);
+                $states[] = $st;
+                if ($txt !== '') $parts[] = (count($lines) > 1 ? $l['item_name'] . ': ' : '') . $txt;
+            }
+            $final = fn($x) => in_array($x, ['vyrizeno', 'zamitnuto'], true);
+            if ($states && count(array_filter($states, $final)) === count($states)) {
+                $new = in_array('vyrizeno', $states, true) ? 'vyrizeno' : 'zamitnuto';
+            } elseif (in_array('v_reseni', $states, true) || ($states && array_filter($states, $final))) {
+                $new = 'v_reseni';
+            } else {
+                $new = null;
+            }
+            if ($new === null || $new === $r['status']) return null;
+            $ucfirst = fn($t) => mb_strtoupper(mb_substr($t, 0, 1)) . mb_substr($t, 1);
+            $text = implode(' ', array_map(fn($p) => $ucfirst($p) . '.', $parts));
+            if ($new === 'vyrizeno') $text = 'Reklamace je vyřízená. ' . $text;
+            if ($new === 'zamitnuto') $text .= ' Podrobnosti vám řekneme na prodejně nebo po telefonu ' . Config::get('shop.phone') . '.';
+            if ($new === 'v_reseni') $text .= ' Jakmile se dodavatel vyjádří, ozveme se.';
+            self::setStatus($r, $new, $text, true, null);
+            return ['ret' => self::get($rid), 'text' => $text];
     }
 
     public static function get(int $id): ?array { return Db::one('SELECT * FROM returns WHERE id = ?', [$id]); }

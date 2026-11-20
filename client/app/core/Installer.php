@@ -24,6 +24,29 @@ final class Installer
         $pdo->exec(self::schema((string) $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME)));
     }
 
+    /** Doplnění sloupců do už nainstalované databáze (na Forpsi). Značka v storage/ zajistí, že se to spustí jen jednou. */
+    public const SCHEMA = 2;
+    public static function migrate(): void
+    {
+        $mark = APP_ROOT . '/storage/schema_v' . self::SCHEMA;
+        if (is_file($mark) || !self::installed()) return;
+        $cols = [
+            "ALTER TABLE returns ADD COLUMN pohoda_state VARCHAR(20) NOT NULL DEFAULT ''",
+            'ALTER TABLE returns ADD COLUMN pohoda_no VARCHAR(120) NULL',
+            'ALTER TABLE return_lines ADD COLUMN pohoda_no VARCHAR(20) NULL',
+            "ALTER TABLE return_lines ADD COLUMN pohoda_status VARCHAR(60) NOT NULL DEFAULT ''",
+            "ALTER TABLE returns ADD COLUMN pohoda_status VARCHAR(60) NOT NULL DEFAULT ''",
+            'ALTER TABLE returns ADD COLUMN pohoda_error TEXT NULL',
+            'ALTER TABLE returns ADD COLUMN notify_pending TINYINT(1) NOT NULL DEFAULT 0',
+        ];
+        foreach ($cols as $sql) {
+            try { Db::exec($sql); } catch (\Throwable $e) {
+                if (!preg_match('/duplicate|already exists/i', $e->getMessage())) throw $e;
+            }
+        }
+        @file_put_contents($mark, date('c'));
+    }
+
     public static function installed(): bool
     {
         try { Db::value('SELECT COUNT(*) FROM users'); return true; } catch (\Throwable) { return false; }

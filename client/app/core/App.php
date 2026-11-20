@@ -27,6 +27,7 @@ final class App
     public static function run(): void
     {
         self::boot();
+        Installer::migrate();
         Session::start();
         self::routes();
         Http::dispatch();

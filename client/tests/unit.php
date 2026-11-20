@@ -77,7 +77,7 @@ t($ok['ok'] && $ok['password'] === '123456789', 'odpověď Zásilkovny – kód'
 $bad = Packeta::parseResponse('<response><status>fault</status><fault>IncorrectApiPasswordFault</fault><string>Incorrect API password.</string></response>');
 t(!$bad['ok'] && str_contains($bad['error'], 'Incorrect'), 'chyba Zásilkovny se zapíše');
 
-// prodejky a ostatní faktury (reklamace zakládá prodejna)
+// prodejky a ostatní faktury (reklamace zakládá prodejna v Pohodě)
 $r = Sync::import(['orders' => [
     ['invoice_no' => '26PH03231', 'source' => 'prodejna', 'invoice_date' => date('Y-m-d'), 'total' => 2490,
      'items' => [['code' => 'POC-1', 'name' => 'helma POC Ventral Air MIPS M/L', 'qty' => 1, 'unit_price' => 2490]]],
@@ -89,19 +89,48 @@ t($r['saved'] === 2 && count($r['errors']) === 1, 'prodejka bez e-mailu projde, 
 $ph = \App\Core\Db::one("SELECT * FROM orders WHERE invoice_no = '26PH03231'");
 t($ph['source'] === 'prodejna' && $ph['email'] === '', 'prodejka uložena se zdrojem');
 t(Service::findOrder('x@y.cz', '260102137') === null, 'veřejný formulář nenajde neeshopový doklad');
-t(count(Service::searchOrders('Ventral')) === 1 && count(Service::searchOrders('26PH0323')) === 1, 'hledání podle zboží a čísla prodejky');
-t(count(Service::searchOrders('604111222')) === 1 && count(Service::searchOrders('dvořáček')) >= 1, 'hledání podle telefonu a jména');
-$items = Service::items((int) $ph['id']);
-[$err, $data] = Service::validateAdmin($ph, $items, ['act' => [$items[0]['id'] => 'vratit']], []);
-t((bool) $err, 'prodejna nemůže založit vrácení, jen reklamaci');
-[$err, $data] = Service::validateAdmin($ph, $items, ['act' => [$items[0]['id'] => 'reklamovat'], 'qty' => [$items[0]['id'] => 1],
-    'defect' => [$items[0]['id'] => 'prasklý skelet'], 'customer_name' => 'Jan Novák', 'phone' => '604 000 000'], []);
-t($err === [], 'reklamace z prodejny bez e-mailu projde');
-$ret = Service::create($ph, $data, ['id' => null]);
-t($ret['email'] === '' && $ret['customer_name'] === 'Jan Novák' && $ret['ship_method'] === 'osobne' && $ret['status'] === 'dorazilo' && $ret['claim_deadline'] !== null, 'reklamace uložena s kontaktem z prodejny');
-\App\Modules\Vratky\Notify::created($ret, true);
-\App\Modules\Vratky\Notify::statusChanged($ret, 'x');
-t(true, 'bez e-mailu se nic neposílá a nespadne to');
+
+// migrace
+@unlink(APP_ROOT . '/storage/schema_v' . Installer::SCHEMA);
+Installer::migrate();
+t(is_file(APP_ROOT . '/storage/schema_v' . Installer::SCHEMA), 'migrace proběhne i na hotové databázi (sloupce už existují)');
+@unlink(APP_ROOT . '/storage/schema_v' . Installer::SCHEMA);
+
+// reklamace zadaná jen v Pohodě (prodejna)
+$pc = ['number' => '26RZ00047', 'status' => 'Přijetí reklamace', 'received' => date('Y-m-d'), 'settle_until' => date('Y-m-d', strtotime('+30 days')),
+       'document_no' => '26PH03231', 'name' => 'Jan Novák', 'phone' => '604 000 000', 'email' => 'jan@novak.cz',
+       'text' => 'helma POC Ventral Air MIPS M/L', 'defect' => 'prasklý skelet', 'qty' => 1];
+$res = Service::importPohodaClaims([$pc]);
+t(count($res) === 1 && $res[0]['kind'] === 'created', 'nová reklamace z Pohody → potvrzení zákazníkovi');
+$ret = $res[0]['ret'];
+t(Service::displayNo($ret) === '26RZ00047' && $ret['status'] === 'dorazilo' && $ret['order_id'] == $ph['id'], 'převzato z Pohody s číslem a dokladem nákupu');
+$ln = Service::lines((int) $ret['id']);
+t($ln[0]['item_code'] === 'POC-1' && $ln[0]['defect_text'] === 'prasklý skelet', 'položka dohledaná na prodejce');
+t(Service::importPohodaClaims([$pc]) === [], 'stejná reklamace podruhé nic nedělá');
+$ch = Service::importPohodaClaims([['number' => '26RZ00047', 'status' => 'Servis']]);
+t(count($ch) === 1 && $ch[0]['ret']['status'] === 'v_reseni', 'Servis v Pohodě = posuzuje dodavatel'); echo '     ', $ch[0]['text'], "\n";
+$ch = Service::importPohodaClaims([['number' => '26RZ00047', 'status' => 'Serv_oprava']]);
+t($ch === [], 'Serv_… je interní, zákazník nic nedostane');
+$ch = Service::importPohodaClaims([['number' => '26RZ00047', 'status' => 'Zák_oprava']]);
+t(count($ch) === 1 && $ch[0]['ret']['status'] === 'vyrizeno', 'Zák_oprava = vyřízeno'); echo '     ', $ch[0]['text'], "\n";
+
+// první načtení: bez e-mailů
+$res = Service::importPohodaClaims([array_merge($pc, ['number' => '26RZ00010', 'status' => 'Zák_neuznaná', 'received' => '2026-03-01'])], true);
+t($res === [] && \App\Core\Db::value("SELECT status FROM returns WHERE pohoda_no = '26RZ00010'") === 'zamitnuto', 'první načtení: stav ano, e-maily ne');
+
+// požadavek zákazníka z webu → založen v Pohodě s číslem V-…
+$fa = \App\Core\Db::one("SELECT * FROM orders WHERE invoice_no = '260102137'");
+$it = Service::items((int) $fa['id']);
+$web = Service::create($fa, ['lines' => [['item' => $it[0], 'action' => 'reklamovat', 'qty' => 1, 'reason' => '', 'size_to' => '', 'defect_text' => 'uvolněná patka', 'photos' => []]],
+    'email' => 'x@y.cz', 'customer_name' => 'Dvořáček Miroslav', 'phone' => '604', 'ship' => 'zasilkovna', 'account' => '', 'note' => '',
+    'calc' => ['refund' => 0, 'postage' => null, 'postage_applies' => false]]);
+t($web['pohoda_state'] === 'cekame' && $web['status'] === 'novy', 'reklamace z webu čeká na založení v Pohodě');
+$res = Service::importPohodaClaims([['number' => '26RZ00048', 'status' => 'Přijetí reklamace', 'received' => date('Y-m-d'), 'document_no' => '260102137',
+    'text' => 'plášť Michelin Power Cup', 'int_note' => 'web ' . $web['no'], 'name' => 'Dvořáček', 'email' => 'x@y.cz']]);
+$w2 = Service::get((int) $web['id']);
+t($w2['pohoda_state'] === 'propojeno' && $w2['pohoda_no'] === '26RZ00048' && $w2['status'] === 'dorazilo', 'propojeno podle čísla V-…');
+t(count($res) === 1 && $res[0]['kind'] === 'created' && (int) $res[0]['ret']['id'] === (int) $web['id'], 'zákazník dostane potvrzení s číslem z Pohody');
+t((int) \App\Core\Db::value("SELECT COUNT(*) FROM returns WHERE pohoda_no = '26RZ00048'") === 1, 'nevznikla duplicitní reklamace');
 
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
