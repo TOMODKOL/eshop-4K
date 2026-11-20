@@ -6,7 +6,7 @@
 @font-face{font-family:"Good Sans";src:url("{{FONT_REGULAR}}") format("truetype");font-weight:400;font-display:swap}
 @font-face{font-family:"Good Sans";src:url("{{FONT_BOLD}}") format("truetype");font-weight:700;font-display:swap}
 :root{
-  --bg:#f2f2f2; --card:#ffffff; --ink:#111111; --muted:#777777; --text:#444444; --line:#dcdcd8; --line2:#ececea;
+  --bg:#f2f2f2; --card:#ffffff; --ink:#231F20; --muted:#777777; --text:#444444; --line:#dcdcd8; --line2:#ececea;
   --yel:#ffc524; --yel-soft:#fff8e6; --yel-ink:#6b5a2a; --green:#2e9d4f; --off:#e6e6e2; --soft:#f7f7f7; --red:#c0392b;
   color-scheme:light;
 }
@@ -15,15 +15,24 @@ body{background:var(--bg);color:var(--ink);font-family:"Good Sans",Arial,Helveti
 button,input,textarea,select{font-family:inherit;color:var(--ink)}
 button{cursor:pointer}
 a{color:var(--ink)}
-.demo{background:var(--ink);color:#fff;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px}
+.demo{background:#fff3cc;color:var(--ink);border-bottom:1px solid #f0dc9a;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px}
 .demo strong{letter-spacing:1px;text-transform:uppercase}
 .demo .tabs{display:flex;gap:4px}
-.demo .tabs button{border:0;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;background:#2a2a2a;color:#fff}
-.demo .tabs button.on{background:var(--yel);color:var(--ink)}
-header.top{background:var(--card);border-bottom:4px solid var(--ink);padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.demo .tabs button{border:1px solid #e8d48e;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;background:#fff;color:var(--ink)}
+.demo .tabs button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+header.top{background:var(--ink);color:#fff;padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 header.top .in{max-width:1000px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
-header.top img{width:170px;height:auto;display:block}
-header.top span{font-size:12px;color:var(--muted)}
+header.top .logo{display:block;flex-shrink:0}
+header.top img{height:28px;width:auto;display:block}
+header.top .r{display:flex;align-items:center;gap:18px;font-size:13px}
+header.top .help{color:#bdbdb8}
+header.top .help strong{color:#fff}
+header.top a.back{color:#fff;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:6px;min-height:44px}
+header.top a.back:hover{color:var(--yel)}
+header.top .arr{font-family:"FK Screamer",Impact,sans-serif;font-size:18px;line-height:1}
+@media (max-width:699px){header.top .help{display:none}}
+@media (min-width:900px){header.top{padding-block:14px}header.top img{height:34px}}
+header.top .staff{font-size:13px;color:#bdbdb8}
 .wrap{padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .col{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 .col.wide{max-width:1000px}
@@ -267,8 +276,11 @@ function shell(inner){
   <div class="tabs"><button data-a="view" data-v="zak" class="${view==='zak'?'on':''}">Zákazník</button><button data-a="view" data-v="pro" class="${view==='pro'?'on':''}">Prodejna</button></div></div>` + inner;
 }
 function head(sub){
-  return `<header class="top"><div class="in"><img src="${LOGO_B}" alt="4 KLUCI OD KOL" width="170" height="26"><span>${sub||'4kluciodkol.cz'}</span></div></header>`;
+  const right = sub ? `<span class="staff">${sub} · prodejna</span>`
+    : `<div class="r"><span class="help">Poradíme: <strong>604 998 800</strong></span><a class="back" href="https://www.4kluciodkol.cz/"><span class="arr">←</span> Zpět na e-shop</a></div>`;
+  return `<header class="top"><div class="in"><a class="logo" href="https://www.4kluciodkol.cz/"><img src="${LOGO_W}" alt="4 KLUCI OD KOL" width="187" height="28"></a>${right}</div></header>`;
 }
+
 function foot(){
   return `<footer class="foot"><strong>Poradíme na 604 998 800</strong> · Po–Pá 9–17, So 9–13<br>4 KLUCI OD KOL s.r.o. · U Vlečky 726/5c · 617 00 Brno</footer>`;
 }
@@ -531,7 +543,7 @@ function sStaff(){
   <div class="chips">${chip('all','Vše')}${STATUS.map((s,i)=>chip(String(i),s)).join('')}</div>
   <div class="vr">${shown.map(v => {
     const idx = list.indexOf(v);
-    const border = ['#ffc524','#7fb0e6','#111111','#2e9d4f'][v.status];
+    const border = ['#ffc524','#7fb0e6','#231F20','#2e9d4f'][v.status];
     const hasRekl = v.lines.some(l=>l.act==='reklamovat');
     return `<div class="vcard" style="border-left-color:${border}">
       <div class="hd"><span class="no">${v.no}</span><span class="st s${v.status}">${STATUS[v.status]}</span></div>
