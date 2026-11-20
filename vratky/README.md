@@ -2,7 +2,7 @@
 
 Vlastní zákaznický portál pro vrácení, výměnu a reklamaci zboží z e-shopu 4kluciodkol.cz. Vzorem je Retino (uživatelsky příjemný průvodce), zpětná doprava jde přes zpětnou logistiku Zásilkovny.
 
-Stav: návrh obrazovek (19. 11. 2026), zatím se neprogramuje.
+Stav: 20. 11. 2026 hotová první verze aplikace ve složce `client/`. Běží na adrese client.4kluciodkol.cz, kde budou později i servisní zakázky. Zatím ji jen zkoušíme, na serveru ještě není (viz `client/README.md`).
 
 ## Klikací návrh
 

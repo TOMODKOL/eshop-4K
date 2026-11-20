@@ -1,0 +1,7 @@
+# tajné údaje a data serveru
+config/config.php
+storage/uploads/*
+storage/log/*
+storage/ratelimit/*
+storage/*.sqlite
+!storage/**/.gitkeep

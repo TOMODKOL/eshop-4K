@@ -1,0 +1,3 @@
+<tr><td style="padding:24px 28px 28px"><div style="background:#fff8e6;border-radius:10px;padding:14px 16px;font-size:13px;line-height:1.6;color:#6b5a2a">Poradíme na <strong style="color:#231F20"><?= e(cfg('shop.phone')) ?></strong> · <?= e(cfg('shop.hours')) ?></div></td></tr>
+<tr><td style="background:#f7f7f7;padding:16px 28px;font-size:11px;line-height:1.6;color:#888;text-align:center"><?= e(cfg('shop.name')) ?> s.r.o. · <?= e(cfg('shop.address')) ?></td></tr>
+</table></td></tr></table></body></html>
