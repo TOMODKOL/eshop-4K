@@ -32,21 +32,22 @@ final class Notify
             Mailer::send($ret['email'], 'Reklamace ' . $ret['no'] . ' – potvrzení', $html);
             return;
         }
+        $w = Service::words($lines);
         $html = View::render('vratky:email', [
-            'kicker' => 'Vratka ' . $ret['no'] . ' vytvořena',
-            'heading' => 'Děkujeme, vratku máme',
+            'kicker' => $w['N'] . ' ' . $ret['no'] . ' vytvořena',
+            'heading' => 'Děkujeme, ' . $w['a'] . ' máme',
             'ret' => $ret, 'lines' => $lines, 'showCode' => true,
             'text' => self::nextStepText($ret),
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], 'Vratka ' . $ret['no'] . ' – ' . self::shortNext($ret), $html);
+        Mailer::send($ret['email'], $w['N'] . ' ' . $ret['no'] . ' – ' . self::shortNext($ret), $html);
 
         $staff = (string) Config::get('vratky.notify_staff', '');
         if ($staff !== '') {
             $admin = rtrim((string) Config::get('app_url'), '/') . '/admin/vratky/' . $ret['no'];
             $sum = implode("\n", array_map(fn($l) => Service::ACTIONS[$l['action']] . ': ' . $l['item_name'] . ' × ' . $l['qty'], $lines));
-            Mailer::send($staff, 'Nová vratka ' . $ret['no'] . ' (' . $ret['customer_name'] . ')',
-                '<p>Nová vratka ' . e($ret['no']) . ' od ' . e($ret['customer_name']) . ' (' . e($ret['email']) . ').</p><pre>' . e($sum) . '</pre><p><a href="' . e($admin) . '">Otevřít v administraci</a></p>');
+            Mailer::send($staff, 'Nová ' . $w['n'] . ' ' . $ret['no'] . ' (' . $ret['customer_name'] . ')',
+                '<p>Nová ' . $w['n'] . ' ' . e($ret['no']) . ' od ' . e($ret['customer_name']) . ' (' . e($ret['email']) . ').</p><pre>' . e($sum) . '</pre><p><a href="' . e($admin) . '">Otevřít v administraci</a></p>');
         }
     }
 
@@ -54,14 +55,16 @@ final class Notify
     {
         if ($ret['email'] === '') return;
         $label = Service::STATUS[$ret['status']] ?? $ret['status'];
+        $lines = Service::lines((int) $ret['id']);
+        $w = Service::words($lines);
         $html = View::render('vratky:email', [
-            'kicker' => 'Vratka ' . $ret['no'],
+            'kicker' => $w['N'] . ' ' . $ret['no'],
             'heading' => $label,
-            'ret' => $ret, 'lines' => Service::lines((int) $ret['id']), 'showCode' => false,
-            'text' => $note !== '' ? $note : self::statusText($ret['status']),
+            'ret' => $ret, 'lines' => $lines, 'showCode' => false,
+            'text' => $note !== '' ? $note : self::statusText($ret['status'], $w),
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], 'Vratka ' . $ret['no'] . ': ' . $label, $html);
+        Mailer::send($ret['email'], $w['N'] . ' ' . $ret['no'] . ': ' . $label, $html);
     }
 
     public static function shortNext(array $ret): string
@@ -73,7 +76,7 @@ final class Notify
     public static function nextStepText(array $ret): string
     {
         if ($ret['ship_method'] === 'osobne') {
-            return 'Zboží přineste na prodejnu ' . Config::get('shop.address') . ' (' . Config::get('shop.hours') . ') a řekněte číslo vratky ' . $ret['no'] . '.';
+            return 'Zboží přineste na prodejnu ' . Config::get('shop.address') . ' (' . Config::get('shop.hours') . ') a řekněte číslo ' . Service::words(Service::lines((int) $ret['id']))['g'] . ' ' . $ret['no'] . '.';
         }
         if ($ret['packeta_password']) {
             $where = $ret['ship_method'] === 'zbox' ? 'V Z-BOXu zadejte podací kód a balík vložte.' : 'Na výdejním místě Zásilkovny nadiktujte podací kód obsluze.';
@@ -82,14 +85,14 @@ final class Notify
         return 'Podací kód Zásilkovny vám pošleme e-mailem během pracovního dne.';
     }
 
-    public static function statusText(string $s): string
+    public static function statusText(string $s, array $w = ['N' => 'Vratka', 'A' => 'Vratku', 'g' => 'vratky']): string
     {
         return match ($s) {
             'na_ceste' => 'Balík je na cestě k nám. Jakmile dorazí, zkontrolujeme ho.',
             'dorazilo' => 'Balík dorazil a kontrolujeme ho. Ozveme se, jak to dopadlo.',
-            'vyrizeno' => 'Vratka je vyřízená. Děkujeme.',
-            'zamitnuto' => 'Vratku jsme bohužel nemohli přijmout. Podrobnosti vám napíšeme nebo zavoláme.',
-            default => 'Stav vratky se změnil.',
+            'vyrizeno' => $w['N'] . ' je vyřízená. Děkujeme.',
+            'zamitnuto' => $w['A'] . ' jsme bohužel nemohli přijmout. Podrobnosti vám napíšeme nebo zavoláme.',
+            default => 'Stav ' . $w['g'] . ' se změnil.',
         };
     }
 }

@@ -115,7 +115,7 @@ Http::post('/vratky/novy', function () use ($loadOrder) {
 Http::get('/vratky/stav/{token}', function (string $token) {
     $ret = preg_match('/^[a-f0-9]{40}$/', $token) ? Service::byToken($token) : null;
     if (!$ret) { http_response_code(404); View::page('layout/notfound', ['title' => 'Vratka nenalezena']); return; }
-    View::page('vratky:status', ['title' => 'Vratka ' . $ret['no'], 'homeUrl' => '/vratky', 'ret' => $ret,
+    View::page('vratky:status', ['title' => Service::words(Service::lines((int) $ret['id']))['N'] . ' ' . $ret['no'], 'homeUrl' => '/vratky', 'ret' => $ret,
         'lines' => Service::lines((int) $ret['id']), 'events' => Service::events((int) $ret['id'], true)]);
 });
 
@@ -190,7 +190,7 @@ Http::get('/admin/vratky/{no}', function (string $no) {
     if (!$ret) { http_response_code(404); View::page('layout/notfound', ['title' => 'Vratka nenalezena'], 'admin'); return; }
     $lines = Service::lines((int) $ret['id']);
     foreach ($lines as &$l) $l['photos'] = Photos::forLine((int) $l['id']);
-    View::page('vratky:admin_detail', ['title' => 'Vratka ' . $ret['no'], 'active' => 'vratky', 'ret' => $ret,
+    View::page('vratky:admin_detail', ['title' => Service::words($lines)['N'] . ' ' . $ret['no'], 'active' => 'vratky', 'ret' => $ret,
         'order' => $ret['order_id'] ? Service::order((int) $ret['order_id']) : null,
         'lines' => $lines, 'events' => Service::events((int) $ret['id'])], 'admin');
 });

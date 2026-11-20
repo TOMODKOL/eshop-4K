@@ -1,5 +1,6 @@
 <?php
 use App\Modules\Vratky\Service;
+$w = Service::words($lines);
 /** @var array $ret @var array $lines @var string $kicker @var string $heading @var string $text @var string $url @var bool $showCode */
 require __DIR__ . '/email_head.php'; ?>
 <tr><td style="padding:28px 28px 6px">
@@ -23,5 +24,5 @@ require __DIR__ . '/email_head.php'; ?>
   <?php endforeach; ?>
   </table>
 </td></tr>
-<tr><td style="padding:20px 28px 0"><a href="<?= e($url) ?>" style="display:inline-block;background:#231F20;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 20px;border-radius:10px">Stav vratky <?= e($ret['no']) ?> →</a></td></tr>
+<tr><td style="padding:20px 28px 0"><a href="<?= e($url) ?>" style="display:inline-block;background:#231F20;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 20px;border-radius:10px">Stav <?= e($w['g']) ?> <?= e($ret['no']) ?> →</a></td></tr>
 <?php require __DIR__ . '/email_foot.php'; ?>

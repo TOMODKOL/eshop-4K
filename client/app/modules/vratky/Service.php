@@ -341,6 +341,20 @@ final class Service
         }
     }
 
+    /**
+     * Jak doklad nazývat: jen reklamované položky = „reklamace“, jinak „vratka“ (obojí ženský rod).
+     * n = 1. pád, g = 2. pád, a = 4. pád, l = 6. pád, N = 1. pád s velkým písmenem.
+     */
+    public static function words(array $lines): array
+    {
+        $claim = $lines && count(array_filter($lines, fn($l) => $l['action'] !== 'reklamovat')) === 0;
+        $w = $claim ? ['n' => 'reklamace', 'g' => 'reklamace', 'a' => 'reklamaci', 'l' => 'reklamaci']
+                    : ['n' => 'vratka', 'g' => 'vratky', 'a' => 'vratku', 'l' => 'vratce'];
+        $w['N'] = mb_strtoupper(mb_substr($w['n'], 0, 1)) . mb_substr($w['n'], 1);
+        $w['A'] = mb_strtoupper(mb_substr($w['a'], 0, 1)) . mb_substr($w['a'], 1);
+        return $w;
+    }
+
     public static function hasAction(array $lines, string $a): bool
     {
         foreach ($lines as $l) if ($l['action'] === $a) return true;
