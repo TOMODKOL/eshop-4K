@@ -53,8 +53,8 @@ $claim = Service::hasAction($lines, 'reklamovat');
   <aside style="display:flex;flex-direction:column;gap:12px">
     <?php if ($ret['pohoda_state'] === 'cekame'): ?>
     <div class="card" style="border:2px solid var(--yellow,#ffc524)"><span class="kicker">Založte v Pohodě – Reklamace</span>
-      <div style="font-size:14px;line-height:1.55">Pro každou reklamovanou položku jednu reklamaci. Do pole <strong>Text</strong> nebo <strong>Poznámka</strong> napište
-        <strong style="user-select:all"><?= e($ret['no']) ?></strong> – pomocník reklamaci do pár minut propojí a zákazník dostane potvrzení s číslem z Pohody.</div>
+      <div style="font-size:14px;line-height:1.55">Pro každou reklamovanou položku jednu reklamaci, do pole <strong>Doklad</strong> číslo dokladu nákupu.
+        Pomocník ji podle něj do pár minut propojí a zákazník dostane potvrzení s číslem z Pohody.</div>
       <?php foreach ($lines as $l): if ($l['action'] !== 'reklamovat' || (string) ($l['pohoda_no'] ?? '') !== '') continue; ?>
         <div style="font-size:13px;line-height:1.5;border-top:1px solid var(--line2);padding-top:8px">
           <div>Doklad: <strong style="user-select:all"><?= e($order['invoice_no'] ?? '') ?></strong><?= $order ? ' z ' . e(date_cz($order['invoice_date'])) : '' ?></div>

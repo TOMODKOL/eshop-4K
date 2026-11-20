@@ -304,9 +304,17 @@ final class Service
             $settle = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($c['settle_until'] ?? '')) ? $c['settle_until'] : null;
             $hay = implode(' ', [(string) ($c['text'] ?? ''), (string) ($c['note'] ?? ''), (string) ($c['int_note'] ?? ''), (string) ($c['defect'] ?? '')]);
             $rid = null;
-            if (preg_match('/\bV-\d{4}-\d{3,5}\b/u', $hay, $m)) {
-                $r = Db::one('SELECT * FROM returns WHERE no = ?', [$m[0]]);
-                $cands = $r ? Db::all("SELECT * FROM return_lines WHERE return_id = ? AND action = 'reklamovat' AND (pohoda_no IS NULL OR pohoda_no = '') ORDER BY id", [$r['id']]) : [];
+            // požadavek zákazníka z webu: podle čísla dokladu nákupu (pole Doklad v Pohodě), případně podle V-… v textu
+            $r = null;
+            if (preg_match('/\bV-\d{4}-\d{3,5}\b/u', $hay, $m)) $r = Db::one('SELECT * FROM returns WHERE no = ?', [$m[0]]);
+            $docNo = trim((string) ($c['document_no'] ?? ''));
+            if (!$r && $docNo !== '') {
+                $r = Db::one("SELECT r.* FROM returns r JOIN orders o ON o.id = r.order_id
+                    WHERE r.pohoda_state = 'cekame' AND (o.invoice_no = ? OR o.order_no = ?) AND r.created_at <= ?
+                    ORDER BY r.id LIMIT 1", [$docNo, $docNo, $received . ' 23:59:59']);
+            }
+            if ($r) {
+                $cands = Db::all("SELECT * FROM return_lines WHERE return_id = ? AND action = 'reklamovat' AND (pohoda_no IS NULL OR pohoda_no = '') ORDER BY id", [$r['id']]);
                 if ($cands) {
                     $pick = $cands[0]; $best = -1;
                     foreach ($cands as $cl) {

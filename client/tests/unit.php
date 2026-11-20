@@ -126,9 +126,9 @@ $web = Service::create($fa, ['lines' => [['item' => $it[0], 'action' => 'reklamo
     'calc' => ['refund' => 0, 'postage' => null, 'postage_applies' => false]]);
 t($web['pohoda_state'] === 'cekame' && $web['status'] === 'novy', 'reklamace z webu čeká na založení v Pohodě');
 $res = Service::importPohodaClaims([['number' => '26RZ00048', 'status' => 'Přijetí reklamace', 'received' => date('Y-m-d'), 'document_no' => '260102137',
-    'text' => 'plášť Michelin Power Cup', 'int_note' => 'web ' . $web['no'], 'name' => 'Dvořáček', 'email' => 'x@y.cz']]);
+    'text' => 'plášť Michelin Power Cup', 'name' => 'Dvořáček', 'email' => 'x@y.cz']]);
 $w2 = Service::get((int) $web['id']);
-t($w2['pohoda_state'] === 'propojeno' && $w2['pohoda_no'] === '26RZ00048' && $w2['status'] === 'dorazilo', 'propojeno podle čísla V-…');
+t($w2['pohoda_state'] === 'propojeno' && $w2['pohoda_no'] === '26RZ00048' && $w2['status'] === 'dorazilo', 'propojeno podle čísla dokladu nákupu');
 t(count($res) === 1 && $res[0]['kind'] === 'created' && (int) $res[0]['ret']['id'] === (int) $web['id'], 'zákazník dostane potvrzení s číslem z Pohody');
 t((int) \App\Core\Db::value("SELECT COUNT(*) FROM returns WHERE pohoda_no = '26RZ00048'") === 1, 'nevznikla duplicitní reklamace');
 

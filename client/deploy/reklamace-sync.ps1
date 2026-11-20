@@ -1,6 +1,6 @@
 ﻿# Přenáší reklamace z Pohody (agenda Reklamace, jen čtení přes mServer) do client.4kluciodkol.cz.
 #  - nové reklamace zadané v Pohodě se objeví v portálu (zákazník s e-mailem dostane potvrzení s číslem 26RZ…)
-#  - reklamace s číslem požadavku V-RRRR-NNNN v textu/poznámce se propojí s požadavkem zákazníka z webu
+#  - reklamace se propojí s požadavkem zákazníka z webu podle čísla dokladu nákupu (pole Doklad)
 #  - změna stavu (záložka Stav reklamace) se zákazníkovi ukáže a pošle e-mailem
 # První běh načte reklamace od 1. 1. letošního roku bez e-mailů, další běhy jen změněné od minula.
 # Ručně:  cd D:\Pomocnik ; powershell -ExecutionPolicy Bypass -File .\reklamace-sync.ps1
