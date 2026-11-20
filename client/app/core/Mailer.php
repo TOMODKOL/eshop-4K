@@ -11,6 +11,17 @@ final class Mailer
 {
     public static function send(string $to, string $subject, string $html, ?string $text = null): bool
     {
+        // Testovací režim: všechno jen na jednu adresu (mail.redirect_to), původní příjemce v předmětu a v pruhu nahoře.
+        $redirect = trim((string) Config::get('mail.redirect_to', ''));
+        if ($redirect !== '' && strcasecmp($redirect, trim($to)) !== 0) {
+            $orig = trim($to) !== '' ? trim($to) : '(bez e-mailu)';
+            $subject = '[TEST → ' . $orig . '] ' . $subject;
+            $banner = '<div style="background:#ffc524;color:#231F20;font:700 14px Arial,sans-serif;padding:10px 14px;text-align:center">'
+                . 'TESTOVACÍ REŽIM – e-mail by šel na ' . htmlspecialchars($orig, ENT_QUOTES, 'UTF-8') . '</div>';
+            $html = preg_match('/<body[^>]*>/i', $html) ? preg_replace('/(<body[^>]*>)/i', '$1' . $banner, $html, 1) : $banner . $html;
+            $text = $text !== null ? 'TESTOVACÍ REŽIM – e-mail by šel na ' . $orig . "\n\n" . $text : null;
+            $to = $redirect;
+        }
         $text ??= self::htmlToText($html);
         $from = (string) Config::get('mail.from');
         $fromName = (string) Config::get('mail.from_name', '');

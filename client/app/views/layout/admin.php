@@ -22,6 +22,7 @@ $u = \App\Core\Auth::user(); $active = $active ?? ''; ?>
   </nav>
   <?php else: ?><span class="staff">Administrace</span><?php endif; ?>
 </div></header>
+<?php if (trim((string) cfg('mail.redirect_to', '')) !== ''): ?><div style="background:#ffc524;color:#231F20;font-weight:700;font-size:13px;text-align:center;padding:8px max(16px, env(safe-area-inset-left, 0px))">Testovací režim: všechny e-maily (i zákazníkům) chodí jen na <?= e((string) cfg('mail.redirect_to')) ?></div><?php endif; ?>
 <div class="wrap">
 <?php foreach ($flash ?? [] as [$t, $m]): ?><div class="col wide" style="margin-bottom:14px"><div class="flash <?= e($t) ?>"><?= e($m) ?></div></div><?php endforeach; ?>
 <?= $content ?>

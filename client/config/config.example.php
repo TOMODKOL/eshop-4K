@@ -71,5 +71,7 @@ return [
         'smtp_secure' => 'ssl',   // ssl (465) nebo tls (587)
         'smtp_user'   => 'client@4kluciodkol.cz',
         'smtp_pass'   => '',
+        // Testovací režim: všechny e-maily (i zákazníkům) jen na tuto adresu. Prázdné = ostrý provoz.
+        'redirect_to' => 'info@4kluciodkol.cz',
     ],
 ];
