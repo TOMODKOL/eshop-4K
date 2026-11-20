@@ -6,12 +6,15 @@
 #  - posílá je na https://client.4kluciodkol.cz/api/sync/objednavky (klíč = sync_token z nasad-client.ps1)
 #  - první běh nahraje doklady od 1. 1. 2025 po měsících, další běhy jen posledních $Dni dní
 # Ručně:  cd D:\Pomocnik ; powershell -ExecutionPolicy Bypass -File .\client-sync.ps1 [-Od 2025-01-01]
-param([string]$Od = '', [int]$Dni = 4, [string]$Portal = 'https://client.4kluciodkol.cz')
+# Ze souborů (XML export z Pohody, např. uzavřený rok):
+#         powershell -ExecutionPolicy Bypass -File .\client-sync.ps1 -Soubory 'cesta\VydFaktury.xml','cesta\Prodejky.xml'
+param([string]$Od = '', [int]$Dni = 4, [string]$Portal = 'https://client.4kluciodkol.cz', [string[]]$Soubory = @())
 . (Join-Path $PSScriptRoot 'spolecne.ps1')
 $uloha = 'client_sync'
 
 $hodina = (Get-Date).Hour
-if ($hodina -lt $MServerOd -or $hodina -ge $MServerDo) { return }
+if (-not $Soubory -and ($hodina -lt $MServerOd -or $hodina -ge $MServerDo)) { return }
+$nejstarsi = (Get-Date).Date.AddMonths(-25).ToString('yyyy-MM-dd')   # starší doklady už reklamovat nejde
 
 $stavF = Join-Path $StavDir 'client_sync.json'
 $prvni = -not (Test-Path -LiteralPath $stavF)
@@ -85,6 +88,9 @@ function Soucet($s) {
 
 function Z-Faktury($f) {
     $h = Uzel $f 'invoiceHeader'
+    $typ = Text $h 'invoiceType'
+    if ($typ -and $typ -ne 'issuedInvoice') { return $null }      # dobropisy apod.
+    if ((Text $h 'date') -lt $nejstarsi) { return $null }
     $obj = Text $h 'numberOrder'
     if (-not $obj) { $obj = Text $h 'symVar' }
     $eshop = $obj -match '^8810\d+$'
@@ -92,11 +98,12 @@ function Z-Faktury($f) {
     $email = Text $adr 'email'
     if (-not $email) { $email = Text $h 'partnerIdentity/shipToAddress/email' }
     $jmeno = Text $adr 'name'; if (-not $jmeno) { $jmeno = Text $adr 'company' }
+    if ($eshop -and -not $email) { $eshop = $false }              # bez e-mailu ji zákazník na webu nenajde – zakládá prodejna
     $polozky = Polozky $f 'invoiceDetail' 'invoiceItem'
     if ($polozky.Count -eq 0) { return $null }
     return [ordered]@{
         invoice_no    = (Text $h 'number/numberRequested')
-        order_no      = $(if ($eshop) { $obj } else { '' })
+        order_no      = $(if ($obj -match '^8810\d+$') { $obj } else { '' })
         source        = $(if ($eshop) { 'eshop' } else { 'faktura' })
         invoice_date  = (Text $h 'date')
         email         = $email
@@ -109,6 +116,7 @@ function Z-Faktury($f) {
 
 function Z-Prodejky($p) {
     $h = Uzel $p 'prodejkaHeader'
+    if ((Text $h 'date') -lt $nejstarsi) { return $null }
     $polozky = Polozky $p 'prodejkaDetail' 'prodejkaItem'
     if ($polozky.Count -eq 0) { return $null }
     $adr = Uzel $h 'partnerIdentity/address'
@@ -144,6 +152,32 @@ function Posli-Vse($doklady) {
         if ($r.errors) { $script:chyby += @($r.errors) }
     }
     return $ulozeno
+}
+
+if ($Soubory) {
+    try {
+        $script:chyby = @(); $pocty = @{ eshop = 0; faktura = 0; prodejna = 0 }; $celkemPoslano = 0
+        foreach ($cesta in $Soubory) {
+            $doc = New-Object Xml.XmlDocument
+            $doc.Load((Resolve-Path -LiteralPath $cesta).Path)
+            $L = 'http://www.stormware.cz/schema/version_2/list.xsd'
+            $doklady = New-Object System.Collections.ArrayList
+            foreach ($f in $doc.SelectNodes("//*[local-name()='invoice' and namespace-uri()='$L']"))  { $o = Z-Faktury $f;  if ($o) { [void]$doklady.Add($o) } }
+            foreach ($p in $doc.SelectNodes("//*[local-name()='prodejka' and namespace-uri()='$L']")) { $o = Z-Prodejky $p; if ($o) { [void]$doklady.Add($o) } }
+            foreach ($o in $doklady) { $pocty[$o.source]++ }
+            $n = Posli-Vse $doklady
+            $celkemPoslano += $n
+            Zapis-Log $uloha ('soubor {0}: dokladů {1}, uloženo {2}' -f (Split-Path $cesta -Leaf), $doklady.Count, $n)
+        }
+        $zprava = 'OK    ze souborů: e-shop {0}, faktury {1}, prodejky {2}; uloženo v portálu {3}' -f $pocty.eshop, $pocty.faktura, $pocty.prodejna, $celkemPoslano
+        if ($script:chyby) { $zprava += (' | portál odmítl ' + $script:chyby.Count + ': ' + (($script:chyby | Select-Object -First 5) -join '; ')) }
+        Zapis-Log $uloha $zprava
+        Write-Host $zprava -ForegroundColor Green
+    } catch {
+        Zapis-Log $uloha ('CHYBA {0}' -f $_.Exception.Message)
+        Write-Host ('CHYBA ' + $_.Exception.Message) -ForegroundColor Red
+    }
+    return
 }
 
 try {
