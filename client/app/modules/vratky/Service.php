@@ -27,7 +27,14 @@ final class Service
         'zbox'   => 'Z-BOX Zásilkovny',
         'vm'     => 'Výdejní místo Zásilkovny',
         'osobne' => 'Osobně na prodejně',
+        'vlastni' => 'Vlastní dopravou',
     ];
+
+    /** Zásilkovna (podací kód, poštovné za vrácení) jen u Z-BOXu a výdejního místa. */
+    public static function usesPacketa(string $ship): bool
+    {
+        return in_array($ship, ['zbox', 'vm'], true);
+    }
 
     // ---------- objednávky ----------
 
@@ -184,7 +191,7 @@ final class Service
         $refund = 0.0;
         foreach ($lines as $l) if ($l['action'] === 'vratit') $refund += (float) $l['item']['unit_price'] * $l['qty'];
         $onlyReturn = $lines && count(array_filter($lines, fn($l) => $l['action'] !== 'vratit')) === 0;
-        $postageApplies = $onlyReturn && $ship !== 'osobne';
+        $postageApplies = $onlyReturn && self::usesPacketa($ship);
         $postage = Config::get('vratky.return_postage');
         return [
             'refund' => round($refund, 2),

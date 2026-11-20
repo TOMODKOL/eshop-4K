@@ -20,7 +20,7 @@ final class Packeta
     /** Vytvoří zpětnou zásilku a uloží kód k vratce. Vrací true/false, chybu zapíše k vratce. */
     public static function createClaim(array $ret): bool
     {
-        if (!self::enabled() || $ret['ship_method'] === 'osobne' || $ret['packeta_password']) return false;
+        if (!self::enabled() || !Service::usesPacketa((string) $ret['ship_method']) || $ret['packeta_password']) return false;
         $value = max(1, (float) Db::value('SELECT COALESCE(SUM(unit_price * qty),0) FROM return_lines WHERE return_id = ?', [$ret['id']]));
         $xml = self::requestXml([
             'number' => $ret['no'],

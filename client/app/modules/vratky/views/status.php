@@ -20,6 +20,8 @@ $last = $ret['refund_total'] > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nová veli
   <?php if ($ret['status'] === 'novy'): ?>
     <?php if ($ret['ship_method'] === 'osobne'): ?>
       <div class="card">Zboží přineste na prodejnu <?= e(cfg('shop.address')) ?> (<?= e(cfg('shop.hours')) ?>) a řekněte číslo <?= e($w['g']) ?> <strong><?= e(Service::displayNo($ret)) ?></strong>.</div>
+    <?php elseif ($ret['ship_method'] === 'vlastni'): ?>
+      <div class="card">Zboží zabalte, přiložte papír s číslem <?= e($w['g']) ?> <strong><?= e(Service::displayNo($ret)) ?></strong> a pošlete ho na vlastní náklady (ne na dobírku) na adresu <strong><?= e(cfg('shop.name')) ?>, <?= e(cfg('shop.address')) ?></strong>.</div>
     <?php elseif ($ret['packeta_password']): ?>
       <div class="code"><span class="kicker" style="color:var(--ink)">Podací kód Zásilkovny</span><span class="v"><?= e($ret['packeta_password']) ?></span><span style="font-size:13px">Kód jsme vám poslali i e-mailem.</span></div>
       <div class="card"><div class="steps dark">
@@ -48,7 +50,7 @@ $last = $ret['refund_total'] > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nová veli
       <div class="tl"><div class="done"><i></i><?= e($w['N']) ?> vytvořena</div><div class="now"><i style="background:var(--red);border-color:var(--red)"></i>Zamítnuto</div></div>
     <?php else: ?>
     <div class="tl">
-      <?php $tl = [['novy', $w['N'] . ' vytvořena'], ['na_ceste', $ret['ship_method'] === 'osobne' ? 'Předáno na prodejně' : 'Podáno u Zásilkovny'], ['dorazilo', 'Dorazilo k nám, kontrolujeme']];
+      <?php $tl = [['novy', $w['N'] . ' vytvořena'], ['na_ceste', ($ret['ship_method'] === 'osobne' ? 'Předáno na prodejně' : ($ret['ship_method'] === 'vlastni' ? 'Odesláno' : 'Podáno u Zásilkovny'))], ['dorazilo', 'Dorazilo k nám, kontrolujeme']];
         if ($hasClaimLine) $tl[] = ['v_reseni', 'Posuzuje dodavatel'];
         $tl[] = ['vyrizeno', $last];
         foreach ($tl as $k => [$s, $lab]):

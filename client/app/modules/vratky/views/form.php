@@ -109,7 +109,8 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
   <h2 class="h2" style="padding:0 4px">JAK NÁM TO POŠLETE?</h2>
   <?php foreach (['zbox' => ['Z-BOX Zásilkovny', 'Kód zadáte do Z-BOXu, nic netisknete. Nonstop.'],
                   'vm' => ['Výdejní místo Zásilkovny', 'Kód nadiktujete obsluze na kterémkoli výdejním místě.'],
-                  'osobne' => ['Osobně na prodejně', cfg('shop.address') . ' · ' . cfg('shop.hours')]] as $k => [$t, $d]): $on = $o('ship', null, 'zbox') === $k; ?>
+                  'osobne' => ['Osobně na prodejně', cfg('shop.address') . ' · ' . cfg('shop.hours')],
+                  'vlastni' => ['Vlastní dopravou', 'Pošlete na naši adresu na vlastní náklady, ne na dobírku.']] as $k => [$t, $d]): $on = $o('ship', null, 'zbox') === $k; ?>
   <label class="opt <?= $on ? 'on' : '' ?>"><input class="sr" type="radio" name="ship" value="<?= $k ?>" <?= $on ? 'checked' : '' ?>><span class="dot"></span>
     <span class="b"><span class="r"><strong><?= e($t) ?></strong><strong style="font-size:13px;white-space:nowrap" data-shipprice="<?= $k ?>"></strong></span><span class="d"><?= e($d) ?></span></span></label>
   <?php endforeach; ?>

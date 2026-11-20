@@ -82,7 +82,7 @@ $claim = Service::hasAction($lines, 'reklamovat');
       <div style="font-size:14px"><?= e(Service::SHIP[$ret['ship_method']] ?? '') ?></div>
       <?php if ($ret['packeta_password']): ?>
         <div style="font-size:14px">Podací kód: <strong><?= e($ret['packeta_password']) ?></strong><br>Zásilka: <?= e($ret['packeta_barcode']) ?></div>
-      <?php elseif ($ret['ship_method'] !== 'osobne'): ?>
+      <?php elseif (Service::usesPacketa((string) $ret['ship_method'])): ?>
         <?php if ($ret['packeta_error']): ?><div class="warn" style="font-size:13px"><?= e($ret['packeta_error']) ?></div><?php endif; ?>
         <?php if (Packeta::enabled()): ?>
         <form method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0"><?= csrf_field() ?><input type="hidden" name="act" value="packeta"><button class="pill">Vytvořit podací kód a poslat zákazníkovi</button></form>

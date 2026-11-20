@@ -23,8 +23,8 @@ final class Notify
             $html = View::render('vratky:email', [
                 'kicker' => 'Reklamace ' . Service::displayNo($ret) . ' přijata',
                 'heading' => 'Reklamaci jsme přijali',
-                'ret' => $ret, 'lines' => $lines, 'showCode' => $ret['ship_method'] !== 'osobne',
-                'text' => $ret['ship_method'] === 'osobne'
+                'ret' => $ret, 'lines' => $lines, 'showCode' => Service::usesPacketa((string) $ret['ship_method']),
+                'text' => !Service::usesPacketa((string) $ret['ship_method'])
                     ? 'Reklamaci vyřídíme nejpozději do ' . date_cz((string) $ret['claim_deadline']) . '. O průběhu vám dáme vědět.'
                     : self::nextStepText($ret),
                 'url' => self::statusUrl($ret),
@@ -70,6 +70,7 @@ final class Notify
     public static function shortNext(array $ret): string
     {
         if ($ret['ship_method'] === 'osobne') return 'přineste zboží na prodejnu';
+        if ($ret['ship_method'] === 'vlastni') return 'pošlete zboží na naši adresu';
         return $ret['packeta_password'] ? 'podací kód ' . $ret['packeta_password'] : 'pošleme vám podací kód';
     }
 
@@ -77,6 +78,10 @@ final class Notify
     {
         if ($ret['ship_method'] === 'osobne') {
             return 'Zboží přineste na prodejnu ' . Config::get('shop.address') . ' (' . Config::get('shop.hours') . ') a řekněte číslo ' . Service::words(Service::lines((int) $ret['id']))['g'] . ' ' . Service::displayNo($ret) . '.';
+        }
+        if ($ret['ship_method'] === 'vlastni') {
+            return 'Zboží zabalte, přiložte papír s číslem ' . Service::words(Service::lines((int) $ret['id']))['g'] . ' ' . Service::displayNo($ret)
+                . ' a pošlite ho na vlastní náklady (ne na dobírku) na adresu ' . Config::get('shop.name') . ', ' . Config::get('shop.address') . '.';
         }
         if ($ret['packeta_password']) {
             $where = $ret['ship_method'] === 'zbox' ? 'V Z-BOXu zadejte podací kód a balík vložte.' : 'Na výdejním místě Zásilkovny nadiktujte podací kód obsluze.';

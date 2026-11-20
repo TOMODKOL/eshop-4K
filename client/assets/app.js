@@ -40,7 +40,7 @@
     var ch = chosen(), refund = 0;
     ch.forEach(function (i) { if (i.act === 'vratit') refund += i.price * i.qty; });
     var onlyReturn = ch.length > 0 && ch.every(function (i) { return i.act === 'vratit'; });
-    return { ch: ch, refund: refund, postageApplies: onlyReturn && ship() !== 'osobne' };
+    return { ch: ch, refund: refund, onlyReturn: onlyReturn, postageApplies: onlyReturn && (ship() === 'zbox' || ship() === 'vm') };
   }
   function detailText(i) {
     if (i.act === 'vratit') { var r = $('input[name="reason[' + i.id + ']"]:checked'); return r ? r.value : ''; }
@@ -79,7 +79,8 @@
     // doprava
     $$('[data-shipprice]').forEach(function (el) {
       var k = el.getAttribute('data-shipprice');
-      var paid = c.postageApplies && k !== 'osobne' && c.ch.length;
+      var paid = c.onlyReturn && (k === 'zbox' || k === 'vm') && c.ch.length;
+      if (k === 'vlastni') { el.textContent = 'na vaše náklady'; el.className = ''; return; }
       el.textContent = paid ? (postage === null ? 'dle ceníku' : '− ' + money(postage)) : 'zdarma';
       el.className = paid ? '' : 'free';
     });
@@ -93,14 +94,14 @@
     });
     var shipEl = $('input[name="ship"]:checked');
     var shipName = shipEl ? shipEl.closest('label').querySelector('strong').textContent : '';
-    var postTxt = c.postageApplies ? (postage === null ? '− poštovné' : '− ' + money(postage)) : 'zdarma';
+    var postTxt = ship() === 'vlastni' ? 'na vaše náklady' : (c.postageApplies ? (postage === null ? '− poštovné' : '− ' + money(postage)) : 'zdarma');
     var net = c.refund - (c.postageApplies && postage !== null ? postage : 0);
 
     var aside = $('[data-aside]');
     if (aside) {
       aside.innerHTML = rows.length ? rows.map(function (r) {
         return '<div class="row"><span><span class="kicker" style="font-size:10px">' + esc(r.label) + '</span><br>' + esc(r.name) + '</span><strong style="white-space:nowrap">' + r.amount + '</strong></div>';
-      }).join('') + '<div class="row" style="border-top:1px solid var(--line2);padding-top:10px"><span>Doprava</span><strong class="' + (c.postageApplies ? '' : 'free') + '">' + postTxt + '</strong></div>' +
+      }).join('') + '<div class="row" style="border-top:1px solid var(--line2);padding-top:10px"><span>Doprava</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '">' + postTxt + '</strong></div>' +
         '<div class="total" style="padding:14px"><strong style="font-size:14px">' + (c.refund > 0 ? 'Vrátíme vám' : 'Bez peněz') + '</strong><span class="v" style="font-size:28px">' + money(Math.max(0, net)) + '</span></div>'
         : '<span style="font-size:13px;color:var(--muted)">Zatím nic nevybráno.</span>';
     }
@@ -108,7 +109,7 @@
     if (sum) {
       sum.innerHTML = rows.map(function (r) {
         return '<div class="sumrow"><span><span class="kicker" style="font-size:11px">' + esc(r.label) + '</span><br><strong>' + esc(r.name) + '</strong>' + (r.detail ? '<br><span style="color:var(--muted)">' + esc(r.detail) + '</span>' : '') + '</span><strong style="white-space:nowrap">' + r.amount + '</strong></div>';
-      }).join('') + (shipName ? '<div class="sumrow"><span>Doprava: ' + esc(shipName) + '</span><strong class="' + (c.postageApplies ? '' : 'free') + '" style="white-space:nowrap">' + postTxt + '</strong></div>' : '');
+      }).join('') + (shipName ? '<div class="sumrow"><span>Doprava: ' + esc(shipName) + '</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '" style="white-space:nowrap">' + postTxt + '</strong></div>' : '');
     }
     var tot = $('[data-total]');
     if (tot) {

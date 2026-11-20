@@ -103,7 +103,7 @@ Http::post('/vratky/novy', function () use ($loadOrder) {
         return;
     }
     $ret = Service::create($o, $data);
-    if (Packeta::enabled() && $ret['ship_method'] !== 'osobne') {
+    if (Packeta::enabled() && Service::usesPacketa((string) $ret['ship_method'])) {
         Packeta::createClaim($ret);
         $ret = Service::get((int) $ret['id']);
     }
