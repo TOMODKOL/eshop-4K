@@ -7,7 +7,7 @@
 #  - první běh nahraje doklady od 1. 1. 2025 po měsících, další běhy jen posledních $Dni dní
 # Ručně:  cd D:\Pomocnik ; powershell -ExecutionPolicy Bypass -File .\client-sync.ps1 [-Od 2025-01-01]
 # Ze souborů (XML export z Pohody, např. uzavřený rok):
-#         powershell -ExecutionPolicy Bypass -File .\client-sync.ps1 -Soubory 'cesta\VydFaktury.xml','cesta\Prodejky.xml'
+#         powershell -ExecutionPolicy Bypass -File .\client-sync.ps1 -Soubory 'složka s XML'   (nebo cesta k jednomu souboru)
 param([string]$Od = '', [int]$Dni = 4, [string]$Portal = 'https://client.4kluciodkol.cz', [string[]]$Soubory = @())
 . (Join-Path $PSScriptRoot 'spolecne.ps1')
 $uloha = 'client_sync'
@@ -154,6 +154,10 @@ function Posli-Vse($doklady) {
     return $ulozeno
 }
 
+# -File předá seznam jako jeden text s čárkami; složka = všechny .xml v ní
+$Soubory = @($Soubory | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object {
+    if (Test-Path -LiteralPath $_ -PathType Container) { Get-ChildItem -LiteralPath $_ -Filter *.xml | ForEach-Object { $_.FullName } } else { $_ }
+})
 if ($Soubory) {
     try {
         $script:chyby = @(); $pocty = @{ eshop = 0; faktura = 0; prodejna = 0 }; $celkemPoslano = 0
