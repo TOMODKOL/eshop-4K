@@ -54,7 +54,7 @@ textarea.f{height:auto;padding:10px 14px;resize:vertical}
 .seg .pill{height:44px}
 .qty{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:#fff;overflow:hidden}
 .qty button{width:36px;height:34px;border:0;background:transparent;font-size:18px;font-weight:700}
-.qty span{min-width:44px;text-align:center;font-size:13px;font-weight:700}
+.qty span{min-width:64px;text-align:center;font-size:13px;font-weight:700}
 .prog{display:flex;flex-direction:column;gap:8px}
 .prog .bars{display:flex;gap:4px}
 .prog .bars i{flex:1;height:6px;border-radius:3px;background:var(--line)}
@@ -183,7 +183,8 @@ const store = {
 const ORDER = { no:'8810000123', email:'jana.novakova@email.cz', delivered:'12. 11. 2026', returnUntil:'26. 11. 2026', customer:'Jana Nováková' };
 const ITEMS = [
   { id:'a', name:"dámský dres POC W's Cadence Jersey Uranium Black", size:'M', price:1990, sw:'#1f1f1f', sizes:['XS','S','M','L'], stock:{XS:true,S:true,M:true,L:false} },
-  { id:'b', name:'helma POC Ventral Air MIPS Uranium Black Matt', size:'M', price:4690, sw:'#2b2b2b', sizes:['S','M','L'], stock:{S:true,M:true,L:true} }
+  { id:'b', name:'helma POC Ventral Air MIPS Uranium Black Matt', size:'M', price:4690, sw:'#2b2b2b', sizes:['S','M','L'], stock:{S:true,M:true,L:true} },
+  { id:'c', name:'dámský dres Castelli Promessa Jacquard Agate Blue', size:'M', price:1570, qty:2, sw:'#4a6b8a', sizes:['XS','S','M','L'], stock:{XS:false,S:true,M:true,L:false} }
 ];
 const CATALOG = [
   { id:1, name:"dámský dres POC W's Cadence Jersey Hydrogen White", price:1990, sw:'#e4e4e0', stock:{XS:true,S:true,M:true,L:false} },
@@ -206,13 +207,16 @@ const SEED = [
     lines:[{ act:'vratit', name:'dámský dres Castelli Promessa Jacquard Agate Blue M', detail:'Nesedí velikost' }], total:1570, postage:true }
 ];
 
-const fresh = () => ({ step:0, act:{}, mode:{}, reason:{}, size:{}, swap:{}, defect:{}, photos:{}, ship:'zbox', ucet:'', pozn:'', swapFor:null, web:false, webSize:'M', linkOk:false, linkErr:'', picked:null, pickSize:null, done:null });
+const fresh = () => ({ step:0, act:{}, mode:{}, reason:{}, size:{}, swap:{}, rq:{}, defect:{}, photos:{}, ship:'zbox', ucet:'', pozn:'', swapFor:null, web:false, webSize:'M', linkOk:false, linkErr:'', picked:null, pickSize:null, done:null });
 let view = 'zak';
 let st = fresh();
 let list = store.get('vratky4k_list', null) || SEED.slice();
 let filter = 'all';
 try { const h = location.hash.replace('#',''); if (h === 'prodejna') view = 'pro'; } catch(e){}
 
+function rq(i){ const q = i.qty || 1; return Math.max(1, Math.min(q, st.rq[i.id] || 1)); }
+function cr(i){ return i.price * rq(i); }
+function nm(i){ return i.name + ' ' + i.size + (rq(i) > 1 ? ' × ' + rq(i) : ''); }
 function swaps(id){ return st.swap[id] || []; }
 function swapSum(id){ return swaps(id).reduce((t,x)=>t+x.price*x.qty,0); }
 function swapText(id){ return swaps(id).map(x=>x.name+' '+x.size+(x.qty>1?' × '+x.qty:'')).join(', '); }
@@ -227,8 +231,8 @@ function calc(){
   let refund = 0, extra = 0;
   ch.forEach(i => {
     const a = st.act[i.id];
-    if (a === 'vratit') refund += i.price;
-    if (a === 'vymenit' && st.mode[i.id] === 'jine' && swaps(i.id).length) extra += swapSum(i.id) - i.price;
+    if (a === 'vratit') refund += cr(i);
+    if (a === 'vymenit' && st.mode[i.id] === 'jine' && swaps(i.id).length) extra += swapSum(i.id) - cr(i);
   });
   const onlyReturn = ch.length > 0 && ch.every(i => st.act[i.id] === 'vratit');
   const postage = onlyReturn && st.ship !== 'osobne';
@@ -259,7 +263,7 @@ function prog(){
   return `<div class="prog"><div class="bars">${steps.map((x,i)=>`<i class="${i<=st.step?'on':''}"></i>`).join('')}</div><span class="kicker">Krok ${n} z 6 · ${steps[n-1]}</span></div>`;
 }
 function itemHead(i, extra){
-  return `<div class="item"><div class="ph" style="background:${i.sw}">foto</div><div class="t"><span class="n">${esc(i.name)}</span><span class="m">Velikost ${i.size} · ${fmt(i.price)}${extra||''}</span></div></div>`;
+  return `<div class="item"><div class="ph" style="background:${i.sw}">foto</div><div class="t"><span class="n">${esc(i.name)}</span><span class="m">Velikost ${i.size} · ${fmt(i.price)}${(i.qty||1)>1?' / ks · objednáno '+i.qty+' ks':''}${extra||''}</span></div></div>`;
 }
 
 // ---------- ZÁKAZNÍK ----------
@@ -292,21 +296,21 @@ function sItems(){
   <div style="padding:0 4px;display:flex;flex-direction:column;gap:6px"><h2 class="h2">CO CHCETE UDĚLAT?</h2><span class="hint" style="font-size:13px">Objednávka ${ORDER.no} · doručeno ${ORDER.delivered}</span></div>
   <div class="grey">Vrátit můžete do <strong style="color:var(--ink)">${ORDER.returnUntil}</strong>. Reklamovat do 2 let od nákupu. <strong style="color:var(--ink)">Výměna je s poštovným zdarma.</strong></div>
   ${ITEMS.map(i => `<div class="card ${st.act[i.id]?'sel':''}">${itemHead(i)}
-    <div class="seg">${['vratit','vymenit','reklamovat'].map(a=>`<button class="pill ${st.act[i.id]===a?'on':''}" data-a="act" data-i="${i.id}" data-v="${a}">${{vratit:'Vrátit',vymenit:'Vyměnit',reklamovat:'Reklamovat'}[a]}</button>`).join('')}</div></div>`).join('')}
+    <div class="seg">${['vratit','vymenit','reklamovat'].map(a=>`<button class="pill ${st.act[i.id]===a?'on':''}" data-a="act" data-i="${i.id}" data-v="${a}">${{vratit:'Vrátit',vymenit:'Vyměnit',reklamovat:'Reklamovat'}[a]}</button>`).join('')}</div>${(i.qty||1)>1 && st.act[i.id] ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span class="l">Kolik kusů ${{vratit:'vracíte',vymenit:'měníte',reklamovat:'reklamujete'}[st.act[i.id]]}?</span><div class="qty"><button data-a="rq" data-i="${i.id}" data-d="-1" aria-label="Ubrat kus">−</button><span>${rq(i)} z ${i.qty} ks</span><button data-a="rq" data-i="${i.id}" data-d="1" aria-label="Přidat kus">+</button></div></div>` : ''}</div>`).join('')}
   <button class="btn ${any?'':'off'}" data-a="go" data-v="2">Pokračovat →</button>
   <button class="link" data-a="go" data-v="0">Zpět</button></div>`;
 }
 function swapBlock(i){
   const arr = swaps(i.id);
   if (!arr.length) return `<button class="btn" data-a="pick" data-i="${i.id}">Vybrat náhradu →</button>`;
-  const d = swapSum(i.id) - i.price;
+  const d = swapSum(i.id) - cr(i);
   return `<div class="card" style="background:var(--soft);padding:14px;gap:14px">
     ${arr.map((x,k)=>`<div class="item"><div class="ph" style="background:${x.sw}">foto</div><div class="t" style="flex:1"><span class="n">${esc(x.name)}</span><span class="m">Velikost ${x.size} · ${fmt(x.price)}${x.qty>1?' / ks':''}</span>
       <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
         <div class="qty"><button data-a="qty" data-i="${i.id}" data-v="${k}" data-d="-1" aria-label="Ubrat kus">−</button><span>${x.qty} ks</span><button data-a="qty" data-i="${i.id}" data-v="${k}" data-d="1" aria-label="Přidat kus">+</button></div>
         <button class="link" style="padding:0;font-size:13px" data-a="rmswap" data-i="${i.id}" data-v="${k}">Odebrat</button></div></div></div>`).join('')}
     <button class="btn ghost" style="align-self:flex-start" data-a="pick" data-i="${i.id}">+ Přidat další zboží</button>
-    <div style="border-top:1px solid var(--line);padding-top:10px;display:flex;justify-content:space-between;gap:8px;font-size:14px"><span>Kredit ${fmt(i.price)} · vybráno ${fmt(swapSum(i.id))}</span><strong style="color:${d>0?'var(--ink)':'var(--green)'};white-space:nowrap">${d>0?'Doplatíte '+fmt(d):(d<0?'Vrátíme vám '+fmt(-d):'Vychází přesně')}</strong></div>
+    <div style="border-top:1px solid var(--line);padding-top:10px;display:flex;justify-content:space-between;gap:8px;font-size:14px"><span>Kredit ${fmt(cr(i))} · vybráno ${fmt(swapSum(i.id))}</span><strong style="color:${d>0?'var(--ink)':'var(--green)'};white-space:nowrap">${d>0?'Doplatíte '+fmt(d):(d<0?'Vrátíme vám '+fmt(-d):'Vychází přesně')}</strong></div>
   </div>`;
 }
 function sDetail(){
@@ -355,7 +359,7 @@ function sPicker(){
     <span class="hint">V ukázce se z jakéhokoli odkazu na náš web načte vzorový dres CASTELLI Corretto.</span>
   </div>
   <span class="kicker" style="padding:0 4px">Nebo podobné ve vaší velikosti (M)</span>
-  <div class="grid2">${sim.map(p => { const d = p.price - (i.price - swapSum(i.id)); return `<button class="prod ${st.picked===p.id?'on':''}" data-a="prod" data-v="${p.id}">
+  <div class="grid2">${sim.map(p => { const d = p.price - (cr(i) - swapSum(i.id)); return `<button class="prod ${st.picked===p.id?'on':''}" data-a="prod" data-v="${p.id}">
     <div class="sw" style="background:${p.sw}"></div><span class="n">${esc(p.name)}</span>
     <span class="p"><strong>${fmt(p.price)}</strong><span class="${d<=0?'g':''}">${d===0?'beze změny':(d>0?'+'+fmt(d):'vrátíme '+fmt(-d))}</span></span>
     <span style="font-size:11px;color:var(--green)">M skladem</span></button>`; }).join('')}</div>
@@ -367,8 +371,8 @@ function sPicker(){
 function sWeb(){
   const i = ITEMS.find(x => x.id === st.swapFor);
   const p = CATALOG.find(x=>x.id===3);
-  const d = p.price - (i.price - swapSum(i.id));
-  return `<div class="webbar"><div class="in"><div class="t"><span class="kicker" style="color:var(--ink);font-size:11px">Vyměňujete</span><span>${esc(i.name)} · ${i.size} · kredit ${fmt(i.price)}</span></div><button data-a="webcancel">Zpět do vratky</button></div></div>
+  const d = p.price - (cr(i) - swapSum(i.id));
+  return `<div class="webbar"><div class="in"><div class="t"><span class="kicker" style="color:var(--ink);font-size:11px">Vyměňujete</span><span>${esc(nm(i))} · kredit ${fmt(cr(i))}</span></div><button data-a="webcancel">Zpět do vratky</button></div></div>
   <div class="webhead"><div class="in"><img src="${LOGO_W}" alt="4 KLUCI OD KOL" width="160" height="24"><span>simulace e-shopu</span></div></div>
   <div class="webpage wrap"><div class="webgrid">
     <div class="webimg" style="background:${p.sw}">foto produktu</div>
@@ -419,15 +423,15 @@ function lineDetail(i){
 }
 function lineAmount(i){
   const a = st.act[i.id];
-  if (a==='vratit') return fmt(i.price);
-  if (a==='vymenit' && st.mode[i.id]==='jine' && swaps(i.id).length) { const d = swapSum(i.id) - i.price; return d>0?'+'+fmt(d):(d<0?'−'+fmt(-d):'0 Kč'); }
+  if (a==='vratit') return fmt(cr(i));
+  if (a==='vymenit' && st.mode[i.id]==='jine' && swaps(i.id).length) { const d = swapSum(i.id) - cr(i); return d>0?'+'+fmt(d):(d<0?'−'+fmt(-d):'0 Kč'); }
   return '0 Kč';
 }
 function sSummary(){
   const c = calc();
   const lbl = c.net > 0 ? 'Vrátíme vám' : (c.net < 0 ? 'Doplatíte' : 'Vychází přesně');
   return `<div class="col">${prog()}<h2 class="h2" style="padding:0 4px">SOUHRN</h2>
-  <div class="card" style="padding:4px 18px;gap:0">${c.ch.map(i=>`<div class="sumrow"><span><span class="kicker" style="font-size:11px">${LABEL[st.act[i.id]]}</span><br><strong>${esc(i.name)} ${i.size}</strong><br><span style="color:var(--muted)">${esc(lineDetail(i))}</span></span><strong style="white-space:nowrap">${lineAmount(i)}</strong></div>`).join('')}
+  <div class="card" style="padding:4px 18px;gap:0">${c.ch.map(i=>`<div class="sumrow"><span><span class="kicker" style="font-size:11px">${LABEL[st.act[i.id]]}</span><br><strong>${esc(nm(i))}</strong><br><span style="color:var(--muted)">${esc(lineDetail(i))}</span></span><strong style="white-space:nowrap">${lineAmount(i)}</strong></div>`).join('')}
   <div class="sumrow"><span>Doprava: ${shipName()}</span><strong class="${c.postage?'':'free'}" style="white-space:nowrap">${c.postage?'− poštovné':'zdarma'}</strong></div></div>
   <div class="total"><strong>${lbl}</strong><span class="v">${c.net===0?'0 Kč':fmt(Math.abs(c.net))}${c.postage?' <span style="font-family:Good Sans,Arial;font-size:14px">− poštovné</span>':''}</span></div>
   ${c.net<0?'<div class="grey">Doplatek zaplatíte QR platbou hned po odeslání. Nové zboží odešleme, jakmile platba dorazí.</div>':''}
@@ -486,7 +490,7 @@ function sStaff(){
 
 function aside(){
   const c = calc();
-  const rows = c.ch.map(i => `<div class="row"><span><span class="kicker" style="font-size:10px">${LABEL[st.act[i.id]]}</span><br>${esc(i.name)} ${i.size}</span><strong style="white-space:nowrap">${lineAmount(i)}</strong></div>`).join('');
+  const rows = c.ch.map(i => `<div class="row"><span><span class="kicker" style="font-size:10px">${LABEL[st.act[i.id]]}</span><br>${esc(nm(i))}</span><strong style="white-space:nowrap">${lineAmount(i)}</strong></div>`).join('');
   const lbl = c.net > 0 ? 'Vrátíme vám' : (c.net < 0 ? 'Doplatíte' : 'Zatím');
   return `<div class="card"><span class="kicker">Objednávka ${ORDER.no}</span><span style="font-size:13px;color:var(--text)">${ORDER.customer} · doručeno ${ORDER.delivered}<br>Vrátit lze do ${ORDER.returnUntil}</span></div>
   <div class="card"><span class="kicker">Vaše vratka</span>${rows || '<span style="font-size:13px;color:var(--muted)">Zatím nic nevybráno.</span>'}
@@ -539,6 +543,7 @@ document.addEventListener('click', e => {
     case 'wsize': st.webSize = v; break;
     case 'webcancel': st.web = false; scroll = true; break;
     case 'wswap': { const p = CATALOG.find(x=>x.id===3); addSwap(st.swapFor, p, st.webSize); st.web = false; st.swapFor = null; scroll = true; break; }
+    case 'rq': { const it = ITEMS.find(x=>x.id===i); st.rq[i] = Math.max(1, Math.min(it.qty||1, rq(it) + (+b.dataset.d))); break; }
     case 'qty': { const arr = swaps(i); const x = arr[+v]; if (!x) return; x.qty = Math.max(1, Math.min(9, x.qty + (+b.dataset.d))); break; }
     case 'rmswap': { st.swap[i] = swaps(i).filter((x,k)=>k!==+v); break; }
     case 'ship': st.ship = v; break;
@@ -546,7 +551,7 @@ document.addEventListener('click', e => {
       const c = calc();
       const nums = list.map(x => +x.no.split('-')[2]);
       const no = 'V-2026-' + String(Math.max(141, ...nums) + 1).padStart(4,'0');
-      const lines = c.ch.map(it => ({ act: st.act[it.id], name: it.name + ' ' + it.size, detail: lineDetail(it) }));
+      const lines = c.ch.map(it => ({ act: st.act[it.id], name: nm(it), detail: lineDetail(it) }));
       const today = new Date(); const dd = today.getDate()+'. '+(today.getMonth()+1)+'. '+today.getFullYear();
       const dl = new Date(today.getTime()+30*864e5);
       list.push({ no, date: dd, customer: ORDER.customer + ' (ukázka)', email: ORDER.email, ship: {zbox:'Z-BOX',vm:'Výdejní místo',osobne:'Osobně'}[st.ship], status:0, lines, total:c.net, postage:c.postage, mine:true, deadline: dl.getDate()+'. '+(dl.getMonth()+1)+'. '+dl.getFullYear() });
