@@ -37,6 +37,7 @@ Http::post('/vratky', function () {
         Http::redirect('/vratky');
     }
     Session::set('vr_order', (int) $o['id']);
+    Session::forget('vr_old');
     Http::redirect('/vratky/novy');
 });
 
@@ -75,6 +76,7 @@ Http::post('/vratky/vybrat', function () {
     $o = Service::order((int) Http::input('order'));
     if ($email === '' || !$o || mb_strtolower($o['email']) !== $email) Http::redirect('/vratky');
     Session::set('vr_order', (int) $o['id']);
+    Session::forget('vr_old');
     Http::redirect('/vratky/novy');
 });
 
@@ -88,8 +90,30 @@ $loadOrder = function (): array {
 Http::get('/vratky/novy', function () use ($loadOrder) {
     $o = $loadOrder();
     $items = Service::items((int) $o['id'], true);
+    $old = (array) Session::get('vr_old', []);
+    // návrat z e-shopu: zákazník vybral zboží tlačítkem „Vyměnit za tento produkt“
+    $swap = (int) ($_GET['swap'] ?? 0);
+    if ($swap && in_array($swap, array_map(fn($i) => (int) $i['id'], $items), true) && Eshop::productUrl((string) ($_GET['url'] ?? ''))) {
+        $old['act'][$swap] = 'vymenit';
+        $old['swap_kind'][$swap] = 'jine';
+        $old['other_url'][$swap] = Eshop::productUrl((string) $_GET['url']);
+        $old['other_pick'][$swap] = mb_substr((string) ($_GET['size'] ?? ''), 0, 40);
+        Session::set('vr_old', $old);
+    }
     View::page('vratky:form', ['title' => 'Co chcete udělat?', 'homeUrl' => '/vratky', 'order' => $o, 'items' => $items,
-        'dl' => Service::deadlines($o), 'old' => Session::get('vr_old', []), 'errors' => []]);
+        'dl' => Service::deadlines($o), 'old' => $old, 'errors' => [], 'start' => max(1, min(5, (int) ($_GET['krok'] ?? 1)))]);
+});
+
+// rozpracovaný formulář před odchodem na e-shop (výběr zboží k výměně)
+Http::post('/vratky/koncept', function () use ($loadOrder) {
+    Session::checkCsrf();
+    $loadOrder();
+    $keep = [];
+    foreach (['act', 'qty', 'reason', 'size_to', 'swap_kind', 'other_url', 'other_pick', 'defect', 'ship', 'account', 'phone', 'note', 'pay_method'] as $k) {
+        if (isset($_POST[$k])) $keep[$k] = $_POST[$k];
+    }
+    Session::set('vr_old', $keep);
+    http_response_code(204);
 });
 
 // výměna za jiné zboží: hledání na e-shopu (HTML kousek formuláře)
@@ -124,6 +148,7 @@ Http::post('/vratky/novy', function () use ($loadOrder) {
         return;
     }
     $ret = Service::create($o, $data);
+    Session::forget('vr_old');
     if (Packeta::enabled() && Service::usesPacketa((string) $ret['ship_method'])) {
         Packeta::createClaim($ret);
         $ret = Service::get((int) $ret['id']);

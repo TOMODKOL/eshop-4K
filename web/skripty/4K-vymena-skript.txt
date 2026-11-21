@@ -1,0 +1,113 @@
+<script>
+/* 4K – výměna za jiné zboží z vratkového portálu client.4kluciodkol.cz.
+   Zákazník přijde z formuláře vratky s #vratka=… (v adrese za #, parametr ?… BSSHOP přesměrováním zahodí) → nahoře žlutý pruh „Vyměňujete …“,
+   na detailu zboží tlačítko „Vyměnit za tento produkt“, které ho vrátí do formuláře
+   s vybraným zbožím a velikostí. Ostatní návštěvníci nic nevidí. Patří na konec Zápatí. */
+(function () {
+  var KEY = '4k_vymena';
+  var CLIENT = 'https://client.4kluciodkol.cz';
+  function read() {
+    try {
+      var m = location.hash.match(/vratka=([A-Za-z0-9_-]+)/);
+      if (m) {
+        var b = m[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b.length % 4) b += '=';
+        var d = JSON.parse(decodeURIComponent(escape(atob(b))));
+        sessionStorage.setItem(KEY, JSON.stringify(d));
+        try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+        return d;
+      }
+      var s = sessionStorage.getItem(KEY);
+      return s ? JSON.parse(s) : null;
+    } catch (e) { return null; }
+  }
+  var v = read();
+  if (!v || !v.i || !v.n) return;
+  if (location.hash.indexOf('vymena-konec') >= 0) { try { sessionStorage.removeItem(KEY); history.replaceState(null, '', location.pathname + location.search); } catch (e) {} return; }
+
+  var nf = function (n) { return Math.round(n).toLocaleString('cs-CZ').replace(/\s/g, ' ') + ' Kč'; };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var back = CLIENT + '/vratky/novy?krok=2';
+
+  var css = document.createElement('style');
+  css.textContent =
+    '#vx-bar{position:fixed;left:0;right:0;bottom:0;z-index:9999;box-shadow:0 -2px 12px rgba(0,0,0,.15);background:#ffc524;color:#231F20;font-family:"Good Sans",Arial,sans-serif}' +
+    '#vx-bar .in{max-width:1200px;margin:0 auto;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:10px 16px;flex-wrap:wrap}' +
+    '#vx-bar .k{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:block}' +
+    '#vx-bar .t{font-size:15px;line-height:1.35}#vx-bar a{color:#231F20;font-weight:700;font-size:14px;white-space:nowrap}' +
+    '#vx-box{width:100%;margin:12px 0;display:flex;flex-direction:column;gap:8px;font-family:"Good Sans",Arial,sans-serif}' +
+    '#vx-go{display:block;width:100%;height:56px;border:0;border-radius:10px;background:#ffc524;color:#231F20;font:700 18px "Good Sans",Arial,sans-serif;cursor:pointer}' +
+    '#vx-go[disabled]{background:#ecece8;color:#8a8a86;cursor:not-allowed}' +
+    '#vx-info{text-align:center;font-size:14px;color:#444}' +
+    '.PDAddToCart{grid-template-rows:auto auto !important;height:auto !important;max-height:none !important}' +
+    '.PDAddToCart > :not(#vx-box){grid-row:2 !important}.PDAddToCart > #vx-box{grid-row:1 !important;grid-column:1/-1 !important;margin:0 0 12px !important}';
+  document.head.appendChild(css);
+
+  var bar = document.createElement('div');
+  bar.id = 'vx-bar';
+  bar.innerHTML = '<div class="in"><span class="t"><span class="k">Vyměňujete</span>' + esc(v.n) + (v.c ? ' · kredit ' + nf(v.c) : '') +
+    '</span><span><a href="' + back + '">Zpět do vratky</a> &nbsp; <a href="#vymena-konec" onclick="setTimeout(function(){location.reload()},0)" style="font-weight:400">Ukončit výměnu</a></span></div>';
+  document.body.appendChild(bar);
+  document.body.style.paddingBottom = '76px';
+
+  function price() {
+    var els = document.querySelectorAll('.price.vat.primary.user .value, .price.vat.primary.user');
+    for (var i = 0; i < els.length; i++) {
+      var e = els[i];
+      if (e.closest('.SimpleBasketView, .ProductView, #vx-box')) continue;
+      var n = parseFloat(e.textContent.replace(/[^\d,]/g, '').replace(',', '.'));
+      if (n > 0) return n;
+    }
+    return null;
+  }
+  function state() {
+    var tiles = document.querySelectorAll('#PDVariantSelector .buttons .value');
+    var sel = document.querySelector('#PDVariantSelector .buttons .value.selected');
+    var av = document.querySelector('.PDAvailabilityInfo');
+    var tav = sel ? sel.querySelector('.availabilityInfo') : null;
+    var variants = tiles.length > 1;
+    return {
+      variants: variants, size: sel ? sel.getAttribute('data-value') : '',
+      ok: variants ? !!(tav && /\bzelena\b/.test(tav.className)) : !!(av && /\bcs_zelena\b/.test(av.className))
+    };
+  }
+  function render() {
+    // kam tlačítko: nad „Do košíku“, u karty bez vybrané velikosti pod dlaždice velikostí
+    // (detail je mřížka – box jde dovnitř bloku „Do košíku“ přes celou šířku, jinak na konec výběru velikosti)
+    var atc = document.querySelector('.PDAddToCart'), vs = document.getElementById('PDVariantSelector');
+    var parent = atc || vs;
+    if (!parent || (!vs && !document.querySelector('.PDAvailabilityInfo'))) return;
+    var box = document.getElementById('vx-box');
+    if (box && !parent.contains(box)) { box.remove(); box = null; }
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'vx-box';
+      box.innerHTML = '<button type="button" id="vx-go">Vyměnit za tento produkt →</button><div id="vx-info"></div>';
+      if (atc) parent.insertBefore(box, parent.firstChild); else parent.appendChild(box);
+      box.querySelector('#vx-go').addEventListener('click', function () {
+        var s = state();
+        if (!s.ok || (s.variants && !s.size)) return;
+        try { sessionStorage.removeItem(KEY); } catch (e) {}
+        location.href = CLIENT + '/vratky/novy?krok=2&swap=' + encodeURIComponent(v.i) +
+          '&url=' + encodeURIComponent(location.origin + location.pathname + location.search) + '&size=' + encodeURIComponent(s.variants ? s.size : '');
+      });
+    }
+    var s = state(), p = price(), go = box.querySelector('#vx-go'), info = box.querySelector('#vx-info');
+    var dis = true, txt;
+    if (s.variants && !s.size) txt = 'Vyberte velikost.';
+    else if (!s.ok) txt = 'Tato velikost není skladem ani u dodavatele – k výměně ji vybrat nejde.';
+    else {
+      dis = false;
+      var d = p !== null && v.c ? p - v.c : null;
+      txt = (d === null ? '' : (Math.abs(d) < 1 ? 'Bez doplatku · ' : (d > 0 ? 'Doplatíte ' + nf(d) : 'Vrátíme vám ' + nf(-d)) + ' · ')) + 'doprava zdarma';
+    }
+    if (go.disabled !== dis) go.disabled = dis;
+    if (info.textContent !== txt) info.textContent = txt;
+  }
+  render();
+  // varianty se přepínají bez načtení stránky → hlídat změny
+  var t = null;
+  new MutationObserver(function () { clearTimeout(t); t = setTimeout(render, 150); })
+    .observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+})();
+</script>

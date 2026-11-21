@@ -223,6 +223,7 @@
     var t = e.target.closest('button, [data-clear], [data-switch]');
     if (!t) return;
     if (t.hasAttribute('data-load')) { e.preventDefault(); loadProduct(t.getAttribute('data-load')); return; }
+    if (t.hasAttribute('data-shop')) { e.preventDefault(); goShop(t); return; }
     if (t.hasAttribute('data-dosearch')) { e.preventDefault(); searchShop(t.getAttribute('data-dosearch')); return; }
     if (t.hasAttribute('data-pick-url')) {
       e.preventDefault();
@@ -269,6 +270,17 @@
     if (e.key === 'Enter' && e.target.matches('[data-search]')) { e.preventDefault(); searchShop(e.target.getAttribute('data-search')); }
   });
 
+  // výměna za jiné zboží: výběr přímo na e-shopu (uloží rozpracovaný formulář a otevře e-shop se žlutým pruhem)
+  function goShop(btn) {
+    var fd = new FormData(form);
+    fd.delete && Array.prototype.slice.call(form.querySelectorAll('input[type=file]')).forEach(function (f) { fd.delete(f.name); });
+    var info = { i: parseInt(btn.getAttribute('data-shop'), 10), n: btn.getAttribute('data-name'), c: parseFloat(btn.getAttribute('data-credit')) || 0 };
+    var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(info)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    btn.disabled = true; btn.textContent = 'Otevírám e-shop…';
+    var go = function () { location.href = form.getAttribute('data-shop-url') + '#vratka=' + b64; };
+    fetch(form.getAttribute('data-draft-url'), { method: 'POST', body: fd, credentials: 'same-origin' }).then(go, go);
+  }
+
   // výměna za jiné zboží: hledání na e-shopu
   function searchShop(id) {
     var inp = $('#sq-' + id), box = form.querySelector('[data-results="' + id + '"]');
@@ -299,5 +311,5 @@
     var b = form.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Odesílám…';
   });
 
-  show(1);
+  show(parseInt(form.getAttribute('data-start'), 10) || 1);
 })();

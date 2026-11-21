@@ -281,3 +281,9 @@ html.js .nojs-only{display:none}
 @media (max-width:480px){.res .go{display:none}}
 .byurl summary{cursor:pointer;font-size:13px;font-weight:700;padding:4px 0}
 .byurl[open] summary{margin-bottom:8px}
+
+/* výběr zboží přímo na e-shopu */
+.shoppick{display:flex;flex-direction:column;gap:8px}
+.main .shoppick .btn,.shoppick .btn{width:100%;min-width:0;align-self:stretch}
+.orsep{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.orsep::before,.orsep::after{content:"";flex:1;height:1px;background:var(--line)}
