@@ -199,6 +199,34 @@ t(($d1['lines'][0]['new_code'] ?? '') === '3023795', 'výměna: kód nové velik
 [$e2] = Service::validate(['invoice_date' => date('Y-m-d')] + ['id' => 0], [$itE], ['act' => [77 => 'vymenit'], 'size_to' => [77 => '48'], 'ship' => 'zbox', 'phone' => '', 'bank_account' => '', 'name' => 'A'], []);
 t((bool) array_filter($e2, fn($x) => str_contains($x, 'stejnou velikost')), 'výměna: stejná velikost se odmítne');
 
+// výměna za jiné zboží
+use App\Modules\Vratky\Eshop;
+t(Eshop::productUrl('www.4kluciodkol.cz/plast-michelin-p155431/?cid=279') === 'https://www.4kluciodkol.cz/plast-michelin-p155431/', 'odkaz na zboží: doplní https, zahodí ?cid');
+t(Eshop::productUrl('https://evil.cz/x-p1/') === null && Eshop::productUrl('https://www.4kluciodkol.cz/helmy-c242/') === null, 'odkaz: cizí web a kategorie se odmítnou');
+$pv = Eshop::parseProduct((string) file_get_contents(__DIR__ . '/fixtures/eshop_variant.html'), 'u');
+t(!$pv['single'] && $pv['options'][1]['ok'] && $pv['options'][1]['price'] == 7490 && !$pv['options'][2]['ok'], 'zboží s velikostmi: skladem u dodavatele lze, není skladem ne');
+$ps = Eshop::parseProduct((string) file_get_contents(__DIR__ . '/fixtures/eshop_single.html'), 'u');
+t($ps['single'] && $ps['options'][0]['ok'] && $ps['options'][0]['sku'] === '00099391' && $ps['options'][0]['price'] == 1290, 'zboží bez velikostí: cena, kód, skladem');
+@mkdir(APP_ROOT . '/storage/cache', 0775, true);
+$cacheV = APP_ROOT . '/storage/cache/eshop_url_' . md5('https://www.4kluciodkol.cz/tretry-p188286/') . '.json';
+$cacheS = APP_ROOT . '/storage/cache/eshop_url_' . md5('https://www.4kluciodkol.cz/plast-p155431/') . '.json';
+file_put_contents($cacheV, json_encode($pv + ['url' => 'https://www.4kluciodkol.cz/tretry-p188286/'])); file_put_contents($cacheS, json_encode($ps + ['url' => 'https://www.4kluciodkol.cz/plast-p155431/']));
+$itO = ['id' => 78, 'name' => 'dres X M', 'code' => 'DX', 'unit_price' => 2000, 'qty_left' => 1, 'eshop' => null];
+$base = ['ship' => 'zbox', 'phone' => '', 'name' => 'A', 'agree' => 1, 'act' => [78 => 'vymenit'], 'swap_kind' => [78 => 'jine']];
+[$e3, $d3] = Service::validate(['invoice_date' => date('Y-m-d'), 'id' => 0], [$itO], $base + ['other_url' => [78 => 'https://www.4kluciodkol.cz/plast-p155431/'], 'other_pick' => [78 => ''], 'account' => '19-2000145399/0800'], []);
+t(!$e3 && $d3['lines'][0]['new_code'] === '00099391' && $d3['calc']['balance'] == 710 && $d3['calc']['postage'] === null, 'levnější jiné zboží: vrátíme rozdíl 710 Kč, poštovné se neplatí');
+[$e4] = Service::validate(['invoice_date' => date('Y-m-d'), 'id' => 0], [$itO], $base + ['other_url' => [78 => 'https://www.4kluciodkol.cz/tretry-p188286/'], 'other_pick' => [78 => '43,5']], []);
+t((bool) array_filter($e4, fn($x) => str_contains($x, 'doplatíte')), 'dražší jiné zboží bez volby doplatku → chyba');
+[$e5, $d5] = Service::validate(['invoice_date' => date('Y-m-d'), 'id' => 0], [$itO], $base + ['other_url' => [78 => 'https://www.4kluciodkol.cz/tretry-p188286/'], 'other_pick' => [78 => '43,5'], 'pay_method' => 'dobirka'], []);
+t(!$e5 && $d5['calc']['balance'] == -5490 && $d5['calc']['cod_fee'] == 69 && $d5['lines'][0]['new_name'] === 'tretry LAKE MX239 Black/Black WIDE 43,5', 'dražší zboží na dobírku: doplatek 5 490 + dobírka 69');
+[$e6] = Service::validate(['invoice_date' => date('Y-m-d'), 'id' => 0], [$itO], $base + ['other_url' => [78 => 'https://www.4kluciodkol.cz/tretry-p188286/'], 'other_pick' => [78 => '44'], 'pay_method' => 'prevod'], []);
+t((bool) array_filter($e6, fn($x) => str_contains($x, 'není skladem')), 'velikost, která není skladem, se u jiného zboží vybrat nedá');
+$retO = ['refund_total' => 0, 'swap_diff' => -5490, 'postage_applies' => 0, 'postage' => null, 'ship_charge' => 0, 'ship_refund' => 0, 'cod_fee' => 69];
+t(Service::toPay($retO) == 5559 && Service::payout($retO) == 0, 'doplatek i s dobírkou = 5 559 Kč');
+$planO = Service::docPlan($retO, [['action' => 'vymenit', 'item_code' => 'DX', 'item_name' => 'dres X M', 'qty' => 1, 'unit_price' => 2000, 'size_to' => '43,5', 'new_code' => '3023795', 'new_name' => 'tretry LAKE 43,5', 'new_price' => 7490]]);
+t($planO['type'] === 'fv' && $planO['total'] == 5559 && $planO['items'][1]['unit_price'] == 7490 && $planO['items'][1]['other'] && $planO['items'][2]['kind'] === 'dobirka', 'doklad: faktura s novým zbožím za cenu z e-shopu a dobírkou');
+@unlink($cacheV); @unlink($cacheS);
+
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
 exit($fail ? 1 : 0);

@@ -1,5 +1,6 @@
 <?php
 use App\Modules\Vratky\Service;
+use App\Modules\Vratky\Eshop;
 /** @var array $order @var array $items @var array $dl @var array $old @var array $errors */
 $o = fn(string $k, $id = null, $def = '') => $id === null ? ($old[$k] ?? $def) : ($old[$k][$id] ?? $def);
 $postage = cfg('vratky.return_postage');
@@ -8,7 +9,7 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
 ?>
 <form id="vrform" class="layout" method="post" action="<?= url('/vratky/novy') ?>" enctype="multipart/form-data" novalidate
       data-postage="<?= $postage === null ? '' : e((string) $postage) ?>"
-      data-ship-charge="<?= e((string) $shipCharge) ?>" data-goods-left="<?= e((string) $goodsLeft) ?>" data-free-from="<?= e((string) $freeFrom) ?>">
+      data-ship-charge="<?= e((string) $shipCharge) ?>" data-goods-left="<?= e((string) $goodsLeft) ?>" data-free-from="<?= e((string) $freeFrom) ?>" data-cod-fee="<?= e((string) cfg('vratky.cod_fee', 69)) ?>" data-product-url="<?= url('/vratky/zbozi') ?>">
 <?= csrf_field() ?>
 <div class="main"><div class="col">
 
@@ -85,33 +86,52 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     </div>
 
     <div data-for="vymenit">
-      <div class="freeswap"><b>Doprava zdarma</b><span>Zpáteční zásilku přes Zásilkovnu i odeslání nové velikosti platíme my.</span></div>
-      <?php if (!empty($it['eshop'])): ?>
-        <fieldset class="sizes" style="border:0;padding:0;margin:0">
-          <legend class="l" style="padding:0;margin-bottom:8px">Za jakou velikost?</legend>
-          <div class="sizegrid">
-          <?php foreach ($it['eshop']['sizes'] as $sz): $cur = $sz['current']; ?>
-            <label class="sz<?= $cur ? ' cur' : '' ?>">
-              <input class="sr" type="radio" name="size_to[<?= $id ?>]" value="<?= e($sz['value']) ?>" <?= $cur ? 'disabled' : '' ?> <?= !$cur && $o('size_to', $id) === $sz['value'] ? 'checked' : '' ?>>
-              <span class="v"><?= e($sz['value']) ?></span>
-              <span class="a <?= e($sz['cls']) ?>"><?= $cur ? 'Vaše velikost' : e($sz['avail']) ?></span>
-            </label>
-          <?php endforeach; ?>
-          </div>
-        </fieldset>
-        <span class="hint">Dostupnost je stejná jako na e-shopu. Novou velikost pošleme hned, jak vaše zboží dorazí. Když není skladem, objednáme ji a dáme vám vědět, kdy dorazí.</span>
-      <?php else: ?>
-      <label class="l" for="size-<?= $id ?>">Za jakou velikost?</label>
-      <?php if ($it['sizes']): ?>
-        <select class="f" id="size-<?= $id ?>" name="size_to[<?= $id ?>]">
-          <option value="">Vyberte velikost</option>
-          <?php foreach ($it['sizes'] as $sz): ?><option <?= $o('size_to', $id) === $sz ? 'selected' : '' ?>><?= e($sz) ?></option><?php endforeach; ?>
-        </select>
-      <?php else: ?>
-        <input class="f" id="size-<?= $id ?>" name="size_to[<?= $id ?>]" maxlength="40" value="<?= e($o('size_to', $id)) ?>" placeholder="např. M nebo 43">
-      <?php endif; ?>
-      <span class="hint">Dostupnost velikosti ověříme a novou pošleme hned, jak vaše zboží dorazí. Kdyby nebyla skladem, ozveme se.</span>
-      <?php endif; ?>
+      <div class="freeswap"><b>Doprava zdarma</b><span>Zpáteční zásilku přes Zásilkovnu i odeslání nového zboží platíme my.</span></div>
+      <?php $kind = $o('swap_kind', $id, 'velikost') === 'jine' ? 'jine' : 'velikost'; ?>
+      <fieldset class="seg" style="border:0;padding:0;margin:0">
+        <legend class="sr">Za co chcete vyměnit</legend>
+        <?php foreach (['velikost' => 'Jinou velikost', 'jine' => 'Jiné zboží'] as $k => $lab): ?>
+          <label class="pill <?= $kind === $k ? 'on' : '' ?>" style="display:flex;align-items:center;justify-content:center"><input class="sr" type="radio" name="swap_kind[<?= $id ?>]" value="<?= $k ?>" <?= $kind === $k ? 'checked' : '' ?>><?= $lab ?></label>
+        <?php endforeach; ?>
+      </fieldset>
+      <div data-kind="velikost" class="kindbox">
+        <?php if (!empty($it['eshop'])): ?>
+          <fieldset class="sizes" style="border:0;padding:0;margin:0">
+            <legend class="l" style="padding:0;margin-bottom:8px">Za jakou velikost?</legend>
+            <div class="sizegrid">
+            <?php foreach ($it['eshop']['sizes'] as $sz): $cur = $sz['current']; ?>
+              <label class="sz<?= $cur ? ' cur' : '' ?>">
+                <input class="sr" type="radio" name="size_to[<?= $id ?>]" value="<?= e($sz['value']) ?>" <?= $cur ? 'disabled' : '' ?> <?= !$cur && $o('size_to', $id) === $sz['value'] ? 'checked' : '' ?>>
+                <span class="v"><?= e($sz['value']) ?></span>
+                <span class="a <?= e($sz['cls']) ?>"><?= $cur ? 'Vaše velikost' : e($sz['avail']) ?></span>
+              </label>
+            <?php endforeach; ?>
+            </div>
+          </fieldset>
+          <span class="hint">Dostupnost je stejná jako na e-shopu. Novou velikost pošleme hned, jak vaše zboží dorazí. Když není skladem, objednáme ji a dáme vám vědět, kdy dorazí.</span>
+          <?php if (!array_filter($it['eshop']['sizes'], fn($z) => !$z['current'] && $z['cls'] === 'zelena')): ?>
+            <div class="note">Jiná velikost teď není skladem ani u dodavatele. Můžete ji objednat, nebo <button type="button" class="link js-only" data-kindswitch="<?= $id ?>" style="padding:0;color:var(--ink);font-weight:700">vyměnit za jiné zboží →</button></div>
+          <?php endif; ?>
+        <?php else: ?>
+        <label class="l" for="size-<?= $id ?>">Za jakou velikost?</label>
+        <?php if ($it['sizes']): ?>
+          <select class="f" id="size-<?= $id ?>" name="size_to[<?= $id ?>]">
+            <option value="">Vyberte velikost</option>
+            <?php foreach ($it['sizes'] as $sz): ?><option <?= $o('size_to', $id) === $sz ? 'selected' : '' ?>><?= e($sz) ?></option><?php endforeach; ?>
+          </select>
+        <?php else: ?>
+          <input class="f" id="size-<?= $id ?>" name="size_to[<?= $id ?>]" maxlength="40" value="<?= e($o('size_to', $id)) ?>" placeholder="např. M nebo 43">
+        <?php endif; ?>
+        <span class="hint">Dostupnost velikosti ověříme a novou pošleme hned, jak vaše zboží dorazí. Kdyby nebyla skladem, ozveme se.</span>
+        <?php endif; ?>
+      </div>
+      <div data-kind="jine" class="kindbox">
+        <div class="field"><label class="l" for="ou-<?= $id ?>">Odkaz na zboží z e-shopu</label>
+          <div class="urlrow"><input class="f" id="ou-<?= $id ?>" name="other_url[<?= $id ?>]" inputmode="url" autocomplete="off" placeholder="https://www.4kluciodkol.cz/…" value="<?= e($o('other_url', $id)) ?>">
+            <button type="button" class="btn dark js-only" data-load="<?= $id ?>">Načíst</button></div>
+          <span class="hint">Najděte zboží na <a href="<?= e(rtrim((string) cfg('shop.web'), '/')) ?>/" target="_blank" rel="noopener">4kluciodkol.cz ↗</a>, zkopírujte adresu stránky a vložte ji sem. Vybrat můžete zboží skladem nebo skladem u dodavatele. Rozdíl v ceně vám vrátíme, nebo ho doplatíte.</span></div>
+        <div data-other="<?= $id ?>"><?php $ou = trim((string) $o('other_url', $id)); if ($ou !== ''): ?><?= \App\Core\View::render('vratky:other_product', ['p' => Eshop::product($ou), 'id' => $id, 'sel' => (string) $o('other_pick', $id), 'url' => $ou]) ?><?php endif; ?></div>
+      </div>
     </div>
 
     <div data-for="reklamovat">
@@ -149,6 +169,13 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     <div class="field" data-account><label class="l" for="account">Číslo účtu pro vrácení peněz</label>
       <input class="f" id="account" name="account" inputmode="text" autocomplete="off" placeholder="např. 123456789/0800" value="<?= e($o('account')) ?>">
       <span class="hint">Peníze pošleme nejpozději do 14 dnů od doručení vratky, obvykle mnohem dřív.</span></div>
+    <div class="field" data-paybox><span class="l">Jak doplatíte rozdíl v ceně?</span>
+      <?php $pm = $o('pay_method'); foreach (['prevod' => ['Převodem', 'Fakturu s platebními údaji pošleme, až vaše zboží dorazí. Nové zboží odešleme po zaplacení.'],
+                    'dobirka' => ['Na dobírku', 'Zaplatíte při převzetí nového zboží. Dobírka stojí ' . money((float) cfg('vratky.cod_fee', 69)) . '.']] as $k => [$t, $d]): ?>
+      <label class="opt <?= $pm === $k ? 'on' : '' ?>"><input class="sr" type="radio" name="pay_method" value="<?= $k ?>" <?= $pm === $k ? 'checked' : '' ?>><span class="dot"></span>
+        <span class="b"><span class="r"><strong><?= e($t) ?></strong></span><span class="d"><?= e($d) ?></span></span></label>
+      <?php endforeach; ?>
+      <span class="hint nojs-only">Vyplňte jen tehdy, když je nové zboží dražší.</span></div>
     <div class="field"><label class="l" for="phone">Telefon <span style="font-weight:400;color:var(--muted)">(pro Zásilkovnu a když se potřebujeme domluvit)</span></label>
       <input class="f" id="phone" name="phone" type="tel" autocomplete="tel" value="<?= e($o('phone', null, $order['phone'])) ?>"></div>
     <div class="field"><label class="l" for="note">Poznámka pro nás <span style="font-weight:400;color:var(--muted)">(nepovinné)</span></label>

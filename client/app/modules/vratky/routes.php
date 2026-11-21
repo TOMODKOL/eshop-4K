@@ -8,6 +8,7 @@ use App\Core\Http;
 use App\Core\RateLimit;
 use App\Core\Session;
 use App\Core\View;
+use App\Modules\Vratky\Eshop;
 use App\Modules\Vratky\Notify;
 use App\Modules\Vratky\Packeta;
 use App\Modules\Vratky\Photos;
@@ -89,6 +90,16 @@ Http::get('/vratky/novy', function () use ($loadOrder) {
     $items = Service::items((int) $o['id'], true);
     View::page('vratky:form', ['title' => 'Co chcete udělat?', 'homeUrl' => '/vratky', 'order' => $o, 'items' => $items,
         'dl' => Service::deadlines($o), 'old' => Session::get('vr_old', []), 'errors' => []]);
+});
+
+// výměna za jiné zboží: načte zboží z e-shopu podle odkazu (HTML kousek formuláře)
+Http::get('/vratky/zbozi', function () use ($loadOrder) {
+    $loadOrder();
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    $url = trim((string) ($_GET['url'] ?? ''));
+    $p = RateLimit::hit('vr_prod', 60, 3600) ? Eshop::product($url) : null;
+    echo View::render('vratky:other_product', ['p' => $p, 'id' => (int) ($_GET['id'] ?? 0), 'sel' => '', 'url' => $url]);
 });
 
 Http::post('/vratky/novy', function () use ($loadOrder) {

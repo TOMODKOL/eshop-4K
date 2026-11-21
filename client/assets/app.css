@@ -209,7 +209,7 @@ table.t tr:last-child td{border-bottom:0}
 .photos a img{width:96px;height:96px;object-fit:cover;border-radius:8px;display:block}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 html:not(.js) .js-only{display:none!important}
-html.js .step[hidden],.detail[hidden],[data-for][hidden]{display:none!important}
+html.js .step[hidden],.detail[hidden],[data-for][hidden],[data-kind][hidden],[data-account][hidden],[data-paybox][hidden],[data-diff][hidden]{display:none!important}
 .step{display:flex;flex-direction:column;gap:14px}
 .navrow{display:flex;flex-direction:column;gap:6px}
 @media (min-width:900px){.navrow{align-items:flex-start}}
@@ -251,3 +251,19 @@ label.pill.na{cursor:not-allowed}
 .sz.cur .v{color:#9a9a96}
 .sz.cur .a{color:var(--muted)}
 @media (max-width:480px){.sz .a{font-size:10px}}
+
+/* výměna za jiné zboží */
+.kindbox{display:flex;flex-direction:column;gap:10px}
+.urlrow{display:flex;gap:8px}
+.urlrow .f{flex:1 1 auto;min-width:0}
+.main .urlrow .btn,.urlrow .btn{width:auto;min-width:0;flex:0 0 auto;padding:0 18px;height:46px;align-self:auto}
+.otherprod{display:flex;flex-direction:column;gap:10px}
+.op-head{display:flex;gap:12px;align-items:center;font-size:14px;line-height:1.4}
+.op-head img{width:64px;height:64px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid var(--line2);flex:0 0 auto}
+.sz .p{font-size:11px;color:var(--muted)}
+.sz:has(input:checked) .p{color:#d8d8d4}
+.sz.na{cursor:not-allowed;opacity:.55}
+.sz.na:hover{border-color:var(--line)}
+.sz.single{flex-direction:row;justify-content:space-between;min-height:0;padding:12px 14px;max-width:320px}
+.loading{font-size:13px;color:var(--muted)}
+html.js .nojs-only{display:none}

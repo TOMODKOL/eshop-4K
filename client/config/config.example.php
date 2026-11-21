@@ -46,6 +46,7 @@ return [
         // Poštovné za vrácení (Kč s DPH), které se strhne z vrácené částky – jen u čistého vrácení přes Zásilkovnu.
         // 79 Kč = zpětná zásilka Zásilkovny stojí 75,02 Kč s DPH (62 Kč bez paliva a mýta), rozhodnuto 20. 11. 2026.
         'return_postage' => 79,
+        'cod_fee' => 69,                // dobírka za doplatek při výměně za dražší zboží
         // Při vrácení celé objednávky vracíme i dopravu, ale nejvýš cenu nejlevnějšího způsobu doručení z obchodních podmínek (Kč s DPH).
         // Osobní odběr se nepočítá (není to doručení), doprava zdarma nad hranicí také ne. 69 Kč = GLS výdejní místo od 21. 11. 2026.
         // Dobírka se nevrací. Po změně ceníku dopravy upravit.

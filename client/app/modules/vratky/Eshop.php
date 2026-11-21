@@ -79,7 +79,7 @@ final class Eshop
             $cls = '';
             if ($av instanceof \DOMElement) foreach (preg_split('/\s+/', $av->getAttribute('class')) as $c) if ($c !== '' && $c !== 'availabilityInfo') $cls = $c;
             $sizes[] = ['value' => $value, 'avail' => trim((string) $av?->textContent), 'cls' => preg_replace('/[^a-z0-9_-]/i', '', $cls),
-                'sku' => '', 'current' => (bool) preg_match('/(^|\s)selected(\s|$)/', $t->getAttribute('class'))];
+                'sku' => '', 'price' => null, 'current' => (bool) preg_match('/(^|\s)selected(\s|$)/', $t->getAttribute('class'))];
         }
         if (count($sizes) < 2) return null;
 
@@ -93,7 +93,7 @@ final class Eshop
             $sku = trim((string) ($v['sku'] ?? ''));
             if ($sku === '') continue;
             $i = self::matchSize($sizes, (string) ($v['name'] ?? ''), (string) ($v['image'] ?? ''));
-            if ($i !== null && $sizes[$i]['sku'] === '') $sizes[$i]['sku'] = $sku;
+            if ($i !== null && $sizes[$i]['sku'] === '') { $sizes[$i]['sku'] = $sku; $sizes[$i]['price'] = self::price($v); }
         }
         return ['sizes' => $sizes];
     }
@@ -110,6 +110,89 @@ final class Eshop
             if ($slug !== '' && str_ends_with($file, '-' . $slug) && strlen($slug) > $len) { $best = $i; $len = strlen($slug); }
         }
         return $best;
+    }
+
+    private static function price(array $p): ?float
+    {
+        $o = $p['offers'] ?? null;
+        if (is_array($o) && isset($o[0])) $o = $o[0];
+        return is_array($o) && is_numeric($o['price'] ?? null) ? (float) $o['price'] : null;
+    }
+
+    /** Je odkaz stránkou zboží na našem e-shopu? Vrací čistou adresu, nebo null. */
+    public static function productUrl(string $url): ?string
+    {
+        $url = trim($url);
+        if ($url === '') return null;
+        if (!preg_match('~^https?://~i', $url)) $url = 'https://' . ltrim($url, '/');
+        $p = parse_url($url);
+        $host = strtolower((string) ($p['host'] ?? ''));
+        if (!in_array($host, ['4kluciodkol.cz', 'www.4kluciodkol.cz'], true)) return null;
+        $path = (string) ($p['path'] ?? '');
+        if (!preg_match('~^/[a-z0-9-]*-p\d+/?$~i', $path)) return null;
+        parse_str((string) ($p['query'] ?? ''), $q);
+        return 'https://www.4kluciodkol.cz' . rtrim($path, '/') . '/' . (isset($q['vid']) && ctype_digit((string) $q['vid']) ? '?vid=' . $q['vid'] : '');
+    }
+
+    /**
+     * Zboží z e-shopu pro výměnu za jiné zboží.
+     * @return array{name:string, image:string, url:string, single:bool, options:list<array{value:string, avail:string, cls:string, sku:string, price:?float, ok:bool}>}|null
+     *   ok = lze vybrat (skladem nebo skladem u dodavatele, se známou cenou a kódem)
+     */
+    public static function product(string $url): ?array
+    {
+        $url = self::productUrl($url);
+        if (!$url) return null;
+        $dir = APP_ROOT . '/storage/cache';
+        $file = "$dir/eshop_url_" . md5($url) . '.json';
+        if (is_file($file) && filemtime($file) > time() - self::TTL) {
+            $c = json_decode((string) file_get_contents($file), true);
+            return is_array($c) && !empty($c['options']) ? $c : null;
+        }
+        $html = self::fetch($url);
+        $res = $html === null ? null : self::parseProduct($html, $url);
+        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        @file_put_contents($file, json_encode($res ?? ['options' => []], JSON_UNESCAPED_UNICODE));
+        return $res;
+    }
+
+    /** Rozebere stránku zboží (s velikostmi i bez nich). Veřejné kvůli testům. */
+    public static function parseProduct(string $html, string $url = ''): ?array
+    {
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
+        libxml_clear_errors();
+        $xp = new \DOMXPath($dom);
+        $ld = null;
+        foreach ($xp->query("//script[@type='application/ld+json']") as $sc) {
+            $j = json_decode($sc->textContent, true);
+            if (is_array($j) && in_array($j['@type'] ?? '', ['ProductGroup', 'Product'], true)) { $ld = $j; break; }
+        }
+        if (!$ld) return null;
+        $ok = fn(array $o) => $o['cls'] === 'zelena' && $o['sku'] !== '' && $o['price'] !== null && $o['price'] > 0;
+        $base = ['name' => trim((string) ($ld['name'] ?? '')), 'image' => (string) ($ld['image'] ?? ''), 'url' => $url];
+        if (($ld['@type'] ?? '') === 'ProductGroup') {
+            $v = self::parse($html);
+            if (!$v) return null;
+            $opts = array_map(fn($o) => ['value' => $o['value'], 'avail' => $o['avail'], 'cls' => $o['cls'], 'sku' => $o['sku'], 'price' => $o['price']], $v['sizes']);
+            foreach ($opts as &$o) $o['ok'] = $ok($o);
+            unset($o);
+            return $base + ['single' => false, 'options' => $opts];
+        }
+        $av = $xp->query("//*[contains(concat(' ', normalize-space(@class), ' '), ' PDAvailabilityInfo ')]")->item(0);
+        $cls = '';
+        if ($av instanceof \DOMElement && preg_match('/\bcs_([a-z0-9_-]+)/i', $av->getAttribute('class'), $m)) $cls = $m[1];
+        $o = ['value' => '', 'avail' => trim((string) $av?->textContent), 'cls' => $cls, 'sku' => trim((string) ($ld['sku'] ?? '')), 'price' => self::price($ld)];
+        $o['ok'] = $ok($o);
+        return $base + ['single' => true, 'options' => [$o]];
+    }
+
+    /** Vybraná možnost (velikost) zboží; u zboží bez velikostí prázdná hodnota. */
+    public static function option(?array $product, string $value): ?array
+    {
+        foreach ($product['options'] ?? [] as $o) if ($o['value'] === $value) return $o;
+        return null;
     }
 
     private static function ascii(string $s): string

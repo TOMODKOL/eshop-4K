@@ -157,11 +157,26 @@ final class Service
             if ($qty > $it['qty_left']) { $errors[] = 'U položky „' . $it['name'] . '“ lze vybrat nejvýš ' . $it['qty_left'] . ' ks.'; continue; }
             if (in_array($act, ['vratit', 'vymenit'], true) && !$dl['can_return']) { $errors[] = 'Lhůta pro vrácení a výměnu u této objednávky už uplynula. Zboží můžete reklamovat.'; continue; }
             if ($act === 'reklamovat' && !$dl['can_claim']) { $errors[] = 'Lhůta pro reklamaci (24 měsíců) už uplynula.'; continue; }
-            $line = ['item' => $it, 'action' => $act, 'qty' => $qty, 'reason' => '', 'size_to' => '', 'new_code' => '', 'defect_text' => '', 'photos' => []];
+            $line = ['item' => $it, 'action' => $act, 'qty' => $qty, 'reason' => '', 'size_to' => '', 'new_code' => '', 'new_name' => '', 'new_price' => null, 'new_url' => '', 'defect_text' => '', 'photos' => []];
             if ($act === 'vratit') {
                 $r = (string) ($post['reason'][$id] ?? '');
                 if (!in_array($r, self::REASONS, true)) $errors[] = 'Vyberte důvod vrácení u „' . $it['name'] . '“.';
                 $line['reason'] = $r;
+            } elseif ($act === 'vymenit' && ($post['swap_kind'][$id] ?? '') === 'jine') {
+                // výměna za jiné zboží z e-shopu (jen skladem nebo skladem u dodavatele)
+                $prod = Eshop::product((string) ($post['other_url'][$id] ?? ''));
+                $opt = $prod ? Eshop::option($prod, (string) ($post['other_pick'][$id] ?? '')) : null;
+                if (!$prod) $errors[] = 'U „' . $it['name'] . '“ vložte odkaz na zboží z 4kluciodkol.cz, za které ho chcete vyměnit.';
+                elseif (!$opt) $errors[] = 'U „' . $it['name'] . '“ vyberte velikost nového zboží.';
+                elseif (!$opt['ok']) $errors[] = '„' . $prod['name'] . ($opt['value'] !== '' ? ' ' . $opt['value'] : '') . '“ teď není skladem ani u dodavatele. Vyberte prosím jiné.';
+                elseif ($opt['sku'] === $it['code']) $errors[] = 'U „' . $it['name'] . '“ jste vybrali stejné zboží. Pro jinou velikost zvolte „Jinou velikost“.';
+                else {
+                    $line['size_to'] = $opt['value'];
+                    $line['new_code'] = mb_substr($opt['sku'], 0, 60);
+                    $line['new_name'] = mb_substr(trim($prod['name'] . ($opt['value'] !== '' && !$prod['single'] ? ' ' . $opt['value'] : '')), 0, 255);
+                    $line['new_price'] = (float) $opt['price'];
+                    $line['new_url'] = mb_substr($prod['url'], 0, 500);
+                }
             } elseif ($act === 'vymenit') {
                 $s = trim((string) ($post['size_to'][$id] ?? ''));
                 if ($s === '' || mb_strlen($s) > 40) $errors[] = 'Napište, za jakou velikost chcete „' . $it['name'] . '“ vyměnit.';
@@ -187,9 +202,11 @@ final class Service
         $ship = (string) ($post['ship'] ?? '');
         if (!isset(self::SHIP[$ship])) $errors[] = 'Vyberte, jak nám zboží pošlete.';
 
-        $calc = self::calc($lines, $ship, $order);
+        $pay = (string) ($post['pay_method'] ?? '');
+        $calc = self::calc($lines, $ship, $order, $pay);
         $account = self::normalizeAccount((string) ($post['account'] ?? ''));
-        if ($calc['refund'] > 0 && !self::validAccount($account)) $errors[] = 'Vyplňte číslo účtu pro vrácení peněz (např. 123456789/0800).';
+        if ($calc['balance'] > 0 && !self::validAccount($account)) $errors[] = 'Vyplňte číslo účtu pro vrácení peněz (např. 123456789/0800).';
+        if ($calc['balance'] < 0 && !in_array($pay, ['prevod', 'dobirka'], true)) $errors[] = 'Vyberte, jak doplatíte rozdíl v ceně.';
 
         if (empty($post['agree'])) $errors[] = 'Potvrďte prosím souhlas s podmínkami vrácení a reklamace.';
 
@@ -203,20 +220,31 @@ final class Service
         ]];
     }
 
-    /** Peníze: vracené zboží; poštovné jen u čistého vrácení zaslaného Zásilkovnou; doprava, když zbytek objednávky klesne pod hranici dopravy zdarma. */
-    public static function calc(array $lines, string $ship, ?array $order = null): array
+    /**
+     * Peníze: vracené zboží; rozdíl ceny při výměně za jiné zboží; poštovné jen u čistého vrácení zaslaného Zásilkovnou;
+     * doprava, když zbytek objednávky klesne pod hranici dopravy zdarma. balance > 0 vracíme, < 0 zákazník doplácí.
+     */
+    public static function calc(array $lines, string $ship, ?array $order = null, string $pay = ''): array
     {
-        $refund = 0.0;
-        foreach ($lines as $l) if ($l['action'] === 'vratit') $refund += (float) $l['item']['unit_price'] * $l['qty'];
+        $refund = 0.0; $diff = 0.0;
+        foreach ($lines as $l) {
+            if ($l['action'] === 'vratit') $refund += (float) $l['item']['unit_price'] * $l['qty'];
+            if ($l['action'] === 'vymenit' && ($l['new_price'] ?? null) !== null) $diff += ((float) $l['item']['unit_price'] - (float) $l['new_price']) * $l['qty'];
+        }
         $onlyReturn = $lines && count(array_filter($lines, fn($l) => $l['action'] !== 'vratit')) === 0;
         $postageApplies = $onlyReturn && self::usesPacketa($ship);
         $postage = Config::get('vratky.return_postage');
-        return [
+        $c = [
             'refund' => round($refund, 2),
+            'swap_diff' => round($diff, 2),
             'postage_applies' => $postageApplies,
             'postage' => $postageApplies && $postage !== null ? (float) $postage : null,
             'ship_charge' => $order ? self::freeShippingCharge($order, $refund) : 0.0,
         ];
+        $c['balance'] = round($c['refund'] + $c['swap_diff'] - (float) ($c['postage'] ?? 0) - $c['ship_charge'], 2);
+        $c['pay_method'] = $c['balance'] < 0 && in_array($pay, ['prevod', 'dobirka'], true) ? $pay : '';
+        $c['cod_fee'] = $c['pay_method'] === 'dobirka' ? (float) Config::get('vratky.cod_fee', 69) : 0.0;
+        return $c;
     }
 
     /** Pravidla dopravy (ceník + hranice dopravy zdarma) platná k datu objednávky. */
@@ -315,6 +343,9 @@ final class Service
                 'postage' => $data['calc']['postage'],
                 'postage_applies' => $data['calc']['postage_applies'] ? 1 : 0,
                 'ship_charge' => (float) ($data['calc']['ship_charge'] ?? 0),
+                'swap_diff' => (float) ($data['calc']['swap_diff'] ?? 0),
+                'pay_method' => (string) ($data['calc']['pay_method'] ?? ''),
+                'cod_fee' => (float) ($data['calc']['cod_fee'] ?? 0),
                 'claim_deadline' => $hasClaim ? date('Y-m-d', strtotime('+' . (int) Config::get('vratky.claim_resolve_days', 30) . ' days')) : null,
                 'pohoda_state' => $pohoda,
                 'created_at' => $now,
@@ -332,6 +363,9 @@ final class Service
                     'reason' => $l['reason'],
                     'size_to' => $l['size_to'],
                     'new_code' => $l['new_code'] ?? '',
+                    'new_name' => $l['new_name'] ?? '',
+                    'new_price' => $l['new_price'] ?? null,
+                    'new_url' => $l['new_url'] ?? '',
                     'defect_text' => $l['defect_text'],
                 ]);
                 foreach ($l['photos'] as $p) Photos::attach($lid, $p);
@@ -350,13 +384,35 @@ final class Service
         return (string) ($ret['pohoda_no'] ?? '') !== '' ? (string) $ret['pohoda_no'] : (string) $ret['no'];
     }
 
-    /** Kolik zákazníkovi skutečně pošleme: zboží − poštovné za vrácení + vrácená doprava. */
-    public static function payout(array $ret): float
+    /** Bilance vratky: kladná = vracíme zákazníkovi, záporná = zákazník doplácí (výměna za dražší zboží, i s dobírkou). */
+    public static function balance(array $ret): float
     {
-        $p = (float) $ret['refund_total'];
+        $p = (float) $ret['refund_total'] + (float) ($ret['swap_diff'] ?? 0);
         if ($ret['postage_applies'] && $ret['postage'] !== null) $p -= (float) $ret['postage'];
         $p -= (float) ($ret['ship_charge'] ?? 0);
-        return round(max(0, $p + (float) ($ret['ship_refund'] ?? 0)), 2);
+        $p += (float) ($ret['ship_refund'] ?? 0);
+        $p -= (float) ($ret['cod_fee'] ?? 0);
+        return round($p, 2);
+    }
+
+    /** Kolik zákazníkovi skutečně pošleme. */
+    public static function payout(array $ret): float { return max(0.0, self::balance($ret)); }
+
+    /** Kolik zákazník doplatí. */
+    public static function toPay(array $ret): float { return max(0.0, -self::balance($ret)); }
+
+    public const PAY = ['prevod' => 'Převodem', 'dobirka' => 'Na dobírku'];
+
+    public static function actionLabel(array $l): string
+    {
+        if ($l['action'] === 'vymenit' && ($l['new_name'] ?? '') !== '') return 'Výměna za jiné zboží';
+        return self::ACTIONS[$l['action']] ?? (string) $l['action'];
+    }
+
+    /** Text „za co se měnilo“ u řádku výměny. */
+    public static function swapText(array $l): string
+    {
+        return ($l['new_name'] ?? '') !== '' ? 'Za: ' . $l['new_name'] : 'Za velikost ' . $l['size_to'];
     }
 
     // ---------- Pohoda: doklad k vratce (opravný daňový doklad / faktura) ----------
@@ -400,8 +456,10 @@ final class Service
                 $items[] = ['kind' => 'zbozi', 'code' => $l['item_code'], 'name' => $l['item_name'], 'qty' => -(int) $l['qty'], 'unit_price' => (float) $l['unit_price']];
             } elseif ($l['action'] === 'vymenit') {
                 $items[] = ['kind' => 'zbozi', 'code' => $l['item_code'], 'name' => $l['item_name'], 'qty' => -(int) $l['qty'], 'unit_price' => (float) $l['unit_price']];
-                $items[] = ['kind' => 'nove', 'code' => (string) ($l['new_code'] ?? ''), 'name' => self::swapSize($l['item_name'], (string) $l['size_to']),
-                    'qty' => (int) $l['qty'], 'unit_price' => (float) $l['unit_price'], 'for_code' => $l['item_code']];
+                $other = ($l['new_name'] ?? '') !== '' && ($l['new_price'] ?? null) !== null;
+                $items[] = ['kind' => 'nove', 'code' => (string) ($l['new_code'] ?? ''),
+                    'name' => $other ? (string) $l['new_name'] : self::swapSize($l['item_name'], (string) $l['size_to']),
+                    'qty' => (int) $l['qty'], 'unit_price' => $other ? (float) $l['new_price'] : (float) $l['unit_price'], 'for_code' => $l['item_code'], 'other' => $other];
             }
         }
         if (!$items) return ['type' => null, 'total' => 0.0, 'items' => []];
@@ -410,6 +468,9 @@ final class Service
         }
         if ((float) ($ret['ship_charge'] ?? 0) > 0) {
             $items[] = ['kind' => 'doprava_navic', 'code' => '', 'name' => 'Doprava – objednávka po vrácení nesplňuje dopravu zdarma', 'qty' => 1, 'unit_price' => (float) $ret['ship_charge']];
+        }
+        if ((float) ($ret['cod_fee'] ?? 0) > 0) {
+            $items[] = ['kind' => 'dobirka', 'code' => '', 'name' => 'Dobírka – doplatek za výměnu', 'qty' => 1, 'unit_price' => (float) $ret['cod_fee']];
         }
         if ((float) ($ret['ship_refund'] ?? 0) > 0) {
             $items[] = ['kind' => 'doprava', 'code' => '', 'name' => 'Vrácení dopravy', 'qty' => -1, 'unit_price' => (float) $ret['ship_refund']];
@@ -473,7 +534,7 @@ final class Service
         $states = $withDrafts ? "('ceka','navrh')" : "('ceka')";
         foreach (Db::all("SELECT r.*, o.invoice_no, o.order_no FROM returns r JOIN orders o ON o.id = r.order_id WHERE r.doc_state IN $states ORDER BY r.id") as $r) {
             $plan = self::docPlan($r);
-            $out[] = ['no' => $r['no'], 'invoice_no' => $r['invoice_no'], 'order_no' => $r['order_no'], 'type' => $plan['type'], 'total' => $plan['total'],
+            $out[] = ['no' => $r['no'], 'invoice_no' => $r['invoice_no'], 'order_no' => $r['order_no'], 'type' => $plan['type'], 'pay_method' => (string) ($r['pay_method'] ?? ''), 'total' => $plan['total'],
                 'bank_account' => $r['bank_account'], 'customer_name' => $r['customer_name'], 'email' => $r['email'], 'items' => $plan['items']];
         }
         return $out;

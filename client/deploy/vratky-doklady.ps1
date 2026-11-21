@@ -116,6 +116,10 @@ try {
                     $cena = [double]::Parse((Text $p 'homeCurrency/unitPrice'), [Globalization.CultureInfo]::InvariantCulture)
                     $sleva = Text $p 'discountPercentage'; if (-not $sleva) { $sleva = '0' }
                     $sazba = Text $p 'rateVAT'; $platiDph = Text $p 'payVAT'; if (-not $platiDph) { $platiDph = 'true' }
+                    if ($i.kind -eq 'nove' -and $i.other) {
+                        # výměna za jiné zboží: cena z e-shopu (s DPH, bez slevy), sazba DPH podle vraceného zboží
+                        $cena = [double]$i.unit_price; $sleva = '0'
+                    }
                     $nazev = if ($i.kind -eq 'nove') { [string]$i.name } else { Text $p 'text' }
                     $kodZ = [string]$i.code
                     if ($i.kind -eq 'nove') {
@@ -129,7 +133,7 @@ try {
 "@)
                     $soucet += $mn * $cena * (1 - [double]::Parse($sleva, [Globalization.CultureInfo]::InvariantCulture) / 100)
                 } else {
-                    # poštovné za vrácení (+), vrácení dopravy (−) – textové položky, 21 %
+                    # poštovné za vrácení (+), doprava navíc (+), dobírka (+), vrácení dopravy (−) – textové položky, 21 %
                     $cena = [double]$i.unit_price
                     [void]$radky.Append(@"
 <inv:invoiceItem><inv:text>$(X ([string]$i.name))</inv:text><inv:quantity>$(Cislo $mn)</inv:quantity><inv:unit>ks</inv:unit><inv:payVAT>true</inv:payVAT><inv:rateVAT>high</inv:rateVAT><inv:homeCurrency><typ:unitPrice>$(Cislo $cena)</typ:unitPrice></inv:homeCurrency></inv:invoiceItem>

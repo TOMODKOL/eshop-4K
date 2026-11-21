@@ -14,6 +14,7 @@
   var shipChargeCfg = parseFloat(form.getAttribute('data-ship-charge')) || 0;
   var goodsLeft = parseFloat(form.getAttribute('data-goods-left')) || 0;
   var freeFrom = parseFloat(form.getAttribute('data-free-from')) || 0;
+  var codFee = parseFloat(form.getAttribute('data-cod-fee')) || 0;
   var current = 1;
   var LABEL = { vratit: 'Vrácení', vymenit: 'Výměna velikosti', reklamovat: 'Reklamace' };
   var nf = new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 2 });
@@ -36,28 +37,47 @@
       var id = card.getAttribute('data-item');
       var act = $('input[name="act[' + id + ']"]:checked', card);
       var qtyEl = form.querySelector('[name="qty[' + id + ']"]');
+      var kindEl = form.querySelector('input[name="swap_kind[' + id + ']"]:checked');
+      var kind = kindEl ? kindEl.value : 'velikost';
+      var pick = form.querySelector('input[name="other_pick[' + id + ']"]:checked');
+      var box = form.querySelector('[data-other="' + id + '"] .otherprod strong');
+      var np = pick ? parseFloat(pick.getAttribute('data-price')) : NaN;
       return {
         id: id,
         name: card.getAttribute('data-name'),
         price: parseFloat(card.getAttribute('data-price')) || 0,
         act: act ? act.value : '',
-        qty: qtyEl ? parseInt(qtyEl.value, 10) || 1 : 1
+        qty: qtyEl ? parseInt(qtyEl.value, 10) || 1 : 1,
+        kind: kind,
+        picked: !!pick,
+        newPrice: kind === 'jine' && pick && !isNaN(np) ? np : null,
+        newName: kind === 'jine' && pick && box ? (box.textContent + (pick.value ? ' ' + pick.value : '')) : ''
       };
     });
   }
   function chosen() { return items().filter(function (i) { return i.act; }); }
   function ship() { var s = $('input[name="ship"]:checked'); return s ? s.value : ''; }
   function calc() {
-    var ch = chosen(), refund = 0;
-    ch.forEach(function (i) { if (i.act === 'vratit') refund += i.price * i.qty; });
+    var ch = chosen(), refund = 0, diff = 0;
+    ch.forEach(function (i) {
+      if (i.act === 'vratit') refund += i.price * i.qty;
+      if (i.act === 'vymenit' && i.newPrice !== null) diff += (i.price - i.newPrice) * i.qty;
+    });
     var onlyReturn = ch.length > 0 && ch.every(function (i) { return i.act === 'vratit'; });
     var after = goodsLeft - refund;
     var shipCharge = (shipChargeCfg > 0 && refund > 0 && after > 0.005 && after < freeFrom) ? shipChargeCfg : 0;
-    return { ch: ch, refund: refund, onlyReturn: onlyReturn, postageApplies: onlyReturn && (ship() === 'zbox' || ship() === 'vm'), shipCharge: shipCharge };
+    var postageApplies = onlyReturn && (ship() === 'zbox' || ship() === 'vm');
+    var balance = refund + diff - (postageApplies && postage !== null ? postage : 0) - shipCharge;
+    var payEl = $('input[name="pay_method"]:checked');
+    var cod = balance < -0.005 && payEl && payEl.value === 'dobirka' ? codFee : 0;
+    return { ch: ch, refund: refund, diff: diff, onlyReturn: onlyReturn, postageApplies: postageApplies, shipCharge: shipCharge, balance: balance - cod, cod: cod, owes: balance < -0.005 };
   }
   function detailText(i) {
     if (i.act === 'vratit') { var r = $('input[name="reason[' + i.id + ']"]:checked'); return r ? r.value : ''; }
-    if (i.act === 'vymenit') { var sv = sizeVal(i.id); return sv ? 'Za velikost ' + sv : ''; }
+    if (i.act === 'vymenit') {
+      if (i.kind === 'jine') return i.newName ? 'Za: ' + i.newName : '';
+      var sv = sizeVal(i.id); return sv ? 'Za velikost ' + sv : '';
+    }
     var d = form.querySelector('[name="defect[' + i.id + ']"]');
     var n = (form.querySelector('[data-photos="' + i.id + '"]') || { files: [] }).files.length;
     return (d && d.value ? 'Vada: ' + d.value.slice(0, 80) : '') + (n ? ' · ' + n + ' foto' : '');
@@ -83,7 +103,9 @@
       var id = d.getAttribute('data-detail'), act = map[id] || '';
       d.hidden = !act;
       $$('[data-for]', d).forEach(function (b) { b.hidden = b.getAttribute('data-for') !== act; });
-      var tag = $('[data-tag]', d); if (tag) tag.textContent = LABEL[act] || '';
+      var k = $('input[name="swap_kind[' + id + ']"]:checked', d);
+      var tag = $('[data-tag]', d); if (tag) tag.textContent = act === 'vymenit' && k && k.value === 'jine' ? 'Výměna za jiné zboží' : (LABEL[act] || '');
+      $$('[data-kind]', d).forEach(function (b) { b.hidden = b.getAttribute('data-kind') !== (k ? k.value : 'velikost'); });
     });
   }
 
@@ -98,17 +120,28 @@
       el.className = paid ? '' : 'free';
     });
     var note = $('[data-postage-note]'); if (note) note.hidden = !c.postageApplies;
-    var acc = $('[data-account]'); if (acc) acc.hidden = c.refund <= 0;
+    var acc = $('[data-account]'); if (acc) acc.hidden = c.balance <= 0.005;
+    var pb = $('[data-paybox]'); if (pb) pb.hidden = !c.owes;
+    c.ch.forEach(function (i) {
+      var el = form.querySelector('[data-diff="' + i.id + '"]');
+      if (!el) return;
+      if (i.newPrice === null) { el.hidden = true; return; }
+      var d = (i.price - i.newPrice) * i.qty;
+      el.hidden = false;
+      el.innerHTML = Math.abs(d) < 0.005 ? 'Cena je stejná, nic se nedoplácí.' : (d > 0 ? 'Nové zboží je levnější – rozdíl <strong>' + money(d) + '</strong> vám vrátíme.' : 'Nové zboží je dražší – doplatíte <strong>' + money(-d) + '</strong>.');
+    });
 
     // panel vpravo + souhrn
     var rows = c.ch.map(function (i) {
-      var amount = i.act === 'vratit' ? money(i.price * i.qty) : '–';
-      return { label: LABEL[i.act], name: i.name + (i.qty > 1 ? ' × ' + i.qty : ''), detail: detailText(i), amount: amount };
+      var amount = i.act === 'vratit' ? money(i.price * i.qty) : (i.newPrice !== null ? ((i.price - i.newPrice) >= 0 ? '' : '− ') + money(Math.abs((i.price - i.newPrice) * i.qty)) : '–');
+      return { label: i.act === 'vymenit' && i.kind === 'jine' ? 'Výměna za jiné zboží' : LABEL[i.act], name: i.name + (i.qty > 1 ? ' × ' + i.qty : ''), detail: detailText(i), amount: amount };
     });
     var shipEl = $('input[name="ship"]:checked');
     var shipName = shipEl ? shipEl.closest('label').querySelector('strong').textContent : '';
     var postTxt = ship() === 'vlastni' ? 'na vaše náklady' : (c.postageApplies ? (postage === null ? '− poštovné' : '− ' + money(postage)) : 'zdarma');
-    var net = c.refund - (c.postageApplies && postage !== null ? postage : 0) - c.shipCharge;
+    var net = c.balance;
+    var totLabel = net > 0.005 ? 'Vrátíme vám' : (net < -0.005 ? 'Doplatíte' : 'Bez peněz');
+    var codRow = c.cod ? '<div class="row"><span>Dobírka</span><strong style="white-space:nowrap">− ' + money(c.cod) + '</strong></div>' : '';
     var chargeRow = c.shipCharge ? '<div class="row"><span>Doprava objednávky – zbytek je pod ' + money(freeFrom) + ', doprava už není zdarma</span><strong style="white-space:nowrap">− ' + money(c.shipCharge) + '</strong></div>' : '';
 
     var aside = $('[data-aside]');
@@ -116,7 +149,7 @@
       aside.innerHTML = rows.length ? rows.map(function (r) {
         return '<div class="row"><span><span class="kicker" style="font-size:10px">' + esc(r.label) + '</span><br>' + esc(r.name) + '</span><strong style="white-space:nowrap">' + r.amount + '</strong></div>';
       }).join('') + '<div class="row" style="border-top:1px solid var(--line2);padding-top:10px"><span>Doprava</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '">' + postTxt + '</strong></div>' + chargeRow +
-        '<div class="total" style="padding:14px"><strong style="font-size:14px">' + (c.refund > 0 ? 'Vrátíme vám' : 'Bez peněz') + '</strong><span class="v" style="font-size:28px">' + money(Math.max(0, net)) + '</span></div>'
+        codRow + '<div class="total" style="padding:14px"><strong style="font-size:14px">' + totLabel + '</strong><span class="v" style="font-size:28px">' + money(Math.abs(net)) + '</span></div>'
         : '<span style="font-size:13px;color:var(--muted)">Zatím nic nevybráno.</span>';
     }
     var sum = $('[data-summary]');
@@ -124,13 +157,14 @@
       sum.innerHTML = rows.map(function (r) {
         return '<div class="sumrow"><span><span class="kicker" style="font-size:11px">' + esc(r.label) + '</span><br><strong>' + esc(r.name) + '</strong>' + (r.detail ? '<br><span style="color:var(--muted)">' + esc(r.detail) + '</span>' : '') + '</span><strong style="white-space:nowrap">' + r.amount + '</strong></div>';
       }).join('') + (shipName ? '<div class="sumrow"><span>Doprava: ' + esc(shipName) + '</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '" style="white-space:nowrap">' + postTxt + '</strong></div>' : '') +
-        (c.shipCharge ? '<div class="sumrow"><span>Doprava objednávky – zbytek objednávky je pod ' + esc(money(freeFrom)) + ', doprava už není zdarma</span><strong style="white-space:nowrap">− ' + money(c.shipCharge) + '</strong></div>' : '');
+        (c.shipCharge ? '<div class="sumrow"><span>Doprava objednávky – zbytek objednávky je pod ' + esc(money(freeFrom)) + ', doprava už není zdarma</span><strong style="white-space:nowrap">− ' + money(c.shipCharge) + '</strong></div>' : '') +
+        (c.cod ? '<div class="sumrow"><span>Dobírka za doplatek</span><strong style="white-space:nowrap">− ' + money(c.cod) + '</strong></div>' : '');
     }
     var tot = $('[data-total]');
     if (tot) {
       tot.hidden = !c.ch.length;
-      $('[data-total-label]').textContent = c.refund > 0 ? 'Vrátíme vám' : 'Vychází přesně';
-      $('[data-total-value]').innerHTML = money(Math.max(0, net)) + (c.postageApplies && postage === null ? ' <span style="font-family:\'Good Sans\',Arial;font-size:14px">− poštovné</span>' : '');
+      $('[data-total-label]').textContent = net > 0.005 ? 'Vrátíme vám' : (net < -0.005 ? 'Doplatíte' : 'Vychází přesně');
+      $('[data-total-value]').innerHTML = money(Math.abs(net)) + (c.postageApplies && postage === null ? ' <span style="font-family:\'Good Sans\',Arial;font-size:14px">− poštovné</span>' : '');
     }
   }
 
@@ -169,12 +203,16 @@
       for (var k = 0; k < ch.length; k++) {
         var i = ch[k];
         if (i.act === 'vratit' && !$('input[name="reason[' + i.id + ']"]:checked')) return error('Vyberte důvod vrácení u „' + i.name + '“.');
-        if (i.act === 'vymenit') { if (!sizeVal(i.id)) return error('Vyberte velikost pro výměnu u „' + i.name + '“.'); }
+        if (i.act === 'vymenit' && i.kind === 'jine') {
+          if (!form.querySelector('[data-other="' + i.id + '"] .otherprod')) return error('U „' + i.name + '“ vložte odkaz na nové zboží a klikněte na Načíst.');
+          if (!i.picked) return error('U „' + i.name + '“ vyberte velikost nového zboží.');
+        } else if (i.act === 'vymenit') { if (!sizeVal(i.id)) return error('Vyberte velikost pro výměnu u „' + i.name + '“.'); }
         if (i.act === 'reklamovat') { var d = form.querySelector('[name="defect[' + i.id + ']"]'); if (!d || d.value.trim().length < 5) return error('Popište vadu u „' + i.name + '“.'); }
       }
     }
     if (n === 3 && !ship()) return error('Vyberte, jak nám zboží pošlete.');
-    if (n === 4 && calc().refund > 0) {
+    if (n === 4 && calc().owes && !$('input[name="pay_method"]:checked')) return error('Vyberte, jak doplatíte rozdíl v ceně.');
+    if (n === 4 && calc().balance > 0.005) {
       var a = ($('#account') || { value: '' }).value.replace(/\s+/g, '').toUpperCase();
       if (!/^(\d{1,6}-)?\d{2,10}\/\d{4}$/.test(a) && !/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(a)) return error('Vyplňte číslo účtu ve tvaru 123456789/0800.');
     }
@@ -184,6 +222,13 @@
   form.addEventListener('click', function (e) {
     var t = e.target.closest('button, [data-clear], [data-switch]');
     if (!t) return;
+    if (t.hasAttribute('data-load')) { e.preventDefault(); loadProduct(t.getAttribute('data-load')); return; }
+    if (t.hasAttribute('data-kindswitch')) {
+      e.preventDefault();
+      var kr = $('input[name="swap_kind[' + t.getAttribute('data-kindswitch') + ']"][value="jine"]');
+      if (kr) { kr.checked = true; render(); var u = $('#ou-' + t.getAttribute('data-kindswitch')); if (u) u.focus(); }
+      return;
+    }
     if (t.hasAttribute('data-next')) { e.preventDefault(); if (validate(current)) show(Math.min(steps.length, current + 1)); }
     else if (t.hasAttribute('data-prev')) { e.preventDefault(); show(Math.max(1, current - 1)); }
     else if (t.hasAttribute('data-clear')) {
@@ -210,6 +255,21 @@
     render();
   });
   form.addEventListener('input', function () { syncMoney(); });
+  form.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.matches('input[name^="other_url"]')) { e.preventDefault(); loadProduct(e.target.id.replace('ou-', '')); }
+  });
+
+  // výměna za jiné zboží: načtení zboží podle odkazu
+  function loadProduct(id) {
+    var inp = $('#ou-' + id), box = form.querySelector('[data-other="' + id + '"]');
+    if (!inp || !box) return;
+    if (!inp.value.trim()) { box.innerHTML = '<div class="flash err" style="margin:0">Vložte odkaz na zboží z 4kluciodkol.cz.</div>'; return; }
+    box.innerHTML = '<span class="loading">Načítám zboží z e-shopu…</span>';
+    fetch(form.getAttribute('data-product-url') + '?id=' + encodeURIComponent(id) + '&url=' + encodeURIComponent(inp.value.trim()), { credentials: 'same-origin' })
+      .then(function (r) { return r.text(); })
+      .then(function (html) { box.innerHTML = html; render(); })
+      .catch(function () { box.innerHTML = '<div class="flash err" style="margin:0">Zboží se nepodařilo načíst. Zkuste to prosím znovu.</div>'; });
+  }
   form.addEventListener('submit', function (e) {
     for (var n = 1; n <= 4; n++) { if (!validate(n)) { e.preventDefault(); if (current !== n) { show(n); validate(n); } return; } }
     if (!$('input[name="agree"]').checked) { e.preventDefault(); error('Potvrďte prosím souhlas s obchodními podmínkami.'); return; }
