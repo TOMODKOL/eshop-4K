@@ -171,7 +171,9 @@ t(str_contains((string) Service::requestDoc(Service::get((int) $x['id']), [$lid 
 $xg = Service::get((int) $x['id']);
 t($xg['xorder_no'] === '9910000001' && $xg['xorder_state'] === 'ceka', 'výměna dostane objednávku 9910000001');
 $xp = Service::xorderPending();
-t(count($xp) === 1 && $xp[0]['xorder_no'] === '9910000001' && $xp[0]['advance'] == 0 && $xp[0]['items'][0]['code'] === '' && $xp[0]['items'][0]['for_code'] === 'T-43', 'objednávka pro pomocníka: nové zboží, bez zálohy');
+t(count($xp) === 1 && $xp[0]['xorder_no'] === '9910000001' && $xp[0]['advance'] == 0 && count($xp[0]['items']) === 2
+    && $xp[0]['items'][0]['kind'] === 'stare' && $xp[0]['items'][0]['qty'] === -1 && $xp[0]['items'][0]['for_code'] === 'T-43'
+    && $xp[0]['items'][1]['kind'] === 'nove' && $xp[0]['items'][1]['code'] === '' && $xp[0]['items'][1]['for_code'] === 'T-43', 'objednávka pro pomocníka: vracené zboží v minusu + nové zboží, bez zálohy');
 t(Service::xorderResult(['no' => $xg['no'], 'state' => 'hotovo']) && Service::get((int) $x['id'])['xorder_state'] === 'hotovo' && Service::xorderPending() === [], 'objednávka založena');
 t(Service::nextXorder() === '9910000002', 'další objednávka 9910000002');
 $adv = ['refund_total' => 0, 'swap_diff' => -1500, 'postage_applies' => 0, 'postage' => null, 'ship_charge' => 0, 'ship_refund' => 0, 'cod_fee' => 0];

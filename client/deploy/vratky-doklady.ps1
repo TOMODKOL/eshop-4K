@@ -154,7 +154,17 @@ try {
             foreach ($i in $r.items) {
                 $p = $fvPolozky[[string]$i.for_code]
                 if (-not $p) { throw "Položka s kódem $($i.for_code) není na faktuře $fvNo." }
-                $sazba = Text $p 'rateVAT'; if (-not $sazba) { $sazba = 'high' }; $sazbaZal = $sazba
+                $sazba = Text $p 'rateVAT'; if (-not $sazba) { $sazba = 'high' }
+                if ([string]$i.kind -eq 'stare') {
+                    # vracené zboží v minusu – textová položka (sklad ani rezervaci neovlivní, zboží se vrátí na sklad až konečnou fakturou)
+                    $cena = [double]::Parse((Text $p 'homeCurrency/unitPrice'), [Globalization.CultureInfo]::InvariantCulture)
+                    $sleva = Text $p 'discountPercentage'; if (-not $sleva) { $sleva = '0' }
+                    [void]$radky.Append(@"
+<ord:orderItem><ord:text>$(X ('Vráceno: ' + (Text $p 'text')))</ord:text><ord:quantity>$(Cislo ([double]$i.qty))</ord:quantity><ord:delivered>0</ord:delivered><ord:unit>ks</ord:unit><ord:payVAT>true</ord:payVAT><ord:rateVAT>$sazba</ord:rateVAT><ord:discountPercentage>$sleva</ord:discountPercentage><ord:homeCurrency><typ:unitPrice>$(Cislo $cena)</typ:unitPrice></ord:homeCurrency><ord:note>$(X ([string]$i.code))</ord:note></ord:orderItem>
+"@)
+                    continue
+                }
+                $sazbaZal = $sazba
                 if ($i.other) { $cena = [double]$i.unit_price; $sleva = '0' }
                 else {
                     $cena = [double]::Parse((Text $p 'homeCurrency/unitPrice'), [Globalization.CultureInfo]::InvariantCulture)

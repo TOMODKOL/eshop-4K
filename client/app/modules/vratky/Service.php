@@ -502,7 +502,7 @@ final class Service
             if ($l['action'] === 'vratit') {
                 $items[] = ['kind' => 'zbozi', 'code' => $l['item_code'], 'name' => $l['item_name'], 'qty' => -(int) $l['qty'], 'unit_price' => (float) $l['unit_price']];
             } elseif ($l['action'] === 'vymenit') {
-                $items[] = ['kind' => 'zbozi', 'code' => $l['item_code'], 'name' => $l['item_name'], 'qty' => -(int) $l['qty'], 'unit_price' => (float) $l['unit_price']];
+                $items[] = ['kind' => 'zbozi', 'code' => $l['item_code'], 'name' => $l['item_name'], 'qty' => -(int) $l['qty'], 'unit_price' => (float) $l['unit_price'], 'swap' => true];
                 $other = ($l['new_name'] ?? '') !== '' && ($l['new_price'] ?? null) !== null;
                 $items[] = ['kind' => 'nove', 'code' => (string) ($l['new_code'] ?? ''),
                     'name' => $other ? (string) $l['new_name'] : self::swapSize($l['item_name'], (string) $l['size_to']),
@@ -608,8 +608,10 @@ final class Service
         $rows = Db::all("SELECT r.*, o.invoice_no, o.order_no FROM returns r JOIN orders o ON o.id = r.order_id
             WHERE r.xorder_no IS NOT NULL AND (r.xorder_state IN $states OR (r.xorder_state = 'hotovo' AND r.zf_no IS NOT NULL AND r.zf_paid = 0)) ORDER BY r.id");
         foreach ($rows as $r) {
-            $items = array_values(array_map(fn($i) => ['code' => $i['code'], 'name' => $i['name'], 'qty' => $i['qty'], 'unit_price' => $i['unit_price'], 'for_code' => $i['for_code'] ?? '', 'other' => !empty($i['other'])],
-                array_filter(self::docPlan($r)['items'], fn($i) => $i['kind'] === 'nove')));
+            // objednávka = vracené zboží v minusu (textová položka, nehýbe skladem ani rezervací) + nové zboží; součet = doplatek / přeplatek
+            $items = array_values(array_map(fn($i) => ['kind' => $i['kind'] === 'nove' ? 'nove' : 'stare', 'code' => $i['code'], 'name' => $i['name'], 'qty' => $i['qty'], 'unit_price' => $i['unit_price'],
+                'for_code' => $i['kind'] === 'nove' ? ($i['for_code'] ?? '') : $i['code'], 'other' => !empty($i['other'])],
+                array_filter(self::docPlan($r)['items'], fn($i) => $i['kind'] === 'nove' || !empty($i['swap']))));
             $out[] = ['no' => $r['no'], 'state' => $r['xorder_state'], 'xorder_no' => $r['xorder_no'], 'invoice_no' => $r['invoice_no'], 'order_no' => $r['order_no'],
                 'date' => substr((string) $r['created_at'], 0, 10), 'customer_name' => $r['customer_name'], 'email' => $r['email'], 'phone' => $r['phone'],
                 'pay_method' => (string) $r['pay_method'], 'advance' => self::advanceAmount($r), 'zf_no' => $r['zf_no'], 'items' => $items];
