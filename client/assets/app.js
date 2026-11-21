@@ -223,6 +223,15 @@
     var t = e.target.closest('button, [data-clear], [data-switch]');
     if (!t) return;
     if (t.hasAttribute('data-load')) { e.preventDefault(); loadProduct(t.getAttribute('data-load')); return; }
+    if (t.hasAttribute('data-dosearch')) { e.preventDefault(); searchShop(t.getAttribute('data-dosearch')); return; }
+    if (t.hasAttribute('data-pick-url')) {
+      e.preventDefault();
+      var pid = t.getAttribute('data-pick-id'), u = $('#ou-' + pid);
+      if (u) u.value = t.getAttribute('data-pick-url');
+      $$('[data-results="' + pid + '"] .res').forEach(function (b) { b.classList.toggle('on', b === t); });
+      loadProduct(pid);
+      return;
+    }
     if (t.hasAttribute('data-kindswitch')) {
       e.preventDefault();
       var kr = $('input[name="swap_kind[' + t.getAttribute('data-kindswitch') + ']"][value="jine"]');
@@ -257,7 +266,21 @@
   form.addEventListener('input', function () { syncMoney(); });
   form.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target.matches('input[name^="other_url"]')) { e.preventDefault(); loadProduct(e.target.id.replace('ou-', '')); }
+    if (e.key === 'Enter' && e.target.matches('[data-search]')) { e.preventDefault(); searchShop(e.target.getAttribute('data-search')); }
   });
+
+  // výměna za jiné zboží: hledání na e-shopu
+  function searchShop(id) {
+    var inp = $('#sq-' + id), box = form.querySelector('[data-results="' + id + '"]');
+    if (!inp || !box) return;
+    var q = inp.value.trim();
+    if (q.length < 2) { box.innerHTML = '<div class="grey">Napište aspoň dvě písmena.</div>'; return; }
+    box.innerHTML = '<span class="loading">Hledám na e-shopu…</span>';
+    fetch(form.getAttribute('data-search-url') + '?id=' + encodeURIComponent(id) + '&q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+      .then(function (r) { return r.text(); })
+      .then(function (html) { box.innerHTML = html; })
+      .catch(function () { box.innerHTML = '<div class="flash err" style="margin:0">Hledání se nepovedlo. Zkuste to prosím znovu.</div>'; });
+  }
 
   // výměna za jiné zboží: načtení zboží podle odkazu
   function loadProduct(id) {
@@ -267,7 +290,7 @@
     box.innerHTML = '<span class="loading">Načítám zboží z e-shopu…</span>';
     fetch(form.getAttribute('data-product-url') + '?id=' + encodeURIComponent(id) + '&url=' + encodeURIComponent(inp.value.trim()), { credentials: 'same-origin' })
       .then(function (r) { return r.text(); })
-      .then(function (html) { box.innerHTML = html; render(); })
+      .then(function (html) { box.innerHTML = html; render(); try { box.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} })
       .catch(function () { box.innerHTML = '<div class="flash err" style="margin:0">Zboží se nepodařilo načíst. Zkuste to prosím znovu.</div>'; });
   }
   form.addEventListener('submit', function (e) {

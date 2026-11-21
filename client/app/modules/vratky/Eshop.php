@@ -188,6 +188,58 @@ final class Eshop
         return $base + ['single' => true, 'options' => [$o]];
     }
 
+    /**
+     * Hledání na e-shopu (stránka /hledat/?q=…). Vrací jen zboží skladem nebo skladem u dodavatele.
+     * @return list<array{name:string, url:string, image:string, price:?float, avail:string}>|null  null = e-shop nejde načíst
+     */
+    public static function search(string $q): ?array
+    {
+        $q = trim(mb_substr($q, 0, 80));
+        if (mb_strlen($q) < 2) return [];
+        $dir = APP_ROOT . '/storage/cache';
+        $file = "$dir/eshop_q_" . md5(mb_strtolower($q)) . '.json';
+        if (is_file($file) && filemtime($file) > time() - 600) {
+            $c = json_decode((string) file_get_contents($file), true);
+            if (is_array($c)) return $c;
+        }
+        $html = self::fetch('https://www.4kluciodkol.cz/hledat/?q=' . rawurlencode($q));
+        if ($html === null) return null;
+        $res = self::parseSearch($html);
+        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        @file_put_contents($file, json_encode($res, JSON_UNESCAPED_UNICODE));
+        return $res;
+    }
+
+    /** Rozebere výsledky hledání. Veřejné kvůli testům. */
+    public static function parseSearch(string $html, int $max = 12): array
+    {
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
+        libxml_clear_errors();
+        $xp = new \DOMXPath($dom);
+        $has = fn(string $c) => "contains(concat(' ', normalize-space(@class), ' '), ' $c ')";
+        $out = []; $seen = [];
+        foreach ($xp->query("//*[{$has('ProductView')}]") as $it) {
+            $a = $xp->query(".//h2//a[@href]", $it)->item(0);
+            if (!$a instanceof \DOMElement) continue;
+            $url = self::productUrl('https://www.4kluciodkol.cz' . $a->getAttribute('href'));
+            if (!$url || isset($seen[$url])) continue;
+            $av = $xp->query(".//*[{$has('AvailabilityInfo')}]", $it)->item(0);
+            $cls = ($av instanceof \DOMElement && preg_match('/\bcs_([a-z0-9_-]+)/i', $av->getAttribute('class'), $m)) ? $m[1] : '';
+            if ($cls !== 'zelena') continue;
+            $img = $xp->query(".//img", $it)->item(0);
+            $src = $img instanceof \DOMElement ? ($img->getAttribute('data-src') ?: $img->getAttribute('src')) : '';
+            $price = $xp->query(".//*[{$has('price')} and {$has('user')}]//*[{$has('value')}]", $it)->item(0);
+            $p = $price ? (float) preg_replace('/[^\d,]/u', '', str_replace(',', '.', str_replace("\u{a0}", '', $price->textContent))) : null;
+            $seen[$url] = true;
+            $out[] = ['name' => trim($a->textContent), 'url' => $url, 'image' => str_starts_with($src, 'https://') ? $src : '',
+                'price' => $p ?: null, 'avail' => trim((string) $av->textContent)];
+            if (count($out) >= $max) break;
+        }
+        return $out;
+    }
+
     /** Vybraná možnost (velikost) zboží; u zboží bez velikostí prázdná hodnota. */
     public static function option(?array $product, string $value): ?array
     {

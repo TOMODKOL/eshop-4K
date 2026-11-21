@@ -9,7 +9,7 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
 ?>
 <form id="vrform" class="layout" method="post" action="<?= url('/vratky/novy') ?>" enctype="multipart/form-data" novalidate
       data-postage="<?= $postage === null ? '' : e((string) $postage) ?>"
-      data-ship-charge="<?= e((string) $shipCharge) ?>" data-goods-left="<?= e((string) $goodsLeft) ?>" data-free-from="<?= e((string) $freeFrom) ?>" data-cod-fee="<?= e((string) cfg('vratky.cod_fee', 69)) ?>" data-product-url="<?= url('/vratky/zbozi') ?>">
+      data-ship-charge="<?= e((string) $shipCharge) ?>" data-goods-left="<?= e((string) $goodsLeft) ?>" data-free-from="<?= e((string) $freeFrom) ?>" data-cod-fee="<?= e((string) cfg('vratky.cod_fee', 69)) ?>" data-product-url="<?= url('/vratky/zbozi') ?>" data-search-url="<?= url('/vratky/hledat') ?>">
 <?= csrf_field() ?>
 <div class="main"><div class="col">
 
@@ -126,10 +126,17 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
         <?php endif; ?>
       </div>
       <div data-kind="jine" class="kindbox">
+        <div class="field js-only"><label class="l" for="sq-<?= $id ?>">Najděte zboží na našem e-shopu</label>
+          <div class="urlrow"><input class="f" id="sq-<?= $id ?>" type="search" autocomplete="off" placeholder="např. Castelli Espresso, helma POC, Lake" data-search="<?= $id ?>">
+            <button type="button" class="btn dark" data-dosearch="<?= $id ?>">Hledat</button></div>
+          <span class="hint">Ukážeme jen zboží skladem nebo skladem u dodavatele.</span></div>
+        <div data-results="<?= $id ?>"></div>
+        <details class="byurl" <?= trim((string) $o('other_url', $id)) !== '' ? 'open' : '' ?>><summary>Nebo vložte odkaz na zboží</summary>
         <div class="field"><label class="l" for="ou-<?= $id ?>">Odkaz na zboží z e-shopu</label>
           <div class="urlrow"><input class="f" id="ou-<?= $id ?>" name="other_url[<?= $id ?>]" inputmode="url" autocomplete="off" placeholder="https://www.4kluciodkol.cz/…" value="<?= e($o('other_url', $id)) ?>">
             <button type="button" class="btn dark js-only" data-load="<?= $id ?>">Načíst</button></div>
           <span class="hint">Najděte zboží na <a href="<?= e(rtrim((string) cfg('shop.web'), '/')) ?>/" target="_blank" rel="noopener">4kluciodkol.cz ↗</a>, zkopírujte adresu stránky a vložte ji sem. Vybrat můžete zboží skladem nebo skladem u dodavatele. Rozdíl v ceně vám vrátíme, nebo ho doplatíte.</span></div>
+        </details>
         <div data-other="<?= $id ?>"><?php $ou = trim((string) $o('other_url', $id)); if ($ou !== ''): ?><?= \App\Core\View::render('vratky:other_product', ['p' => Eshop::product($ou), 'id' => $id, 'sel' => (string) $o('other_pick', $id), 'url' => $ou]) ?><?php endif; ?></div>
       </div>
     </div>

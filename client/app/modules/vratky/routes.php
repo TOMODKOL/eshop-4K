@@ -92,6 +92,16 @@ Http::get('/vratky/novy', function () use ($loadOrder) {
         'dl' => Service::deadlines($o), 'old' => Session::get('vr_old', []), 'errors' => []]);
 });
 
+// výměna za jiné zboží: hledání na e-shopu (HTML kousek formuláře)
+Http::get('/vratky/hledat', function () use ($loadOrder) {
+    $loadOrder();
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    $q = trim((string) ($_GET['q'] ?? ''));
+    $res = RateLimit::hit('vr_search', 120, 3600) ? Eshop::search($q) : null;
+    echo View::render('vratky:search_results', ['res' => $res, 'id' => (int) ($_GET['id'] ?? 0), 'q' => $q]);
+});
+
 // výměna za jiné zboží: načte zboží z e-shopu podle odkazu (HTML kousek formuláře)
 Http::get('/vratky/zbozi', function () use ($loadOrder) {
     $loadOrder();

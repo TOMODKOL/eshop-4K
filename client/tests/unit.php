@@ -226,6 +226,8 @@ t(Service::toPay($retO) == 5559 && Service::payout($retO) == 0, 'doplatek i s do
 $planO = Service::docPlan($retO, [['action' => 'vymenit', 'item_code' => 'DX', 'item_name' => 'dres X M', 'qty' => 1, 'unit_price' => 2000, 'size_to' => '43,5', 'new_code' => '3023795', 'new_name' => 'tretry LAKE 43,5', 'new_price' => 7490]]);
 t($planO['type'] === 'fv' && $planO['total'] == 5559 && $planO['items'][1]['unit_price'] == 7490 && $planO['items'][1]['other'] && $planO['items'][2]['kind'] === 'dobirka', 'doklad: faktura s novým zbožím za cenu z e-shopu a dobírkou');
 @unlink($cacheV); @unlink($cacheS);
+$sr = Eshop::parseSearch((string) file_get_contents(__DIR__ . '/fixtures/eshop_search.html'));
+t(count($sr) === 2 && $sr[0]['price'] == 690 && $sr[1]['price'] == 2899 && $sr[0]['url'] === 'https://www.4kluciodkol.cz/rukavice-castelli-espresso-glove-mocha-p157565/', 'hledání na e-shopu: jen skladem / u dodavatele, cena, čistý odkaz');
 
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
