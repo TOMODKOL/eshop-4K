@@ -20,8 +20,12 @@ $hodina = (Get-Date).Hour
 if ($hodina -lt $MServerOd -or $hodina -ge $MServerDo) { return }
 
 $nastF = Join-Path $StavDir 'vratky_doklady.json'
-if (-not $Ostre -and (Test-Path -LiteralPath $nastF)) {
-    $Ostre = [bool](Get-Content -LiteralPath $nastF -Raw -Encoding UTF8 | ConvertFrom-Json).ostre
+# {"ostre": true} = konečné doklady (ODD/faktura) naostro; {"ostre_objednavky": true} = objednávky 991…, zálohy a daňové doklady k zálohám naostro
+$OstreObj = [bool]$Ostre
+if (Test-Path -LiteralPath $nastF) {
+    $nast = Get-Content -LiteralPath $nastF -Raw -Encoding UTF8 | ConvertFrom-Json
+    if (-not $Ostre) { $Ostre = [bool]$nast.ostre }
+    $OstreObj = [bool]$Ostre -or [bool]$nast.ostre_objednavky
 }
 $hotoveF = Join-Path $StavDir 'vratky_doklady_hotove.json'   # pojistka proti dvojímu zápisu: číslo vratky → číslo dokladu
 $hotove = @{}
@@ -118,14 +122,14 @@ function Zpet([string]$no, [string]$stav, [string]$cislo, [string]$chyba) {
 
 # ===== 1. Výměny: přijatá objednávka 991… + zálohová faktura na doplatek, hlídání platby =====
 try {
-    $q = if ($Ostre) { '?navrhy=1' } else { '' }
+    $q = if ($OstreObj) { '?navrhy=1' } else { '' }
     $obj = @((Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/objednavky' + $q) -Headers $apiHlav -TimeoutSec 60).returns)
     foreach ($r in $obj) {
         $no = [string]$r.no
         try {
             # --- založená objednávka se zálohou: zaplaceno? (KcLikv = zbývá uhradit) ---
             if ([string]$r.state -eq 'hotovo') {
-                if (-not $Ostre -or -not $r.zf_no) { continue }
+                if (-not $OstreObj -or -not $r.zf_no) { continue }
                 $zf = ([string]$r.zf_no) -replace '[^0-9]', ''
                 $d = MServer ("vratka_zf_" + $no) ("<dat:dataPackItem id=`"zf`" version=`"2.0`"><lst:listInvoiceRequest version=`"2.0`" invoiceType=`"issuedAdvanceInvoice`" invoiceVersion=`"2.0`"><lst:requestInvoice><ftr:queryFilter><ftr:filter>FA.Cislo = '$zf' AND FA.KcLikv = 0</ftr:filter></ftr:queryFilter></lst:requestInvoice></lst:listInvoiceRequest></dat:dataPackItem>") 'Vratky - zaplaceni zalohy'
                 if ($d.SelectSingleNode("//*[local-name()='invoiceHeader']")) {
@@ -210,7 +214,7 @@ $(if ($stredisko) { "<inv:centre><typ:ids>$(X $stredisko)</typ:ids></inv:centre>
 "@
             }
 
-            if (-not $Ostre) {
+            if (-not $OstreObj) {
                 Zajisti-Slozku $navrhDir
                 $f = Join-Path $navrhDir ("{0}_OBJ_{1}.xml" -f $no, $xo)
                 [IO.File]::WriteAllText($f, $objXml, (New-Object Text.UTF8Encoding($true)))
@@ -266,7 +270,7 @@ try {
             $zh = Uzel $zf 'invoiceHeader'
             $zfNo = Text $zh 'number/numberRequested'
             if (-not $zfNo -or $maDdpp.ContainsKey($zfNo)) { continue }
-            if ($hotove.ContainsKey("DDPP-$zfNo") -and (-not $Ostre -or [string]$hotove["DDPP-$zfNo"] -ne 'navrh')) { continue }
+            if ($hotove.ContainsKey("DDPP-$zfNo") -and (-not $OstreObj -or [string]$hotove["DDPP-$zfNo"] -ne 'navrh')) { continue }
             try {
                 $den = Text $zh 'liquidation/date'; if (-not $den) { $den = (Get-Date).ToString('yyyy-MM-dd') }
                 $dnes = (Get-Date).ToString('yyyy-MM-dd')
@@ -299,7 +303,7 @@ $polozky
 <int:intDocSummary><int:roundingDocument>none</int:roundingDocument><int:roundingVAT>none</int:roundingVAT></int:intDocSummary>
 </int:intDoc></dat:dataPackItem>
 "@
-                if (-not $Ostre) {
+                if (-not $OstreObj) {
                     Zajisti-Slozku $navrhDir
                     [IO.File]::WriteAllText((Join-Path $navrhDir ("DDPP_{0}.xml" -f $zfNo)), $ddppXml, (New-Object Text.UTF8Encoding($true)))
                     $hotove["DDPP-$zfNo"] = 'navrh'
