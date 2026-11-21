@@ -35,11 +35,13 @@ return [
         'phone'   => '604 998 800',
         'address' => 'U Vlečky 726/5c, 617 00 Brno',
         'hours'   => 'Po–Pá 9–17, So 9–13',
+        'bank_account' => '2071163455/8040',   // Oberbank – sem platí zákazníci doplatky (zálohové faktury)
     ],
 
     'vratky' => [
         // Vrátit (odstoupit od smlouvy) lze 14 dní od převzetí. Datum převzetí neznáme,
         // proto počítáme od data faktury + rezerva na doručení.
+        'xorder_prefix' => '991',          // přijaté objednávky v Pohodě pro výměny: 991 + 7 číslic (číslo dává Client)
         'return_days' => 14,               // od převzetí zásilky (datum z Zásilkovny)
         'return_days_from_invoice' => 21,  // odhad, když datum převzetí neznáme (GLS, PPL, osobní odběr)
         // Reklamace do 24 měsíců od data faktury

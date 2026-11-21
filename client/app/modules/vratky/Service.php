@@ -351,6 +351,15 @@ final class Service
         return sprintf('V-%s-%04d', $y, $n);
     }
 
+    /** Číslo přijaté objednávky v Pohodě pro výměnu: 991 + 7 číslic, nezávislé na roce (Pohoda ho přijme jako numberRequested). */
+    public static function nextXorder(): string
+    {
+        $pre = (string) Config::get('vratky.xorder_prefix', '991');
+        $last = (string) Db::value('SELECT xorder_no FROM returns WHERE xorder_no LIKE ? ORDER BY xorder_no DESC LIMIT 1', [$pre . '%']);
+        $n = $last !== '' ? (int) substr($last, strlen($pre)) + 1 : 1;
+        return $pre . str_pad((string) $n, 10 - strlen($pre), '0', STR_PAD_LEFT);
+    }
+
     /** Uloží vratku. Vrací její řádek z databáze. */
     public static function create(array $order, array $data, ?array $byUser = null): array
     {
@@ -381,6 +390,9 @@ final class Service
                 'cod_fee' => (float) ($data['calc']['cod_fee'] ?? 0),
                 'claim_deadline' => $hasClaim ? date('Y-m-d', strtotime('+' . (int) Config::get('vratky.claim_resolve_days', 30) . ' days')) : null,
                 'pohoda_state' => $pohoda,
+                // výměna: nové zboží → přijatá objednávka v Pohodě (rezervace), doplatek převodem → zálohová faktura
+                'xorder_no' => array_filter($data['lines'], fn($l) => $l['action'] === 'vymenit') ? self::nextXorder() : null,
+                'xorder_state' => array_filter($data['lines'], fn($l) => $l['action'] === 'vymenit') ? 'ceka' : '',
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
@@ -536,6 +548,8 @@ final class Service
             if ($i['kind'] === 'nove' && $i['code'] === '') return 'Doplňte kód zásoby nové velikosti u „' . $i['name'] . '“.';
         }
         if ($plan['type'] === 'odd' && !self::validAccount((string) $ret['bank_account'])) return 'Chybí číslo účtu zákazníka pro vrácení peněz.';
+        if (!empty($ret['xorder_no']) && !in_array($ret['xorder_state'], ['hotovo', 'navrh'], true)) return 'Nejdřív se musí v Pohodě založit objednávka ' . $ret['xorder_no'] . ' na nové zboží (pomocník ji zakládá do pár minut).';
+        if (!empty($ret['zf_no']) && empty($ret['zf_paid'])) return 'Doplatek k zálohové faktuře ' . $ret['zf_no'] . ' zatím nepřišel – doklad vystavte až po zaplacení.';
         return null;
     }
 
@@ -570,9 +584,67 @@ final class Service
         foreach (Db::all("SELECT r.*, o.invoice_no, o.order_no FROM returns r JOIN orders o ON o.id = r.order_id WHERE r.doc_state IN $states ORDER BY r.id") as $r) {
             $plan = self::docPlan($r);
             $out[] = ['no' => $r['no'], 'invoice_no' => $r['invoice_no'], 'order_no' => $r['order_no'], 'type' => $plan['type'], 'pay_method' => (string) ($r['pay_method'] ?? ''), 'total' => $plan['total'],
+                'xorder_no' => $r['xorder_no'], 'xorder_state' => $r['xorder_state'], 'zf_no' => $r['zf_no'], 'zf_paid' => (bool) $r['zf_paid'], 'advance' => self::advanceAmount($r),
                 'bank_account' => $r['bank_account'], 'customer_name' => $r['customer_name'], 'email' => $r['email'], 'items' => $plan['items']];
         }
         return $out;
+    }
+
+    // ---------- Pohoda: přijatá objednávka 991… a zálohová faktura k výměně ----------
+
+    public const XORDER_STATE = ['ceka' => 'Čeká na založení v Pohodě', 'navrh' => 'Návrh čeká na schválení', 'hotovo' => 'Založeno v Pohodě', 'chyba' => 'Nepodařilo se založit'];
+
+    /** Doplatek převodem → zálohová faktura (částka), jinak 0. */
+    public static function advanceAmount(array $ret): float
+    {
+        return ($ret['pay_method'] ?? '') === 'prevod' ? self::toPay($ret) : 0.0;
+    }
+
+    /** Pro pomocníka: objednávky k založení (+ návrhy) a zálohy, u kterých hlídá zaplacení. */
+    public static function xorderPending(bool $withDrafts = false): array
+    {
+        $out = [];
+        $states = $withDrafts ? "('ceka','navrh')" : "('ceka')";
+        $rows = Db::all("SELECT r.*, o.invoice_no, o.order_no FROM returns r JOIN orders o ON o.id = r.order_id
+            WHERE r.xorder_no IS NOT NULL AND (r.xorder_state IN $states OR (r.xorder_state = 'hotovo' AND r.zf_no IS NOT NULL AND r.zf_paid = 0)) ORDER BY r.id");
+        foreach ($rows as $r) {
+            $items = array_values(array_map(fn($i) => ['code' => $i['code'], 'name' => $i['name'], 'qty' => $i['qty'], 'unit_price' => $i['unit_price'], 'for_code' => $i['for_code'] ?? '', 'other' => !empty($i['other'])],
+                array_filter(self::docPlan($r)['items'], fn($i) => $i['kind'] === 'nove')));
+            $out[] = ['no' => $r['no'], 'state' => $r['xorder_state'], 'xorder_no' => $r['xorder_no'], 'invoice_no' => $r['invoice_no'], 'order_no' => $r['order_no'],
+                'date' => substr((string) $r['created_at'], 0, 10), 'customer_name' => $r['customer_name'], 'email' => $r['email'], 'phone' => $r['phone'],
+                'pay_method' => (string) $r['pay_method'], 'advance' => self::advanceAmount($r), 'zf_no' => $r['zf_no'], 'items' => $items];
+        }
+        return $out;
+    }
+
+    /** Výsledek z KANCL: {no, state: hotovo|navrh|chyba|zaplaceno, zf_no, error}. */
+    public static function xorderResult(array $x): bool
+    {
+        $r = self::byNo((string) ($x['no'] ?? ''));
+        if (!$r || !$r['xorder_no']) return false;
+        $state = (string) ($x['state'] ?? '');
+        if ($state === 'zaplaceno') {
+            if (!$r['zf_no'] || $r['zf_paid']) return false;
+            Db::exec('UPDATE returns SET zf_paid = 1, updated_at = ? WHERE id = ?', [Db::now(), $r['id']]);
+            Db::insert('return_events', ['return_id' => $r['id'], 'status' => null, 'note' => 'Doplatek ' . money(self::advanceAmount($r)) . ' jsme přijali. Děkujeme.',
+                'public' => 1, 'user_id' => null, 'created_at' => Db::now()]);
+            return true;
+        }
+        if (!in_array($r['xorder_state'], ['ceka', 'navrh'], true) || !in_array($state, ['hotovo', 'navrh', 'chyba'], true)) return false;
+        $zf = mb_substr(trim((string) ($x['zf_no'] ?? '')), 0, 20);
+        $err = mb_substr(trim((string) ($x['error'] ?? '')), 0, 2000);
+        Db::exec('UPDATE returns SET xorder_state = ?, xorder_error = ?, zf_no = ?, updated_at = ? WHERE id = ?',
+            [$state, $state === 'chyba' ? ($err ?: 'neznámá chyba') : null, $state === 'hotovo' && $zf !== '' ? $zf : null, Db::now(), $r['id']]);
+        if ($state === 'hotovo') {
+            Db::insert('return_events', ['return_id' => $r['id'], 'status' => null,
+                'note' => 'Přijatá objednávka ' . $r['xorder_no'] . ' založena v Pohodě (nové zboží zarezervováno)' . ($zf !== '' ? ', zálohová faktura ' . $zf . ' na doplatek.' : '.'),
+                'public' => 0, 'user_id' => null, 'created_at' => Db::now()]);
+            if ($zf !== '') Notify::advance(self::get((int) $r['id']));
+        } elseif ($state === 'chyba') {
+            Db::insert('return_events', ['return_id' => $r['id'], 'status' => null, 'note' => 'Objednávku ' . $r['xorder_no'] . ' se nepodařilo založit v Pohodě: ' . $err,
+                'public' => 0, 'user_id' => null, 'created_at' => Db::now()]);
+        }
+        return true;
     }
 
     /** Výsledek z KANCL: {no, state: hotovo|navrh|chyba, doc_no, error}. */

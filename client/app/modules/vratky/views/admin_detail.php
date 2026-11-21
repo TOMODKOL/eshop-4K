@@ -91,6 +91,13 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
         <?php else: ?><span class="hint">Zásilkovna zatím není zapnutá – kód vytvořte v klientské sekci a pošlete zákazníkovi poznámkou.</span><?php endif; ?>
       <?php endif; ?>
     </div>
+    <?php if (!empty($ret['xorder_no'])): ?>
+    <div class="card"<?= $ret['xorder_state'] === 'chyba' ? ' style="border:2px solid var(--red,#d33)"' : '' ?>><span class="kicker">Výměna v Pohodě</span>
+      <div style="font-size:14px;line-height:1.6">Přijatá objednávka <strong><?= e($ret['xorder_no']) ?></strong> · <?= e(Service::XORDER_STATE[$ret['xorder_state']] ?? $ret['xorder_state']) ?>
+      <?php if (Service::advanceAmount($ret) > 0.005): ?><br>Zálohová faktura na doplatek <?= e(money(Service::advanceAmount($ret))) ?>: <?= $ret['zf_no'] ? '<strong>' . e($ret['zf_no']) . '</strong> · ' . ($ret['zf_paid'] ? 'zaplaceno' : 'čeká na platbu') : 'vznikne s objednávkou' ?><?php endif; ?></div>
+      <?php if ($ret['xorder_state'] === 'chyba' && $ret['xorder_error']): ?><div class="warn" style="font-size:13px"><?= e($ret['xorder_error']) ?></div><?php endif; ?>
+    </div>
+    <?php endif; ?>
     <?php if ($plan['type']): ?>
     <div class="card"<?= $docState === 'chyba' ? ' style="border:2px solid var(--red,#d33)"' : '' ?>><span class="kicker">Doklad v Pohodě</span>
       <?php if ($docState === 'hotovo'): ?>

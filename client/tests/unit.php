@@ -167,6 +167,15 @@ $x = Service::create($o2, ['lines' => $l2, 'ship' => 'zbox', 'account' => '', 'n
 Service::setStatus($x, 'dorazilo', '', false, 1);
 t(str_contains((string) Service::requestDoc(Service::get((int) $x['id']), [], 1), 'kód zásoby nové velikosti'), 'výměna chce kód nové velikosti');
 $lid = (int) Service::lines((int) $x['id'])[0]['id'];
+t(str_contains((string) Service::requestDoc(Service::get((int) $x['id']), [$lid => 'T-44'], 1), 'objednávka'), 'doklad až po založení objednávky 991…');
+$xg = Service::get((int) $x['id']);
+t($xg['xorder_no'] === '9910000001' && $xg['xorder_state'] === 'ceka', 'výměna dostane objednávku 9910000001');
+$xp = Service::xorderPending();
+t(count($xp) === 1 && $xp[0]['xorder_no'] === '9910000001' && $xp[0]['advance'] == 0 && $xp[0]['items'][0]['code'] === '' && $xp[0]['items'][0]['for_code'] === 'T-43', 'objednávka pro pomocníka: nové zboží, bez zálohy');
+t(Service::xorderResult(['no' => $xg['no'], 'state' => 'hotovo']) && Service::get((int) $x['id'])['xorder_state'] === 'hotovo' && Service::xorderPending() === [], 'objednávka založena');
+t(Service::nextXorder() === '9910000002', 'další objednávka 9910000002');
+$adv = ['refund_total' => 0, 'swap_diff' => -1500, 'postage_applies' => 0, 'postage' => null, 'ship_charge' => 0, 'ship_refund' => 0, 'cod_fee' => 0];
+t(Service::advanceAmount($adv + ['pay_method' => 'prevod']) == 1500 && Service::advanceAmount($adv + ['pay_method' => 'dobirka']) == 0, 'záloha jen při doplatku převodem');
 t(Service::requestDoc(Service::get((int) $x['id']), [$lid => 'T-44'], 1) === null, 'výměna s kódem zadána');
 $p2 = Service::docPlan(Service::get((int) $x['id']));
 t($p2['type'] === 'fv' && $p2['total'] == 0 && $p2['items'][1]['name'] === 'tretry LAKE CX239 REGULAR 44' && $p2['items'][1]['code'] === 'T-44', 'výměna = faktura za 0 Kč s novou velikostí');

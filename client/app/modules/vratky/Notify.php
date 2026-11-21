@@ -55,6 +55,24 @@ final class Notify
         }
     }
 
+    /** Zálohová faktura na doplatek výměny je v Pohodě → zákazníkovi platební údaje. */
+    public static function advance(?array $ret): void
+    {
+        if (!$ret || $ret['email'] === '' || !$ret['zf_no']) return;
+        $lines = Service::lines((int) $ret['id']);
+        $amount = Service::advanceAmount($ret);
+        $html = View::render('vratky:email', [
+            'kicker' => 'Výměna ' . Service::displayNo($ret),
+            'heading' => 'Doplatek za výměnu',
+            'ret' => $ret, 'lines' => $lines, 'showCode' => false,
+            'text' => 'Nové zboží máme pro vás zarezervované (objednávka ' . $ret['xorder_no'] . '). Doplatek prosím pošlete převodem podle údajů níže. '
+                . 'Doplatek vedeme pod zálohovou fakturou ' . $ret['zf_no'] . '. Nové zboží odešleme, jakmile dorazí vaše vracené zboží a platba.',
+            'pay' => ['amount' => $amount, 'account' => (string) Config::get('shop.bank_account', ''), 'vs' => (string) $ret['zf_no']],
+            'url' => self::statusUrl($ret),
+        ]);
+        Mailer::send($ret['email'], 'Výměna ' . Service::displayNo($ret) . ' – doplatek ' . money($amount), $html);
+    }
+
     /** Zákazník dostal „kód pošleme e-mailem“ → prodejně upozornění s postupem. */
     public static function packetaMissing(array $ret): void
     {

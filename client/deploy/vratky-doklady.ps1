@@ -6,6 +6,10 @@
 #
 # Režim NÁVRH (výchozí): doklad se do Pohody NEZAPÍŠE, jen se uloží XML do Pomocnik\Client\doklady-navrh ke kontrole.
 # Ostrý režim zapne Otík po schválení prvního dokladu: soubor stav\vratky_doklady.json  {"ostre": true}
+#
+# Výměny (od 21. 11. 2026): hned po odeslání vratky založí přijatou objednávku 991… (číslo dává Client, zboží se zarezervuje)
+# a při doplatku převodem zálohovou fakturu v řadě 2608 (VS = její číslo). Hlídá zaplacení zálohy (FA.KcLikv = 0).
+# Konečná faktura pak vyřídí položky objednávky a odečte zaplacenou zálohu.
 # Spouští se z reklamace-sync.ps1 (každých 5 minut). Ručně:
 #   cd D:\Pomocnik ; powershell -ExecutionPolicy Bypass -File .\vratky-doklady.ps1
 param([string]$Portal = 'https://client.4kluciodkol.cz', [switch]$Ostre)
@@ -57,6 +61,7 @@ function MServer([string]$id, [string]$obsah, [string]$poznamka) {
   xmlns:lStk="http://www.stormware.cz/schema/version_2/list_stock.xsd"
   xmlns:ftr="http://www.stormware.cz/schema/version_2/filter.xsd"
   xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:ord="http://www.stormware.cz/schema/version_2/order.xsd"
   xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
 $obsah
 </dat:dataPack>
@@ -78,12 +83,170 @@ function Ucet([string]$u) {
     return $null
 }
 
+function ZpetObj([string]$no, [string]$stav, [string]$zf, [string]$chyba) {
+    $json = ConvertTo-Json -InputObject @{ results = @(@{ no = $no; state = $stav; zf_no = $zf; error = $chyba }) } -Depth 5 -Compress
+    Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/objednavky') -Method Post -Body ([Text.Encoding]::UTF8.GetBytes($json)) `
+        -ContentType 'application/json; charset=utf-8' -Headers $apiHlav -TimeoutSec 60 | Out-Null
+}
+# Odpověď Pohody na import → číslo vzniklého dokladu, jinak výjimka s důvodem
+function Vysledek($d, [string]$co) {
+    $item = $d.SelectSingleNode("//*[local-name()='responsePackItem']")
+    $pd = $d.SelectSingleNode("//*[local-name()='producedDetails']")
+    $cislo = if ($pd) { Text $pd 'number' } else { '' }
+    $chyba = @($d.SelectNodes("//*[@state='error']")).Count -gt 0
+    if ($chyba -or -not $cislo) {
+        $pozn = ($d.SelectNodes("//*[local-name()='detail']") | ForEach-Object { (Text $_ 'note') }) -join '; '
+        if (-not $pozn -and $item) { $pozn = $item.GetAttribute('note') }
+        throw "Pohoda $co nezaložila: $pozn"
+    }
+    return $cislo
+}
+function PuvodniFaktura([string]$no, [string]$fvNo) {
+    $d = MServer ("vratka_fv_" + $no) ("<dat:dataPackItem id=`"fv`" version=`"2.0`"><lst:listInvoiceRequest version=`"2.0`" invoiceType=`"issuedInvoice`" invoiceVersion=`"2.0`"><lst:requestInvoice><ftr:queryFilter><ftr:filter>FA.Cislo = '$fvNo'</ftr:filter></ftr:queryFilter></lst:requestInvoice></lst:listInvoiceRequest></dat:dataPackItem>") 'Vratky - cteni faktury'
+    $fv = $d.SelectSingleNode("//*[local-name()='invoice' and namespace-uri()='http://www.stormware.cz/schema/version_2/list.xsd']")
+    if (-not $fv) { throw "Faktura $fvNo v Pohodě nenalezena." }
+    if (Uzel $fv 'invoiceSummary/foreignCurrency') { throw "Faktura $fvNo je v cizí měně – doklady vystavte ručně." }
+    return $fv
+}
+
 function Zpet([string]$no, [string]$stav, [string]$cislo, [string]$chyba) {
     $json = ConvertTo-Json -InputObject @{ results = @(@{ no = $no; state = $stav; doc_no = $cislo; error = $chyba }) } -Depth 5 -Compress
     Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/doklady') -Method Post -Body ([Text.Encoding]::UTF8.GetBytes($json)) `
         -ContentType 'application/json; charset=utf-8' -Headers $apiHlav -TimeoutSec 60 | Out-Null
 }
 
+# ===== 1. Výměny: přijatá objednávka 991… + zálohová faktura na doplatek, hlídání platby =====
+try {
+    $q = if ($Ostre) { '?navrhy=1' } else { '' }
+    $obj = @((Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/objednavky' + $q) -Headers $apiHlav -TimeoutSec 60).returns)
+    foreach ($r in $obj) {
+        $no = [string]$r.no
+        try {
+            # --- založená objednávka se zálohou: zaplaceno? (KcLikv = zbývá uhradit) ---
+            if ([string]$r.state -eq 'hotovo') {
+                if (-not $Ostre -or -not $r.zf_no) { continue }
+                $zf = ([string]$r.zf_no) -replace '[^0-9]', ''
+                $d = MServer ("vratka_zf_" + $no) ("<dat:dataPackItem id=`"zf`" version=`"2.0`"><lst:listInvoiceRequest version=`"2.0`" invoiceType=`"issuedAdvanceInvoice`" invoiceVersion=`"2.0`"><lst:requestInvoice><ftr:queryFilter><ftr:filter>FA.Cislo = '$zf' AND FA.KcLikv = 0</ftr:filter></ftr:queryFilter></lst:requestInvoice></lst:listInvoiceRequest></dat:dataPackItem>") 'Vratky - zaplaceni zalohy'
+                if ($d.SelectSingleNode("//*[local-name()='invoiceHeader']")) {
+                    ZpetObj $no 'zaplaceno' $zf ''
+                    Zapis-Log $uloha ("OK    {0}: záloha {1} zaplacena" -f $no, $zf)
+                }
+                continue
+            }
+            $xo = ([string]$r.xorder_no) -replace '[^0-9]', ''
+            $fvNo = ([string]$r.invoice_no) -replace "[^0-9A-Za-z]", ''
+            $fv = PuvodniFaktura $no $fvNo
+            $h = Uzel $fv 'invoiceHeader'
+            $fvPolozky = @{}
+            foreach ($p in (Uzly $fv 'invoiceDetail/invoiceItem')) { $c = Text $p 'code'; if ($c -and -not $fvPolozky.ContainsKey($c)) { $fvPolozky[$c] = $p } }
+            $partner = (Uzel $h 'partnerIdentity').OuterXml -replace '<inv:partnerIdentity', '<ord:partnerIdentity' -replace '</inv:partnerIdentity>', '</ord:partnerIdentity>'
+            $stredisko = Text $h 'centre/ids'; $cinnost = Text $h 'activity/ids'
+            $dnes = (Get-Date).ToString('yyyy-MM-dd')
+
+            # --- položky objednávky = nové zboží ---
+            $radky = New-Object System.Text.StringBuilder
+            $sazbaZal = 'high'
+            foreach ($i in $r.items) {
+                $p = $fvPolozky[[string]$i.for_code]
+                if (-not $p) { throw "Položka s kódem $($i.for_code) není na faktuře $fvNo." }
+                $sazba = Text $p 'rateVAT'; if (-not $sazba) { $sazba = 'high' }; $sazbaZal = $sazba
+                if ($i.other) { $cena = [double]$i.unit_price; $sleva = '0' }
+                else {
+                    $cena = [double]::Parse((Text $p 'homeCurrency/unitPrice'), [Globalization.CultureInfo]::InvariantCulture)
+                    $sleva = Text $p 'discountPercentage'; if (-not $sleva) { $sleva = '0' }
+                }
+                $kodZ = [string]$i.code
+                $sklad = if ($kodZ) { "<ord:code>$(X $kodZ)</ord:code><ord:stockItem><typ:store><typ:ids>SKLAD</typ:ids></typ:store><typ:stockItem><typ:ids>$(X $kodZ)</typ:ids></typ:stockItem></ord:stockItem>" } else { '' }
+                [void]$radky.Append(@"
+<ord:orderItem><ord:text>$(X ([string]$i.name))</ord:text><ord:quantity>$(Cislo ([double]$i.qty))</ord:quantity><ord:delivered>0</ord:delivered><ord:unit>ks</ord:unit><ord:payVAT>true</ord:payVAT><ord:rateVAT>$sazba</ord:rateVAT><ord:discountPercentage>$sleva</ord:discountPercentage><ord:homeCurrency><typ:unitPrice>$(Cislo $cena)</typ:unitPrice></ord:homeCurrency>$sklad</ord:orderItem>
+"@)
+            }
+            $platba = if ([string]$r.pay_method -eq 'dobirka') { 'Dobírkou' } else { 'Příkazem' }
+            $objXml = @"
+<dat:dataPackItem id="obj_$no" version="2.0"><ord:order version="2.0">
+<ord:orderHeader>
+<ord:orderType>receivedOrder</ord:orderType>
+<ord:number><typ:numberRequested checkDuplicity="true">$xo</typ:numberRequested></ord:number>
+<ord:numberOrder>$xo</ord:numberOrder>
+<ord:date>$dnes</ord:date>
+<ord:text>$(X "Výměna k obj. $($r.order_no) (faktura $fvNo) – vratka $no")</ord:text>
+$partner
+<ord:paymentType><typ:ids>$platba</typ:ids></ord:paymentType>
+<ord:isReserved>true</ord:isReserved>
+$(if ($stredisko) { "<ord:centre><typ:ids>$(X $stredisko)</typ:ids></ord:centre>" })$(if ($cinnost) { "<ord:activity><typ:ids>$(X $cinnost)</typ:ids></ord:activity>" })
+<ord:note>Vratka $no z client.4kluciodkol.cz</ord:note>
+<ord:intNote>Výměna – nové zboží se odešle, až dorazí vrácené zboží$(if ([double]$r.advance -gt 0) { ' a doplatek' }).</ord:intNote>
+</ord:orderHeader>
+<ord:orderDetail>
+$($radky.ToString())
+</ord:orderDetail>
+</ord:order></dat:dataPackItem>
+"@
+            # --- zálohová faktura na doplatek (převodem) ---
+            $zfXml = ''
+            $zaloha = [double]$r.advance
+            if ($zaloha -gt 0) {
+                $partnerZ = (Uzel $h 'partnerIdentity').OuterXml
+                $zfXml = @"
+<dat:dataPackItem id="zf_$no" version="2.0"><inv:invoice version="2.0">
+<inv:invoiceHeader>
+<inv:invoiceType>issuedAdvanceInvoice</inv:invoiceType>
+<inv:number><typ:ids>2608</typ:ids></inv:number>
+<inv:date>$dnes</inv:date><inv:dateAccounting>$dnes</inv:dateAccounting><inv:dateDue>$((Get-Date).AddDays(7).ToString('yyyy-MM-dd'))</inv:dateDue>
+<inv:accounting><typ:ids>Nevím</typ:ids></inv:accounting>
+<inv:text>$(X "Záloha – doplatek za výměnu zboží, objednávka $xo (vratka $no)")</inv:text>
+$partnerZ
+<inv:numberOrder>$xo</inv:numberOrder><inv:dateOrder>$dnes</inv:dateOrder>
+<inv:paymentType><typ:ids>Příkazem</typ:ids></inv:paymentType><inv:account><typ:ids>OBCZ</typ:ids></inv:account><inv:symConst>0308</inv:symConst>
+$(if ($stredisko) { "<inv:centre><typ:ids>$(X $stredisko)</typ:ids></inv:centre>" })$(if ($cinnost) { "<inv:activity><typ:ids>$(X $cinnost)</typ:ids></inv:activity>" })
+<inv:note>Vratka $no z client.4kluciodkol.cz</inv:note>
+</inv:invoiceHeader>
+<inv:invoiceDetail>
+<inv:invoiceItem><inv:text>$(X "Doplatek za výměnu zboží – objednávka $xo")</inv:text><inv:quantity>1</inv:quantity><inv:unit>ks</inv:unit><inv:payVAT>true</inv:payVAT><inv:rateVAT>$sazbaZal</inv:rateVAT><inv:homeCurrency><typ:unitPrice>$(Cislo $zaloha)</typ:unitPrice></inv:homeCurrency></inv:invoiceItem>
+</inv:invoiceDetail>
+<inv:invoiceSummary><inv:roundingDocument>math2one</inv:roundingDocument><inv:roundingVAT>none</inv:roundingVAT></inv:invoiceSummary>
+</inv:invoice></dat:dataPackItem>
+"@
+            }
+
+            if (-not $Ostre) {
+                Zajisti-Slozku $navrhDir
+                $f = Join-Path $navrhDir ("{0}_OBJ_{1}.xml" -f $no, $xo)
+                [IO.File]::WriteAllText($f, $objXml, (New-Object Text.UTF8Encoding($true)))
+                if ($zfXml) { [IO.File]::WriteAllText((Join-Path $navrhDir ("{0}_ZF.xml" -f $no)), $zfXml, (New-Object Text.UTF8Encoding($true))) }
+                ZpetObj $no 'navrh' '' ''
+                Zapis-Log $uloha ("NÁVRH {0}: objednávka {1}{2}" -f $no, $xo, $(if ($zfXml) { (", záloha {0} Kč" -f (Cislo $zaloha)) } else { '' }))
+                continue
+            }
+
+            if (-not $hotove.ContainsKey("OBJ-$no")) {
+                $d = MServer ("vratka_obj_" + $no) $objXml ("Objednavka k vymene $no")
+                $hotove["OBJ-$no"] = Vysledek $d 'objednávku'
+                Set-Content -LiteralPath $hotoveF -Value ($hotove | ConvertTo-Json) -Encoding UTF8
+            }
+            $zfNo = ''
+            if ($zfXml) {
+                if ($hotove.ContainsKey("ZF-$no")) { $zfNo = [string]$hotove["ZF-$no"] }
+                else {
+                    $d = MServer ("vratka_zf_" + $no) $zfXml ("Zaloha k vymene $no")
+                    $zfNo = Vysledek $d 'zálohovou fakturu'
+                    $hotove["ZF-$no"] = $zfNo
+                    Set-Content -LiteralPath $hotoveF -Value ($hotove | ConvertTo-Json) -Encoding UTF8
+                }
+            }
+            ZpetObj $no 'hotovo' $zfNo ''
+            Zapis-Log $uloha ("OK    {0}: objednávka {1}{2}" -f $no, $xo, $(if ($zfNo) { ", záloha $zfNo" } else { '' }))
+        } catch {
+            $m = $_.Exception.Message
+            Zapis-Log $uloha ("CHYBA {0} (objednávka): {1}" -f $no, $m)
+            try { ZpetObj $no 'chyba' '' $m } catch { }
+        }
+    }
+} catch {
+    Zapis-Log $uloha ('CHYBA objednávky {0}' -f $_.Exception.Message)
+}
+
+# ===== 2. Doklad po kontrole vráceného zboží (ODD / faktura) =====
 try {
     $q = if ($Ostre) { '?navrhy=1' } else { '' }
     $seznam = @((Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/doklady' + $q) -Headers $apiHlav -TimeoutSec 60).returns)
@@ -103,6 +266,18 @@ try {
             if (Uzel $fv 'invoiceSummary/foreignCurrency') { throw "Faktura $fvNo je v cizí měně – doklad vystavte ručně." }
             $fvPolozky = @{}
             foreach ($p in (Uzly $fv 'invoiceDetail/invoiceItem')) { $c = Text $p 'code'; if ($c -and -not $fvPolozky.ContainsKey($c)) { $fvPolozky[$c] = $p } }
+
+            # --- výměna: položky přijaté objednávky 991… (faktura je vyřídí a uvolní rezervaci) ---
+            $objPol = @{}
+            $xo = ([string]$r.xorder_no) -replace '[^0-9]', ''
+            if ($xo -and $Ostre -and [string]$r.xorder_state -eq 'hotovo') {
+                $od = MServer ("vratka_objcteni_" + $no) ("<dat:dataPackItem id=`"o`" version=`"2.0`"><lst:listOrderRequest version=`"2.0`" orderType=`"receivedOrder`" orderVersion=`"2.0`"><lst:requestOrder><ftr:queryFilter><ftr:filter>OBJ.Cislo = '$xo'</ftr:filter></ftr:queryFilter></lst:requestOrder></lst:listOrderRequest></dat:dataPackItem>") 'Vratky - cteni objednavky'
+                foreach ($op in $od.SelectNodes("//*[local-name()='orderItem']")) {
+                    $k = Text $op 'code'; if (-not $k) { $k = Text $op 'text' }
+                    if ($k -and -not $objPol.ContainsKey($k)) { $objPol[$k] = Text $op 'id' }
+                }
+                if ($objPol.Count -eq 0) { throw "Objednávka $xo v Pohodě nenalezena." }
+            }
 
             # --- položky ---
             $radky = New-Object System.Text.StringBuilder
@@ -128,8 +303,13 @@ try {
                         if (-not $k) { throw "Karta $kodZ (nová velikost) není ve skladu SKLAD." }
                         $nazev = Text $k 'name'
                     }
+                    $vazba = ''
+                    if ($i.kind -eq 'nove' -and $objPol.Count) {
+                        $oid = $objPol[$kodZ]; if (-not $oid) { $oid = $objPol[[string]$i.name] }
+                        if ($oid) { $vazba = "<inv:link><typ:sourceAgenda>receivedOrder</typ:sourceAgenda><typ:sourceItemId>$oid</typ:sourceItemId></inv:link>" }
+                    }
                     [void]$radky.Append(@"
-<inv:invoiceItem><inv:text>$(X $nazev)</inv:text><inv:quantity>$(Cislo $mn)</inv:quantity><inv:unit>ks</inv:unit><inv:payVAT>$platiDph</inv:payVAT><inv:rateVAT>$sazba</inv:rateVAT><inv:discountPercentage>$sleva</inv:discountPercentage><inv:homeCurrency><typ:unitPrice>$(Cislo $cena)</typ:unitPrice></inv:homeCurrency><inv:code>$(X $kodZ)</inv:code><inv:stockItem><typ:store><typ:ids>SKLAD</typ:ids></typ:store><typ:stockItem><typ:ids>$(X $kodZ)</typ:ids></typ:stockItem></inv:stockItem></inv:invoiceItem>
+<inv:invoiceItem>$vazba<inv:text>$(X $nazev)</inv:text><inv:quantity>$(Cislo $mn)</inv:quantity><inv:unit>ks</inv:unit><inv:payVAT>$platiDph</inv:payVAT><inv:rateVAT>$sazba</inv:rateVAT><inv:discountPercentage>$sleva</inv:discountPercentage><inv:homeCurrency><typ:unitPrice>$(Cislo $cena)</typ:unitPrice></inv:homeCurrency><inv:code>$(X $kodZ)</inv:code><inv:stockItem><typ:store><typ:ids>SKLAD</typ:ids></typ:store><typ:stockItem><typ:ids>$(X $kodZ)</typ:ids></typ:stockItem></inv:stockItem></inv:invoiceItem>
 "@)
                     $soucet += $mn * $cena * (1 - [double]::Parse($sleva, [Globalization.CultureInfo]::InvariantCulture) / 100)
                 } else {
@@ -140,6 +320,15 @@ try {
 "@)
                     $soucet += $mn * $cena
                 }
+            }
+            # --- odpočet zaplacené zálohy (doplatek převodem) ---
+            $zfNo = ([string]$r.zf_no) -replace '[^0-9]', ''
+            if ($zfNo -and [double]$r.advance -gt 0) {
+                $z = [double]$r.advance
+                $zakl = [math]::Round($z / 1.21, 2); $dph = [math]::Round($z - $zakl, 2)
+                [void]$radky.Append(@"
+<inv:invoiceAdvancePaymentItem><inv:sourceDocument><typ:number>$zfNo</typ:number></inv:sourceDocument><inv:quantity>1</inv:quantity><inv:payVAT>true</inv:payVAT><inv:rateVAT>high</inv:rateVAT><inv:homeCurrency><typ:unitPrice>$(Cislo (-$z))</typ:unitPrice><typ:price>$(Cislo (-$zakl))</typ:price><typ:priceVAT>$(Cislo (-$dph))</typ:priceVAT><typ:priceSum>$(Cislo (-$z))</typ:priceSum></inv:homeCurrency></inv:invoiceAdvancePaymentItem>
+"@)
             }
             $odd = $soucet -lt 0
             if (($odd -and $r.type -ne 'odd') -or (-not $odd -and $r.type -ne 'fv')) { throw ("Součet z faktury ({0} Kč) nesedí s typem dokladu v Clientu – zkontrolujte ceny." -f (Cislo $soucet)) }
@@ -155,7 +344,7 @@ try {
                 if (-not $u) { throw "Číslo účtu zákazníka '$($r.bank_account)' neumím zapsat – doklad vystavte ručně." }
                 $ucetX = "<inv:paymentAccount><typ:accountNo>$($u.cislo)</typ:accountNo><typ:bankCode>$($u.banka)</typ:bankCode></inv:paymentAccount>"
             }
-            $text = if ($odd) { "Opravný daňový doklad k daňovému dokladu č. $fvNo`nDůvod opravy: Vratka eshop" } else { "Výměna zboží k faktuře č. $fvNo" }
+            $text = if ($odd) { "Opravný daňový doklad k daňovému dokladu č. $fvNo`nDůvod opravy: Vratka eshop" } else { "Výměna zboží k faktuře č. $fvNo" + $(if ($xo) { ", objednávka $xo" } else { '' }) }
             $hlavicka = @"
 <inv:invoiceHeader>
 <inv:invoiceType>$(if ($odd) { 'issuedCorrectiveTax' } else { 'issuedInvoice' })</inv:invoiceType>
@@ -166,7 +355,7 @@ try {
 <inv:text>$(X $text)</inv:text>
 $partner
 $(if ($objCislo) { "<inv:numberOrder>$(X $objCislo)</inv:numberOrder>" })$(if ($objDatum) { "<inv:dateOrder>$objDatum</inv:dateOrder>" })
-<inv:paymentType><typ:ids>Příkazem</typ:ids></inv:paymentType><inv:account><typ:ids>OBCZ</typ:ids></inv:account><inv:symConst>0308</inv:symConst>
+<inv:paymentType><typ:ids>$(if (-not $odd -and [string]$r.pay_method -eq 'dobirka') { 'Dobírkou' } else { 'Příkazem' })</typ:ids></inv:paymentType><inv:account><typ:ids>OBCZ</typ:ids></inv:account><inv:symConst>0308</inv:symConst>
 $ucetX
 $(if ($stredisko) { "<inv:centre><typ:ids>$(X $stredisko)</typ:ids></inv:centre>" })$(if ($cinnost) { "<inv:activity><typ:ids>$(X $cinnost)</typ:ids></inv:activity>" })
 <inv:note>Vratka $no z client.4kluciodkol.cz</inv:note>

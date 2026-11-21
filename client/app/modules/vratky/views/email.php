@@ -8,6 +8,15 @@ require __DIR__ . '/email_head.php'; ?>
   <p style="margin:0 0 12px;font-size:22px;font-weight:700"><?= e($heading) ?></p>
   <p style="margin:0;font-size:15px;line-height:1.6;color:#444"><?= nl2br(e($text)) ?></p>
 </td></tr>
+<?php if (!empty($pay)): ?>
+<tr><td style="padding:16px 28px 0">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f7f5;border-radius:12px;border-collapse:separate;font-size:15px;line-height:1.5">
+    <tr><td style="padding:16px 18px 4px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#777" colspan="2">Platební údaje</td></tr>
+    <tr><td style="padding:4px 18px;color:#777">Částka</td><td style="padding:4px 18px;font-weight:700;text-align:right"><?= e(money($pay['amount'])) ?></td></tr>
+    <tr><td style="padding:4px 18px;color:#777">Číslo účtu</td><td style="padding:4px 18px;font-weight:700;text-align:right"><?= e($pay['account']) ?></td></tr>
+    <tr><td style="padding:4px 18px 16px;color:#777">Variabilní symbol</td><td style="padding:4px 18px 16px;font-weight:700;text-align:right"><?= e($pay['vs']) ?></td></tr>
+  </table></td></tr>
+<?php endif; ?>
 <?php if ($showCode && $ret['packeta_password']): ?>
 <tr><td style="padding:16px 28px 0">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#BA1B02;color:#ffffff;border-radius:12px;border-collapse:separate">

@@ -25,7 +25,7 @@ final class Installer
     }
 
     /** Doplnění sloupců do už nainstalované databáze (na Forpsi). Značka v storage/ zajistí, že se to spustí jen jednou. */
-    public const SCHEMA = 8;
+    public const SCHEMA = 9;
     public static function migrate(): void
     {
         $mark = APP_ROOT . '/storage/schema_v' . self::SCHEMA;
@@ -63,6 +63,12 @@ final class Installer
             "ALTER TABLE orders ADD COLUMN parcel_no VARCHAR(40) NOT NULL DEFAULT ''",
             'ALTER TABLE orders ADD COLUMN delivered_date DATE NULL',
             'ALTER TABLE orders ADD COLUMN tracking_checked_at DATETIME NULL',
+            // v9: výměna → přijatá objednávka 991… v Pohodě (číslo dává Client), doplatek převodem → zálohová faktura 2608…
+            'ALTER TABLE returns ADD COLUMN xorder_no VARCHAR(20) NULL',
+            "ALTER TABLE returns ADD COLUMN xorder_state VARCHAR(10) NOT NULL DEFAULT ''",
+            'ALTER TABLE returns ADD COLUMN xorder_error TEXT NULL',
+            'ALTER TABLE returns ADD COLUMN zf_no VARCHAR(20) NULL',
+            'ALTER TABLE returns ADD COLUMN zf_paid TINYINT(1) NOT NULL DEFAULT 0',
         ];
         foreach ($cols as $sql) {
             try { Db::exec($sql); } catch (\Throwable $e) {

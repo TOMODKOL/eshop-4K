@@ -31,6 +31,23 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
         <div class="cd"><span class="k">Podací kód</span><span style="font-size:15px;font-weight:700">Pošleme vám ho e-mailem během pracovního dne.</span></div></div>
     <?php endif; ?>
   <?php endif; ?>
+  <?php $adv = Service::advanceAmount($ret); if ($adv > 0.005 && !in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true)): ?>
+    <div class="card"><span class="kicker">Doplatek za výměnu</span>
+    <?php if ($ret['zf_no'] && !$ret['zf_paid']): ?>
+      <p style="margin:0">Nové zboží máme zarezervované. Doplatek prosím pošlete převodem:</p>
+      <div class="ai-sum" style="padding:0">
+        <div class="row"><span>Částka</span><strong><?= e(money($adv)) ?></strong></div>
+        <div class="row"><span>Číslo účtu</span><strong><?= e(cfg('shop.bank_account')) ?></strong></div>
+        <div class="row"><span>Variabilní symbol</span><strong><?= e($ret['zf_no']) ?></strong></div>
+      </div>
+      <span class="hint">Platební údaje máte i v e-mailu. Číslo zálohové faktury je <?= e($ret['zf_no']) ?>.</span>
+    <?php elseif ($ret['zf_paid']): ?>
+      <p style="margin:0">Doplatek <?= e(money($adv)) ?> jsme přijali, děkujeme.</p>
+    <?php else: ?>
+      <p style="margin:0">Platební údaje k doplatku <?= e(money($adv)) ?> vám pošleme e-mailem během pracovního dne.</p>
+    <?php endif; ?>
+    </div>
+  <?php endif; ?>
   <?php
     // stejná „účtenka“ jako v panelu formuláře
     $ln = fn(string $k, string $n, string $v = '', bool $wait = false) => '<div class="ai-l"><span class="ai-lk">' . e($k) . '</span><span class="ai-ln' . ($wait ? ' ai-wait' : '') . '">' . e($n) . '</span>' . ($v !== '' ? '<span class="ai-lv">' . e($v) . '</span>' : '') . '</div>';
