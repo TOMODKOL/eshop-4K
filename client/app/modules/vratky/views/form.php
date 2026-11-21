@@ -114,12 +114,6 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
           <button type="button" class="btn" data-shop="<?= $id ?>" data-name="<?= e($it['name']) ?>" data-credit="<?= e((string) (float) $it['unit_price']) ?>">Vybrat na e-shopu →</button>
           <span class="hint">Otevře se náš e-shop. U zboží, které chcete, klikněte na „Vyměnit za tento produkt“ a vrátíte se sem. Uvidíte i doplatek nebo kolik vám vrátíme.</span>
         </div>
-        <div class="orsep js-only"><span>nebo hledejte tady</span></div>
-        <div class="field js-only"><label class="l" for="sq-<?= $id ?>">Hledat zboží</label>
-          <div class="urlrow"><input class="f" id="sq-<?= $id ?>" type="search" autocomplete="off" placeholder="např. Castelli Espresso, helma POC, Lake" data-search="<?= $id ?>">
-            <button type="button" class="btn dark" data-dosearch="<?= $id ?>">Hledat</button></div>
-          <span class="hint">Ukážeme jen zboží skladem nebo skladem u dodavatele.</span></div>
-        <div data-results="<?= $id ?>"></div>
         <details class="byurl"><summary>Nebo vložte odkaz na zboží</summary>
         <div class="field"><label class="l" for="ou-<?= $id ?>">Odkaz na zboží z e-shopu</label>
           <div class="urlrow"><input class="f" id="ou-<?= $id ?>" name="other_url[<?= $id ?>]" inputmode="url" autocomplete="off" placeholder="https://www.4kluciodkol.cz/…" value="<?= e($o('other_url', $id)) ?>">
