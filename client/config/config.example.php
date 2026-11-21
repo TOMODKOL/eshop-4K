@@ -47,7 +47,7 @@ return [
         // 79 Kč = zpětná zásilka Zásilkovny stojí 75,02 Kč s DPH (62 Kč bez paliva a mýta), rozhodnuto 20. 11. 2026.
         'return_postage' => 79,
         // Při vrácení celé objednávky vracíme i dopravu, ale nejvýš cenu nejlevnějšího způsobu doručení z obchodních podmínek (Kč s DPH).
-        // Osobní odběr se nepočítá (není to doručení), doprava zdarma nad hranicí také ne. 69 Kč = GLS výdejní místo od 23. 11. 2026.
+        // Osobní odběr se nepočítá (není to doručení), doprava zdarma nad hranicí také ne. 69 Kč = GLS výdejní místo od 21. 11. 2026.
         // Dobírka se nevrací. Po změně ceníku dopravy upravit.
         'refund_shipping_max' => 69,
         // Ceník dopravy podle obchodních podmínek (Kč s DPH) a hranice dopravy zdarma, platné od data objednávky.
@@ -57,7 +57,7 @@ return [
             ['from' => '2014-01-01', 'free_from' => 2500, 'prices' => [
                 'zásilkovna na adresu' => 99, 'zásilkovna sk' => 99, 'zásilkovna' => 69, 'gls čr - výdejní' => 59, 'gls čr - na adresu' => 99,
                 'gls sk - výdejní' => 119, 'gls sk - na adresu' => 129, 'ppl' => 119]],
-            ['from' => '2026-11-23', 'free_from' => 3000, 'prices' => [
+            ['from' => '2026-11-21', 'free_from' => 3000, 'prices' => [
                 'zásilkovna na adresu' => 129, 'zásilkovna sk' => 99, 'zásilkovna' => 89, 'gls čr - výdejní' => 69, 'gls čr - na adresu' => 109,
                 'gls sk - výdejní' => 129, 'gls sk - na adresu' => 149, 'ppl' => 149]],
         ],

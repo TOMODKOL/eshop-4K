@@ -171,7 +171,7 @@ $p2 = Service::docPlan(Service::get((int) $x['id']));
 t($p2['type'] === 'fv' && $p2['total'] == 0 && $p2['items'][1]['name'] === 'tretry LAKE CX239 REGULAR 44' && $p2['items'][1]['code'] === 'T-44', 'výměna = faktura za 0 Kč s novou velikostí');
 
 // částečné vrácení pod hranici dopravy zdarma
-Sync::import(['orders' => [['invoice_no' => '260102300', 'order_no' => '8810009100', 'invoice_date' => '2026-11-25', 'email' => 'f@g.cz',
+Sync::import(['orders' => [['invoice_no' => '260102300', 'order_no' => '8810009100', 'invoice_date' => '2026-11-21', 'email' => 'f@g.cz',
     'items' => [['code' => 'A', 'name' => 'bunda A M', 'qty' => 1, 'unit_price' => 2500], ['code' => 'B', 'name' => 'čepice B', 'qty' => 1, 'unit_price' => 800],
                 ['name' => 'Zásilkovna ČR', 'qty' => 1, 'unit_price' => 0]]]]]);
 $o3 = Service::findOrder('f@g.cz', '8810009100');
@@ -184,7 +184,7 @@ $c3 = Service::calc([$mk($i3[1], 'vymenit', ['size_to' => 'L'])], 'zbox', $o3);
 t($c3['ship_charge'] == 0.0, 'výměna → doprava se neúčtuje');
 $x3 = Service::create($o3, ['lines' => [$mk($i3[1], 'vratit')], 'ship' => 'zbox', 'account' => '123456789/0800', 'note' => '', 'phone' => '', 'calc' => $c1]);
 t(Service::payout($x3) == 800 - 79 - 89, 'zákazník dostane 800 − 79 poštovné − 89 doprava = ' . Service::payout($x3));
-t(Service::shippingRule('2026-11-20')['free_from'] == 2500 && Service::shippingRule('2026-11-23')['free_from'] == 3000, 'objednávka před 23. 11. podle starých podmínek');
+t(Service::shippingRule('2026-11-20')['free_from'] == 2500 && Service::shippingRule('2026-11-21')['free_from'] == 3000, 'objednávka před 23. 11. podle starých podmínek');
 
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
