@@ -1,6 +1,6 @@
 <script>
 /* 4K – výměna za jiné zboží z vratkového portálu client.4kluciodkol.cz.
-   Zákazník přijde z formuláře vratky s #vratka=… (v adrese za #, parametr ?… BSSHOP přesměrováním zahodí) → nahoře žlutý pruh „Vyměňujete …“,
+   Zákazník přijde z formuláře vratky s #vratka=… (v adrese za #, parametr ?… BSSHOP přesměrováním zahodí) → dole žlutý pruh „Vyměňujete …“,
    na detailu zboží tlačítko „Vyměnit za tento produkt“, které ho vrátí do formuláře
    s vybraným zbožím a velikostí. Ostatní návštěvníci nic nevidí. Patří na konec Zápatí. */
 (function () {
@@ -25,7 +25,7 @@
   if (!v || !v.i || !v.n) return;
   if (location.hash.indexOf('vymena-konec') >= 0) { try { sessionStorage.removeItem(KEY); history.replaceState(null, '', location.pathname + location.search); } catch (e) {} return; }
 
-  var nf = function (n) { return Math.round(n).toLocaleString('cs-CZ').replace(/\s/g, ' ') + ' Kč'; };
+  var nf = function (n) { return Math.round(n).toLocaleString('cs-CZ').replace(/\s/g, '\u00a0') + '\u00a0Kč'; };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var back = CLIENT + '/vratky/novy?krok=2';
 
@@ -36,11 +36,10 @@
     '#vx-bar .k{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:block}' +
     '#vx-bar .t{font-size:15px;line-height:1.35}#vx-bar a{color:#231F20;font-weight:700;font-size:14px;white-space:nowrap}' +
     '#vx-box{width:100%;margin:12px 0;display:flex;flex-direction:column;gap:8px;font-family:"Good Sans",Arial,sans-serif}' +
-    '#vx-go{display:block;width:100%;height:56px;border:0;border-radius:10px;background:#ffc524;color:#231F20;font:700 18px "Good Sans",Arial,sans-serif;cursor:pointer}' +
-    '#vx-go[disabled]{background:#ecece8;color:#8a8a86;cursor:not-allowed}' +
-    '#vx-info{text-align:center;font-size:14px;color:#444}' +
-    '.PDAddToCart{grid-template-rows:auto auto !important;height:auto !important;max-height:none !important}' +
-    '.PDAddToCart > :not(#vx-box){grid-row:2 !important}.PDAddToCart > #vx-box{grid-row:1 !important;grid-column:1/-1 !important;margin:0 0 12px !important}';
+    '#vx-box #vx-go{display:block!important;width:100%!important;height:56px!important;min-height:56px!important;padding:0 16px!important;border:0!important;border-radius:10px!important;background:#ffc524!important;color:#231F20!important;font:700 18px/56px "Good Sans",Arial,sans-serif!important;cursor:pointer}' +
+    '#vx-box #vx-go[disabled]{background:#ecece8!important;color:#8a8a86!important;cursor:not-allowed}' +
+    '#vx-box #vx-info{height:auto!important;text-align:center;font-size:14px;line-height:1.4;color:#444}' +
+    '.PDAddToCart > :not(#vx-box){grid-row:2 !important}.PDAddToCart > #vx-box{grid-row:1 !important;grid-column:1/-1 !important;margin:0 0 12px !important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;align-self:start!important}';
   document.head.appendChild(css);
 
   var bar = document.createElement('div');
@@ -83,7 +82,12 @@
       box = document.createElement('div');
       box.id = 'vx-box';
       box.innerHTML = '<button type="button" id="vx-go">Vyměnit za tento produkt →</button><div id="vx-info"></div>';
-      if (atc) parent.insertBefore(box, parent.firstChild); else parent.appendChild(box);
+      if (atc) {
+        parent.insertBefore(box, parent.firstChild);
+        // mřížka „Do košíku“ má pevné výšky řádků – inline !important přebije styly e-shopu
+        parent.style.setProperty('grid-template-rows', 'auto auto', 'important');
+        parent.style.setProperty('height', 'auto', 'important');
+      } else parent.appendChild(box);
       box.querySelector('#vx-go').addEventListener('click', function () {
         var s = state();
         if (!s.ok || (s.variants && !s.size)) return;
