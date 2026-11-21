@@ -125,7 +125,7 @@ Http::post('/vratky/koncept', function () use ($loadOrder) {
     Session::checkCsrf();
     $loadOrder();
     $keep = [];
-    foreach (['act', 'qty', 'reason', 'size_to', 'swap_kind', 'other_url', 'other_pick', 'defect', 'ship', 'account', 'phone', 'note', 'pay_method'] as $k) {
+    foreach (['act', 'qty', 'reason', 'size_to', 'swap_kind', 'other_url', 'other_pick', 'other_qty', 'defect', 'ship', 'account', 'phone', 'note', 'pay_method'] as $k) {
         if (isset($_POST[$k])) $keep[$k] = $_POST[$k];
     }
     Session::set('vr_old', $keep);
@@ -149,7 +149,7 @@ Http::get('/vratky/zbozi', function () use ($loadOrder) {
     header('Cache-Control: no-store');
     $url = trim((string) ($_GET['url'] ?? ''));
     $p = RateLimit::hit('vr_prod', 60, 3600) ? Eshop::product($url) : null;
-    echo View::render('vratky:other_product', ['p' => $p, 'id' => (int) ($_GET['id'] ?? 0), 'sel' => '', 'url' => $url]);
+    echo View::render('vratky:other_product', ['p' => $p, 'id' => (int) ($_GET['id'] ?? 0), 'sel' => '', 'url' => $url, 'oqty' => 1]);
 });
 
 Http::post('/vratky/novy', function () use ($loadOrder) {

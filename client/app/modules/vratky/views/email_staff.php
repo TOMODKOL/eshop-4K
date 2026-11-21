@@ -27,7 +27,7 @@ require __DIR__ . '/email_head.php'; ?>
       <span style="<?= $label ?>"><?= e(Service::actionLabel($l)) ?></span><br>
       <strong><?= e($l['item_name']) ?><?= $l['qty'] > 1 ? ' × ' . (int) $l['qty'] : '' ?></strong><span style="color:#777"><?= $l['item_code'] ? ' · ' . e($l['item_code']) : '' ?> · <?= e(money($l['unit_price'])) ?></span><br>
       <?php if ($l['action'] === 'vratit'): ?><span style="color:#444">Důvod: <?= e($l['reason']) ?></span>
-      <?php elseif ($l['action'] === 'vymenit'): ?><span style="color:#444"><?php if (($l['new_name'] ?? '') !== ''): ?>Za jiné zboží: <strong><?= e($l['new_name']) ?></strong> · <?= e(money($l['new_price'])) ?><?php else: ?>Za velikost <strong><?= e($l['size_to']) ?></strong><?php endif; ?><?= ($l['new_code'] ?? '') !== '' ? ' · kód ' . e($l['new_code']) : '' ?></span>
+      <?php elseif ($l['action'] === 'vymenit'): ?><span style="color:#444"><?php if (($l['new_name'] ?? '') !== ''): ?>Za jiné zboží: <strong><?= e($l['new_name']) ?></strong><?= (int) ($l['new_qty'] ?? 0) > 1 ? ' × ' . (int) $l['new_qty'] . ' ks' : '' ?> · <?= e(money($l['new_price'])) ?>/ks<?php else: ?>Za velikost <strong><?= e($l['size_to']) ?></strong><?php endif; ?><?= ($l['new_code'] ?? '') !== '' ? ' · kód ' . e($l['new_code']) : '' ?></span>
       <?php else: ?><span style="color:#444"><?= nl2br(e(mb_strimwidth((string) $l['defect_text'], 0, 600, '…'))) ?></span><?php endif; ?>
     </td></tr>
   <?php endforeach; ?>

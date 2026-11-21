@@ -215,6 +215,10 @@ $itO = ['id' => 78, 'name' => 'dres X M', 'code' => 'DX', 'unit_price' => 2000, 
 $base = ['ship' => 'zbox', 'phone' => '', 'name' => 'A', 'agree' => 1, 'act' => [78 => 'vymenit'], 'swap_kind' => [78 => 'jine']];
 [$e3, $d3] = Service::validate(['invoice_date' => date('Y-m-d'), 'id' => 0], [$itO], $base + ['other_url' => [78 => 'https://www.4kluciodkol.cz/plast-p155431/'], 'other_pick' => [78 => ''], 'account' => '19-2000145399/0800'], []);
 t(!$e3 && $d3['lines'][0]['new_code'] === '00099391' && $d3['calc']['balance'] == 710 && $d3['calc']['postage'] === null, 'levnější jiné zboží: vrátíme rozdíl 710 Kč, poštovné se neplatí');
+[$e7, $d7] = Service::validate(['invoice_date' => date('Y-m-d'), 'id' => 0], [$itO], $base + ['other_url' => [78 => 'https://www.4kluciodkol.cz/plast-p155431/'], 'other_pick' => [78 => ''], 'other_qty' => [78 => 2], 'pay_method' => 'prevod'], []);
+t(!$e7 && $d7['lines'][0]['new_qty'] === 2 && $d7['calc']['balance'] == -580, 'jiné zboží 2 ks: 2000 − 2 × 1290 = doplatek 580');
+t(Service::docPlan(['refund_total' => 0, 'swap_diff' => -580, 'postage_applies' => 0, 'postage' => null, 'ship_charge' => 0, 'ship_refund' => 0, 'cod_fee' => 0],
+    [['action' => 'vymenit', 'item_code' => 'DX', 'item_name' => 'dres X M', 'qty' => 1, 'unit_price' => 2000, 'size_to' => '', 'new_code' => '00099391', 'new_name' => 'plášť', 'new_price' => 1290, 'new_qty' => 2]])['total'] == 580, 'doklad: 2 ks nového zboží');
 [$e4] = Service::validate(['invoice_date' => date('Y-m-d'), 'id' => 0], [$itO], $base + ['other_url' => [78 => 'https://www.4kluciodkol.cz/tretry-p188286/'], 'other_pick' => [78 => '43,5']], []);
 t((bool) array_filter($e4, fn($x) => str_contains($x, 'doplatíte')), 'dražší jiné zboží bez volby doplatku → chyba');
 [$e5, $d5] = Service::validate(['invoice_date' => date('Y-m-d'), 'id' => 0], [$itO], $base + ['other_url' => [78 => 'https://www.4kluciodkol.cz/tretry-p188286/'], 'other_pick' => [78 => '43,5'], 'pay_method' => 'dobirka'], []);

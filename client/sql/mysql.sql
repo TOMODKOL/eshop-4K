@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS return_lines (
   new_name VARCHAR(255) NOT NULL DEFAULT '',
   new_price DECIMAL(12,2) NULL,
   new_url VARCHAR(500) NOT NULL DEFAULT '',
+  new_qty INT NOT NULL DEFAULT 0,
   KEY k_return (return_id),
   CONSTRAINT fk_lines_return FOREIGN KEY (return_id) REFERENCES returns(id) ON DELETE CASCADE,
   CONSTRAINT fk_lines_item FOREIGN KEY (item_id) REFERENCES order_items(id) ON DELETE SET NULL

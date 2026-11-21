@@ -142,7 +142,7 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
             <button type="button" class="btn dark js-only" data-load="<?= $id ?>">Načíst</button></div>
           <span class="hint">Najděte zboží na <a href="<?= e(rtrim((string) cfg('shop.web'), '/')) ?>/" target="_blank" rel="noopener">4kluciodkol.cz ↗</a>, zkopírujte adresu stránky a vložte ji sem. Vybrat můžete zboží skladem nebo skladem u dodavatele. Rozdíl v ceně vám vrátíme, nebo ho doplatíte.</span></div>
         </details>
-        <div data-other="<?= $id ?>"><?php $ou = trim((string) $o('other_url', $id)); if ($ou !== ''): ?><?= \App\Core\View::render('vratky:other_product', ['p' => Eshop::product($ou), 'id' => $id, 'sel' => (string) $o('other_pick', $id), 'url' => $ou]) ?><?php endif; ?></div>
+        <div data-other="<?= $id ?>"><?php $ou = trim((string) $o('other_url', $id)); if ($ou !== ''): ?><?= \App\Core\View::render('vratky:other_product', ['p' => Eshop::product($ou), 'id' => $id, 'sel' => (string) $o('other_pick', $id), 'url' => $ou, 'oqty' => (int) $o('other_qty', $id, 1)]) ?><?php endif; ?></div>
       </div>
     </div>
 

@@ -1,5 +1,6 @@
 <?php
-/** Zboží z e-shopu pro výměnu za jiné zboží (vkládá se do formuláře i přes /vratky/zbozi). @var ?array $p @var int $id @var string $sel @var string $url */
+/** Zboží z e-shopu pro výměnu za jiné zboží (vkládá se do formuláře i přes /vratky/zbozi). @var ?array $p @var int $id @var string $sel @var string $url @var int $oqty */
+$oqty = max(1, (int) ($oqty ?? 1));
 if ($url === ''): return; endif;
 if (!$p): ?>
   <div class="flash err" style="margin:0">Zboží se nepodařilo načíst. Vložte prosím celý odkaz na stránku zboží z 4kluciodkol.cz (adresa končí např. „-p188286/“).</div>
@@ -21,6 +22,14 @@ $anyOk = (bool) array_filter($p['options'], fn($o) => $o['ok']); ?>
         <span class="v"><?= e($o['value']) ?></span><span class="a <?= e($o['cls']) ?>"><?= e($o['avail']) ?></span><?php if ($o['ok']): ?><span class="p"><?= e(money($o['price'])) ?></span><?php endif; ?></label>
     <?php endforeach; ?>
     </div>
+  <?php endif; ?>
+  <?php if ($anyOk): ?>
+  <div class="qtyrow" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <label class="l" for="oq-<?= $id ?>">Kolik kusů nového zboží?</label>
+    <select class="f" id="oq-<?= $id ?>" name="other_qty[<?= $id ?>]" data-oqty="<?= $id ?>" style="width:auto;min-width:110px">
+      <?php for ($q = 1; $q <= 10; $q++): ?><option value="<?= $q ?>" <?= $q === $oqty ? 'selected' : '' ?>><?= $q ?> ks</option><?php endfor; ?>
+    </select>
+  </div>
   <?php endif; ?>
   <?php if (!$anyOk): ?><div class="flash err" style="margin:0">Toto zboží teď není skladem ani u dodavatele. Vyberte prosím jiné.</div><?php endif; ?>
   <div class="grey" data-diff="<?= $id ?>" hidden></div>

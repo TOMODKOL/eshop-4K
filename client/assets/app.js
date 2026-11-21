@@ -51,6 +51,7 @@
         kind: kind,
         picked: !!pick,
         newPrice: kind === 'jine' && pick && !isNaN(np) ? np : null,
+        newQty: (function () { var s = form.querySelector('[name="other_qty[' + id + ']"]'); return s ? parseInt(s.value, 10) || 1 : 1; })(),
         newName: kind === 'jine' && pick && box ? (box.textContent + (pick.value ? ' ' + pick.value : '')) : ''
       };
     });
@@ -61,7 +62,7 @@
     var ch = chosen(), refund = 0, diff = 0;
     ch.forEach(function (i) {
       if (i.act === 'vratit') refund += i.price * i.qty;
-      if (i.act === 'vymenit' && i.newPrice !== null) diff += (i.price - i.newPrice) * i.qty;
+      if (i.act === 'vymenit' && i.newPrice !== null) diff += i.price * i.qty - i.newPrice * i.newQty;
     });
     var onlyReturn = ch.length > 0 && ch.every(function (i) { return i.act === 'vratit'; });
     var after = goodsLeft - refund;
@@ -75,7 +76,7 @@
   function detailText(i) {
     if (i.act === 'vratit') { var r = $('input[name="reason[' + i.id + ']"]:checked'); return r ? r.value : ''; }
     if (i.act === 'vymenit') {
-      if (i.kind === 'jine') return i.newName ? 'Za: ' + i.newName : '';
+      if (i.kind === 'jine') return i.newName ? 'Za: ' + i.newName + (i.newQty > 1 ? ' × ' + i.newQty + ' ks' : '') : '';
       var sv = sizeVal(i.id); return sv ? 'Za velikost ' + sv : '';
     }
     var d = form.querySelector('[name="defect[' + i.id + ']"]');
@@ -126,14 +127,14 @@
       var el = form.querySelector('[data-diff="' + i.id + '"]');
       if (!el) return;
       if (i.newPrice === null) { el.hidden = true; return; }
-      var d = (i.price - i.newPrice) * i.qty;
+      var d = i.price * i.qty - i.newPrice * i.newQty;
       el.hidden = false;
       el.innerHTML = Math.abs(d) < 0.005 ? 'Cena je stejná, nic se nedoplácí.' : (d > 0 ? 'Nové zboží je levnější – rozdíl <strong>' + money(d) + '</strong> vám vrátíme.' : 'Nové zboží je dražší – doplatíte <strong>' + money(-d) + '</strong>.');
     });
 
     // panel vpravo + souhrn
     var rows = c.ch.map(function (i) {
-      var amount = i.act === 'vratit' ? money(i.price * i.qty) : (i.newPrice !== null ? ((i.price - i.newPrice) >= 0 ? '' : '− ') + money(Math.abs((i.price - i.newPrice) * i.qty)) : '–');
+      var amount = i.act === 'vratit' ? money(i.price * i.qty) : (i.newPrice !== null ? ((i.price * i.qty - i.newPrice * i.newQty) >= 0 ? '' : '− ') + money(Math.abs(i.price * i.qty - i.newPrice * i.newQty)) : '–');
       return { label: i.act === 'vymenit' && i.kind === 'jine' ? 'Výměna za jiné zboží' : LABEL[i.act], name: i.name + (i.qty > 1 ? ' × ' + i.qty : ''), detail: detailText(i), amount: amount };
     });
     var shipEl = $('input[name="ship"]:checked');

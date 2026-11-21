@@ -20,7 +20,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
       <div><strong style="font-size:16px"><?= e($l['item_name']) ?></strong><br>
         <span class="hint"><?= $l['item_code'] ? 'Kód ' . e($l['item_code']) . ' · ' : '' ?><?= (int) $l['qty'] ?> ks × <?= e(money($l['unit_price'])) ?></span></div>
       <?php if ($l['action'] === 'vratit'): ?><div>Důvod: <strong><?= e($l['reason']) ?></strong></div><?php endif; ?>
-      <?php if ($l['action'] === 'vymenit'): ?><div><?php if (($l['new_name'] ?? '') !== ''): ?>Vyměnit za jiné zboží: <strong><?= e($l['new_name']) ?></strong> · <?= e(money($l['new_price'])) ?><?php if ($l['new_url']): ?> · <a href="<?= e($l['new_url']) ?>" target="_blank" rel="noopener">e-shop ↗</a><?php endif; ?><?php else: ?>Vyměnit za velikost: <strong><?= e($l['size_to']) ?></strong><?php endif; ?></div><?php endif; ?>
+      <?php if ($l['action'] === 'vymenit'): ?><div><?php if (($l['new_name'] ?? '') !== ''): ?>Vyměnit za jiné zboží: <strong><?= e($l['new_name']) ?></strong><?= (int) ($l['new_qty'] ?? 0) > 1 ? ' × ' . (int) $l['new_qty'] . ' ks' : '' ?> · <?= e(money($l['new_price'])) ?>/ks<?php if ($l['new_url']): ?> · <a href="<?= e($l['new_url']) ?>" target="_blank" rel="noopener">e-shop ↗</a><?php endif; ?><?php else: ?>Vyměnit za velikost: <strong><?= e($l['size_to']) ?></strong><?php endif; ?></div><?php endif; ?>
       <?php if ($l['action'] === 'reklamovat'): ?>
         <div class="grey" style="white-space:pre-line"><?= e($l['defect_text']) ?></div>
         <?php if ($l['photos']): ?><div class="photos"><?php foreach ($l['photos'] as $p): ?>

@@ -158,7 +158,7 @@ final class Service
             if ($qty > $it['qty_left']) { $errors[] = 'U položky „' . $it['name'] . '“ lze vybrat nejvýš ' . $it['qty_left'] . ' ks.'; continue; }
             if (in_array($act, ['vratit', 'vymenit'], true) && !$dl['can_return']) { $errors[] = 'Lhůta pro vrácení a výměnu u této objednávky už uplynula. Zboží můžete reklamovat.'; continue; }
             if ($act === 'reklamovat' && !$dl['can_claim']) { $errors[] = 'Lhůta pro reklamaci (24 měsíců) už uplynula.'; continue; }
-            $line = ['item' => $it, 'action' => $act, 'qty' => $qty, 'reason' => '', 'size_to' => '', 'new_code' => '', 'new_name' => '', 'new_price' => null, 'new_url' => '', 'defect_text' => '', 'photos' => []];
+            $line = ['item' => $it, 'action' => $act, 'qty' => $qty, 'reason' => '', 'size_to' => '', 'new_code' => '', 'new_name' => '', 'new_price' => null, 'new_url' => '', 'new_qty' => 0, 'defect_text' => '', 'photos' => []];
             if ($act === 'vratit') {
                 $r = (string) ($post['reason'][$id] ?? '');
                 if (!in_array($r, self::REASONS, true)) $errors[] = 'Vyberte důvod vrácení u „' . $it['name'] . '“.';
@@ -176,6 +176,7 @@ final class Service
                     $line['new_code'] = mb_substr($opt['sku'], 0, 60);
                     $line['new_name'] = mb_substr(trim($prod['name'] . ($opt['value'] !== '' && !$prod['single'] ? ' ' . $opt['value'] : '')), 0, 255);
                     $line['new_price'] = (float) $opt['price'];
+                    $line['new_qty'] = max(1, min(20, (int) ($post['other_qty'][$id] ?? $qty)));
                     $line['new_url'] = mb_substr($prod['url'], 0, 500);
                 }
             } elseif ($act === 'vymenit') {
@@ -230,7 +231,7 @@ final class Service
         $refund = 0.0; $diff = 0.0;
         foreach ($lines as $l) {
             if ($l['action'] === 'vratit') $refund += (float) $l['item']['unit_price'] * $l['qty'];
-            if ($l['action'] === 'vymenit' && ($l['new_price'] ?? null) !== null) $diff += ((float) $l['item']['unit_price'] - (float) $l['new_price']) * $l['qty'];
+            if ($l['action'] === 'vymenit' && ($l['new_price'] ?? null) !== null) $diff += (float) $l['item']['unit_price'] * $l['qty'] - (float) $l['new_price'] * ((int) ($l['new_qty'] ?? 0) ?: $l['qty']);
         }
         $onlyReturn = $lines && count(array_filter($lines, fn($l) => $l['action'] !== 'vratit')) === 0;
         $postageApplies = $onlyReturn && self::usesPacketa($ship);
@@ -366,6 +367,7 @@ final class Service
                     'new_code' => $l['new_code'] ?? '',
                     'new_name' => $l['new_name'] ?? '',
                     'new_price' => $l['new_price'] ?? null,
+                    'new_qty' => (int) ($l['new_qty'] ?? 0),
                     'new_url' => $l['new_url'] ?? '',
                     'defect_text' => $l['defect_text'],
                 ]);
@@ -413,7 +415,8 @@ final class Service
     /** Text „za co se měnilo“ u řádku výměny. */
     public static function swapText(array $l): string
     {
-        return ($l['new_name'] ?? '') !== '' ? 'Za: ' . $l['new_name'] : 'Za velikost ' . $l['size_to'];
+        $nq = (int) ($l['new_qty'] ?? 0);
+        return ($l['new_name'] ?? '') !== '' ? 'Za: ' . $l['new_name'] . ($nq > 1 ? ' × ' . $nq . ' ks' : '') : 'Za velikost ' . $l['size_to'];
     }
 
     // ---------- Pohoda: doklad k vratce (opravný daňový doklad / faktura) ----------
@@ -460,7 +463,7 @@ final class Service
                 $other = ($l['new_name'] ?? '') !== '' && ($l['new_price'] ?? null) !== null;
                 $items[] = ['kind' => 'nove', 'code' => (string) ($l['new_code'] ?? ''),
                     'name' => $other ? (string) $l['new_name'] : self::swapSize($l['item_name'], (string) $l['size_to']),
-                    'qty' => (int) $l['qty'], 'unit_price' => $other ? (float) $l['new_price'] : (float) $l['unit_price'], 'for_code' => $l['item_code'], 'other' => $other];
+                    'qty' => $other ? ((int) ($l['new_qty'] ?? 0) ?: (int) $l['qty']) : (int) $l['qty'], 'unit_price' => $other ? (float) $l['new_price'] : (float) $l['unit_price'], 'for_code' => $l['item_code'], 'other' => $other];
             }
         }
         if (!$items) return ['type' => null, 'total' => 0.0, 'items' => []];
