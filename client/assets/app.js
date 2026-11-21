@@ -141,18 +141,38 @@
     var shipName = shipEl ? shipEl.closest('label').querySelector('strong').textContent : '';
     var postTxt = ship() === 'vlastni' ? 'na vaše náklady' : (c.postageApplies ? (postage === null ? '− poštovné' : '− ' + money(postage)) : 'zdarma');
     var net = c.balance;
-    var totLabel = net > 0.005 ? 'Vrátíme vám' : (net < -0.005 ? 'Doplatíte' : 'Bez peněz');
+    var totLabel = net > 0.005 ? 'Vrátíme vám' : (net < -0.005 ? 'Doplatíte' : 'Vychází nastejno');
     var codRow = c.cod ? '<div class="row"><span>Dobírka</span><strong style="white-space:nowrap">+ ' + money(c.cod) + '</strong></div>' : '';
     var chargeRow = c.shipCharge ? '<div class="row"><span>Doprava objednávky – zbytek je pod ' + money(freeFrom) + ', doprava už není zdarma</span><strong style="white-space:nowrap">− ' + money(c.shipCharge) + '</strong></div>' : '';
 
     var aside = $('[data-aside]');
     if (aside) {
-      aside.innerHTML = rows.length ? '<div class="ai-list">' + rows.map(function (r) {
-        var amt = r.amount && r.amount !== '–' ? (/^\d/.test(r.amount) ? 'vrátíme ' + r.amount : r.amount) : '';
-        return '<div class="ai"><span class="ai-k">' + esc(r.label) + '</span><span class="ai-n">' + esc(r.name) + '</span>' +
-          (r.detail ? '<span class="ai-d">' + esc(r.detail) + '</span>' : '') + (amt ? '<span class="ai-a">' + amt + '</span>' : '') + '</div>';
-      }).join('') + '</div><div class="ai-sum"><div class="row"><span>Doprava</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '">' + postTxt + '</strong></div>' + chargeRow +
-        codRow + '</div><div class="total ai-total"><strong>' + totLabel + '</strong><span class="v">' + money(Math.abs(net)) + '</span></div>'
+      // účtenka: co posíláte / co dostanete, pod tím peníze řádek po řádku a výsledek
+      var ln = function (k, name, v) { return '<div class="ai-l"><span class="ai-lk">' + k + '</span><span class="ai-ln">' + esc(name) + '</span>' + (v ? '<span class="ai-lv">' + v + '</span>' : '') + '</div>'; };
+      var blocks = c.ch.map(function (i) {
+        var nm = i.name + (i.qty > 1 ? ' × ' + i.qty + ' ks' : ''), h = '';
+        if (i.act === 'vratit') h = ln('Vracíte', nm, money(i.price * i.qty));
+        else if (i.act === 'vymenit' && i.kind === 'jine') {
+          h = ln('Posíláte', nm, money(i.price * i.qty)) +
+            (i.newName ? ln('Dostanete', i.newName + (i.newQty > 1 ? ' × ' + i.newQty + ' ks' : ''), i.newPrice !== null ? money(i.newPrice * i.newQty) : '')
+              : '<div class="ai-l"><span class="ai-lk">Dostanete</span><span class="ai-ln ai-wait">vyberte zboží</span></div>');
+        } else if (i.act === 'vymenit') {
+          var sv = sizeVal(i.id);
+          h = ln('Posíláte', nm, '') + (sv ? ln('Dostanete', 'velikost ' + sv, '') : '<div class="ai-l"><span class="ai-lk">Dostanete</span><span class="ai-ln ai-wait">vyberte velikost</span></div>');
+        } else {
+          h = ln('Posíláte', nm, '') + (detailText(i) ? '<div class="ai-l"><span class="ai-lk"></span><span class="ai-ln ai-wait">' + esc(detailText(i)) + '</span></div>' : '');
+        }
+        return '<div class="ai"><span class="ai-k">' + esc(i.act === 'vymenit' && i.kind === 'jine' ? 'Výměna za jiné zboží' : (i.act === 'vymenit' ? 'Výměna velikosti' : LABEL[i.act])) + '</span>' + h + '</div>';
+      });
+      var mrows = '';
+      if (c.refund > 0.005) mrows += '<div class="row"><span>Vrátíme za zboží</span><strong>' + money(c.refund) + '</strong></div>';
+      if (Math.abs(c.diff) > 0.005) mrows += '<div class="row"><span>' + (c.diff < 0 ? 'Doplatek – nové zboží je dražší' : 'Vrátíme rozdíl – nové zboží je levnější') + '</span><strong>' + money(Math.abs(c.diff)) + '</strong></div>';
+      mrows += c.postageApplies && postage !== null ? '<div class="row"><span>Odečteme poštovné</span><strong>' + money(postage) + '</strong></div>'
+        : '<div class="row"><span>Doprava</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '">' + postTxt + '</strong></div>';
+      if (c.shipCharge) mrows += '<div class="row"><span>Odečteme dopravu objednávky – zbytek je pod ' + money(freeFrom) + '</span><strong>' + money(c.shipCharge) + '</strong></div>';
+      if (c.cod) mrows += '<div class="row"><span>Poplatek za dobírku</span><strong>' + money(c.cod) + '</strong></div>';
+      aside.innerHTML = c.ch.length ? '<div class="ai-list">' + blocks.join('') + '</div><div class="ai-sum">' + mrows + '</div>' +
+        '<div class="ai-total ' + (net < -0.005 ? 'owe' : '') + '"><span>' + totLabel + '</span><span class="v">' + money(Math.abs(net)) + '</span></div>'
         : '<span style="font-size:13px;color:var(--muted)">Zatím nic nevybráno.</span>';
     }
     var sum = $('[data-summary]');

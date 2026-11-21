@@ -79,7 +79,7 @@ textarea.f{height:auto;padding:10px 14px;resize:vertical}
 .free{color:var(--green);font-weight:700}
 .sumrow{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line2);font-size:14px;line-height:1.45}
 .sumrow:last-child{border-bottom:0}
-.total{background:var(--yel);border-radius:12px;padding:18px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.total{border-top:2px solid var(--ink);padding:14px 0 0;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;font-weight:700}
 .total .v{font-family:"FK Screamer",Impact,sans-serif;font-size:36px;line-height:1}
 .code{background:var(--yel);border-radius:12px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
 .code .v{font-family:"FK Screamer",Impact,sans-serif;font-size:64px;line-height:1;letter-spacing:.06em}
@@ -295,16 +295,31 @@ html.js .nojs-only{display:none}
 
 /* panel „Vaše vratka“ */
 .ai-list{display:flex;flex-direction:column}
-.ai{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid var(--line2)}
+.ai{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-bottom:1px solid var(--line2)}
 .ai:first-child{padding-top:2px}
 .ai-k{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-.ai-n{font-size:14px;font-weight:700;line-height:1.35;color:var(--ink)}
-.ai-d{font-size:13px;line-height:1.35;color:var(--text)}
-.ai-a{font-size:13px;font-weight:700;color:var(--ink);margin-top:2px}
-.ai-sum{display:flex;flex-direction:column;gap:6px;padding:10px 0 2px}
-.ai-total{margin-top:10px;padding:14px 16px;align-items:center}
-.ai-total strong{font-size:14px}
-.ai-total .v{font-size:28px}
+.ai-l{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'k k' 'n v';gap:1px 12px;align-items:baseline;font-size:14px;line-height:1.35}
+.ai-lk{grid-area:k;color:var(--muted);font-size:12px}
+.ai-ln{grid-area:n}
+.ai-lv{grid-area:v}
+.ai-ln{color:var(--ink);font-weight:700;min-width:0}
+.ai-ln.ai-wait{font-weight:400;color:var(--muted);font-style:italic}
+.ai-lv{white-space:nowrap;color:var(--text)}
+.ai-sum{display:flex;flex-direction:column;gap:6px;padding:12px 0;font-size:13px}
+.ai-sum .row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.ai-sum .row strong{white-space:nowrap}
+.ai-total{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-top:2px solid var(--ink);padding-top:12px;font-weight:700;font-size:15px}
+.ai-total .v{font-family:"FK Screamer",Impact,sans-serif;font-size:30px;line-height:1;font-weight:400}
+/* reakce na najetí myší – jako na e-shopu */
+.btn,.pill,.opt,.sz,.res,.ordrow{transition:background-color .15s,border-color .15s,color .15s}
+.btn:not(.off):not(.dark):not(.ghost):hover{background:#e8b52b}
+.btn.dark:hover{background:#3d3839}
+.btn.ghost:hover{border-color:var(--ink)}
+label.pill:not(.na):not(.on):hover,button.pill:hover{border-color:var(--ink);background:#f7f7f5}
+label.pill.on:hover{background:#e8b52b;border-color:#e8b52b}
+label.opt:hover{border-color:var(--line)}
+label.opt.on:hover{border-color:#e8b52b}
+.link:hover{color:var(--ink)}
 
 /* upřesnění rovnou v kartě položky */
 .detail.inl{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line2);padding-top:14px;margin-top:2px}
