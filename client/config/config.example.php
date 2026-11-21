@@ -40,7 +40,8 @@ return [
     'vratky' => [
         // Vrátit (odstoupit od smlouvy) lze 14 dní od převzetí. Datum převzetí neznáme,
         // proto počítáme od data faktury + rezerva na doručení.
-        'return_days_from_invoice' => 21,
+        'return_days' => 14,               // od převzetí zásilky (datum z Zásilkovny)
+        'return_days_from_invoice' => 21,  // odhad, když datum převzetí neznáme (GLS, PPL, osobní odběr)
         // Reklamace do 24 měsíců od data faktury
         'claim_months' => 24,
         // Poštovné za vrácení (Kč s DPH), které se strhne z vrácené částky – jen u čistého vrácení přes Zásilkovnu.

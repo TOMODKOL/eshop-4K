@@ -233,6 +233,21 @@ t($planO['type'] === 'fv' && $planO['total'] == 5559 && $planO['items'][1]['unit
 $sr = Eshop::parseSearch((string) file_get_contents(__DIR__ . '/fixtures/eshop_search.html'));
 t(count($sr) === 2 && $sr[0]['price'] == 690 && $sr[1]['price'] == 2899 && $sr[0]['url'] === 'https://www.4kluciodkol.cz/rukavice-castelli-espresso-glove-mocha-p157565/', 'hledání na e-shopu: jen skladem / u dodavatele, cena, čistý odkaz');
 
+// číslo balíku a datum převzetí
+use App\Modules\Vratky\Tracking;
+t(Sync::parcel("(číslo balíku)\nZAS: Z4868453580\n\nPlatba byla ověřena") === ['zas', 'Z4868453580'], 'balík Zásilkovny z poznámky faktury');
+t(Sync::parcel("(číslo balíku)\nGLSParcel: 5045482534\nzaplaceno") === ['gls', '5045482534'] && Sync::parcel('GLCZ: 5037851653') === ['gls', '5037851653'], 'balík GLS z poznámky');
+t(Sync::parcel('Odběrné místo: Praha') === ['', ''], 'bez čísla balíku');
+$trk = '<response><status>ok</status><result><record><dateTime>2026-11-18T10:00:00</dateTime><statusCode>2</statusCode><codeText>arrived</codeText></record><record><dateTime>2026-11-20T16:45:12</dateTime><statusCode>7</statusCode><codeText>delivered</codeText></record></result></response>';
+t(Tracking::parsePacketa($trk) === '2026-11-20' && Tracking::parsePacketa('<response><status>ok</status><result><record><statusCode>5</statusCode><dateTime>2026-11-19T10:00:00</dateTime></record></result></response>') === null, 'Zásilkovna: datum vyzvednutí (stav 7)');
+$dd = Service::deadlines(['invoice_date' => '2026-11-10', 'delivered_date' => '2026-11-20']);
+t($dd['basis'] === 'delivered' && $dd['return_until'] === '2026-12-04' && $dd['claim_until'] === '2028-11-20', 'lhůta 14 dní a reklamace 24 měsíců od převzetí');
+$di = Service::deadlines(['invoice_date' => '2026-11-18']);
+t($di['basis'] === 'invoice' && $di['return_until'] === '2026-12-09', 'bez data převzetí odhad podle faktury');
+$r = Sync::import(['orders' => [['invoice_no' => '260109990', 'order_no' => '8810099990', 'invoice_date' => date('Y-m-d'), 'email' => 'p@b.cz', 'note' => 'ZAS: Z4868453580',
+    'items' => [['name' => 'dres', 'qty' => 1, 'unit_price' => 100]]]]]);
+t(\App\Core\Db::value("SELECT parcel_no FROM orders WHERE invoice_no = '260109990'") === 'Z4868453580', 'sync uloží číslo balíku');
+
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
 exit($fail ? 1 : 0);

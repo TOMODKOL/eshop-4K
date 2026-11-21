@@ -98,17 +98,37 @@ final class Service
     }
 
     /** Lhůty z data faktury. */
+    /**
+     * Lhůty: vrácení/výměna 14 dní od převzetí zásilky (vratky.return_days), reklamace 24 měsíců.
+     * basis: delivered = známe datum převzetí, waiting = balík ještě nebyl převzat, invoice = odhad podle data faktury.
+     */
     public static function deadlines(array $order): array
     {
-        $d = new \DateTimeImmutable($order['invoice_date']);
-        $ret = $d->modify('+' . (int) Config::get('vratky.return_days_from_invoice', 21) . ' days');
-        $claim = $d->modify('+' . (int) Config::get('vratky.claim_months', 24) . ' months');
+        if (isset($order['id']) && ($order['parcel_no'] ?? '') !== '') $order = Tracking::refresh($order);
         $today = new \DateTimeImmutable('today');
+        $claimM = (int) Config::get('vratky.claim_months', 24);
+        if (!empty($order['delivered_date'])) {
+            $d = new \DateTimeImmutable($order['delivered_date']);
+            $ret = $d->modify('+' . (int) Config::get('vratky.return_days', 14) . ' days');
+            $basis = 'delivered';
+        } elseif (($order['parcel_carrier'] ?? '') === 'zas' && !empty($order['tracking_checked_at'])) {
+            // balík je na cestě nebo čeká na výdejním místě – lhůta ještě neběží
+            $d = $today;
+            $ret = $today->modify('+' . (int) Config::get('vratky.return_days', 14) . ' days');
+            $basis = 'waiting';
+        } else {
+            $d = new \DateTimeImmutable($order['invoice_date']);
+            $ret = $d->modify('+' . (int) Config::get('vratky.return_days_from_invoice', 21) . ' days');
+            $basis = 'invoice';
+        }
+        $claim = $d->modify('+' . $claimM . ' months');
         return [
             'return_until' => $ret->format('Y-m-d'),
             'claim_until' => $claim->format('Y-m-d'),
             'can_return' => $today <= $ret,
             'can_claim' => $today <= $claim,
+            'basis' => $basis,
+            'delivered' => $basis === 'delivered' ? $d->format('Y-m-d') : null,
         ];
     }
 

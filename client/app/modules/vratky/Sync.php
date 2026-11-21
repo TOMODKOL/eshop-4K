@@ -41,6 +41,9 @@ final class Sync
                     'source' => self::source($o),
                     'updated_at' => $now,
                 ];
+                // číslo balíku z poznámky faktury (ZAS: Z…, GLSParcel: …) – jen když přišlo, ať ho prázdná hodnota nesmaže
+                [$carrier, $parcel] = self::parcel((string) ($o['note'] ?? ''));
+                if ($parcel !== '') { $row['parcel_carrier'] = $carrier; $row['parcel_no'] = $parcel; }
                 $id = Db::value('SELECT id FROM orders WHERE invoice_no = ?', [$inv]);
                 if ($id) {
                     $sets = implode(',', array_map(fn($c) => "$c = :$c", array_keys($row)));
@@ -74,6 +77,15 @@ final class Sync
         }
         Db::insert('sync_log', ['received_at' => Db::now(), 'orders' => $saved, 'note' => $errors ? mb_substr(implode('; ', $errors), 0, 250) : '']);
         return ['saved' => $saved, 'errors' => $errors];
+    }
+
+    /** Dopravce a číslo balíku z poznámky faktury: „ZAS: Z4868453580“, „GLSParcel: 5045482534“, „GLCZ: 5037851653“. */
+    public static function parcel(string $note): array
+    {
+        if (preg_match('/\bZAS\s*:\s*(Z?\d{6,})/i', $note, $m)) return ['zas', strtoupper($m[1])];
+        if (preg_match('/\b(?:GLSParcel|GLCZ|GLS)\s*:\s*(\d{6,})/i', $note, $m)) return ['gls', $m[1]];
+        if (preg_match('/\bPPL\w*\s*:\s*(\d{6,})/i', $note, $m)) return ['ppl', $m[1]];
+        return ['', ''];
     }
 
     public const SOURCES = ['eshop' => 'E-shop', 'prodejna' => 'Prodejna', 'faktura' => 'Faktura'];

@@ -110,6 +110,7 @@ function Z-Faktury($f) {
         customer_name = $jmeno
         phone         = (Text $adr 'phone')
         total         = (Soucet (Uzel $f 'invoiceSummary/homeCurrency'))
+        note          = $(if ((Text $h 'note') -match '(ZAS|GLSParcel|GLCZ|GLS|PPL\w*)\s*:\s*Z?\d{6,}') { $Matches[0] } else { '' })   # jen číslo balíku – datum převzetí si zjistí portál
         items         = $polozky
     }
 }

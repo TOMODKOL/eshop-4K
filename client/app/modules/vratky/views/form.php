@@ -27,7 +27,10 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     <span class="hint" style="font-size:13px">Objednávka <?= e($order['order_no'] ?: $order['invoice_no']) ?> · faktura z <?= e(date_cz($order['invoice_date'])) ?></span>
   </div>
   <div class="grey">
-    <?php if ($dl['can_return']): ?>Vrátit nebo vyměnit můžete do <strong style="color:var(--ink)"><?= e(date_cz($dl['return_until'])) ?></strong>. <?php else: ?>Lhůta pro vrácení a výměnu už uplynula, zboží můžete reklamovat. <?php endif; ?>
+    <?php if ($dl['basis'] === 'waiting'): ?>Zásilku jste zatím nepřevzali – vrátit nebo vyměnit ji můžete do 14 dnů od převzetí.
+    <?php elseif ($dl['can_return'] && $dl['basis'] === 'delivered'): ?>Zásilku jste převzali <?= e(date_cz($dl['delivered'])) ?>. Vrátit nebo vyměnit můžete do <strong style="color:var(--ink)"><?= e(date_cz($dl['return_until'])) ?></strong>.
+    <?php elseif ($dl['can_return']): ?>Vrátit nebo vyměnit můžete do 14 dnů od převzetí zásilky, tedy zhruba do <strong style="color:var(--ink)"><?= e(date_cz($dl['return_until'])) ?></strong>.
+    <?php else: ?>Lhůta pro vrácení a výměnu už uplynula, zboží můžete reklamovat. Pokud jste zásilku převzali později, zavolejte nám na <?= e(cfg('shop.phone')) ?>.<?php endif; ?>
     Reklamovat do <?= e(date_cz($dl['claim_until'])) ?>.
   </div>
   <?php $prev = Service::returnsForOrder((int) $order['id']); if ($prev): ?>
@@ -201,7 +204,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
 
 <aside class="aside" aria-label="Vaše vratka">
   <div class="card"><span class="kicker">Objednávka <?= e($order['order_no'] ?: $order['invoice_no']) ?></span>
-    <span style="font-size:13px;color:var(--text)"><?= e($order['customer_name']) ?> · faktura <?= e(date_cz($order['invoice_date'])) ?><?php if ($dl['can_return']): ?><br>Vrátit lze do <?= e(date_cz($dl['return_until'])) ?><?php endif; ?></span></div>
+    <span style="font-size:13px;color:var(--text)"><?= e($order['customer_name']) ?> · faktura <?= e(date_cz($order['invoice_date'])) ?><?php if ($dl['basis'] === 'delivered'): ?><br>Převzato <?= e(date_cz($dl['delivered'])) ?><?php endif; ?><?php if ($dl['can_return'] && $dl['basis'] !== 'waiting'): ?><br>Vrátit lze do <?= e(date_cz($dl['return_until'])) ?><?php endif; ?></span></div>
   <div class="card"><span class="kicker">Vaše vratka</span><div data-aside><span style="font-size:13px;color:var(--muted)">Zatím nic nevybráno.</span></div></div>
   <div class="note">Nevíte si rady? Zavolejte na <strong><?= e(cfg('shop.phone')) ?></strong>, <?= e(cfg('shop.hours')) ?>.</div>
 </aside>
