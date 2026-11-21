@@ -183,6 +183,8 @@
         (c.shipCharge ? '<div class="sumrow"><span>Doprava objednávky – zbytek objednávky je pod ' + esc(money(freeFrom)) + ', doprava už není zdarma</span><strong style="white-space:nowrap">− ' + money(c.shipCharge) + '</strong></div>' : '') +
         (c.cod ? '<div class="sumrow"><span>Dobírka za doplatek</span><strong style="white-space:nowrap">+ ' + money(c.cod) + '</strong></div>' : '');
     }
+    var sb = $('[data-submit]');
+    if (sb) { var sk = ship(); sb.textContent = sk === 'zbox' || sk === 'vm' ? 'Odeslat a získat kód →' : 'Odeslat →'; }
     var tot = $('[data-total]');
     if (tot) {
       tot.hidden = !c.ch.length;

@@ -13,15 +13,13 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
 ?>
 <div class="donegrid">
 <div class="col">
-  <div style="padding:0 4px;display:flex;flex-direction:column;gap:8px">
-    <span class="kicker" style="color:var(--green)">✓ <?= e($w['N']) ?> <?= e(Service::displayNo($ret)) ?><?= $isNew ? ' vytvořena' : '' ?></span>
-    <h1 class="h1" style="font-size:46px"><?= $isNew ? 'HOTOVO, <span class="out">DÍKY!</span>' : e(mb_strtoupper(Service::STATUS[$ret['status']] ?? '')) ?></h1>
-  </div>
+  <div class="prog" aria-hidden="true"><div class="bars"><?php for ($i = 0; $i < 4; $i++): ?><i class="on"></i><?php endfor; ?></div><span class="kicker" style="color:var(--green)">✓ <?= e($w['N']) ?> <?= e(Service::displayNo($ret)) ?><?= $isNew ? ' vytvořena' : '' ?></span></div>
+  <h2 class="h2" style="padding:0 4px"><?= $isNew ? 'HOTOVO, DÍKY!' : e(mb_strtoupper(Service::STATUS[$ret['status']] ?? '')) ?></h2>
   <?php if ($ret['status'] === 'novy'): ?>
     <?php if ($ret['ship_method'] === 'osobne'): ?>
-      <div class="card">Zboží přineste na prodejnu <?= e(cfg('shop.address')) ?> (<?= e(cfg('shop.hours')) ?>) a řekněte číslo <?= e($w['g']) ?> <strong><?= e(Service::displayNo($ret)) ?></strong>.</div>
+      <div class="card"><span class="kicker">Co teď</span><p style="margin:0">Zboží přineste na prodejnu <strong><?= e(cfg('shop.address')) ?></strong> (<?= e(cfg('shop.hours')) ?>) a řekněte číslo <?= e($w['g']) ?> <strong><?= e(Service::displayNo($ret)) ?></strong>.</p></div>
     <?php elseif ($ret['ship_method'] === 'vlastni'): ?>
-      <div class="card">Zboží zabalte, přiložte papír s číslem <?= e($w['g']) ?> <strong><?= e(Service::displayNo($ret)) ?></strong> a pošlete ho na vlastní náklady (ne na dobírku) na adresu <strong><?= e(cfg('shop.name')) ?>, <?= e(cfg('shop.address')) ?></strong>.</div>
+      <div class="card"><span class="kicker">Co teď</span><p style="margin:0">Zboží zabalte, přiložte papír s číslem <?= e($w['g']) ?> <strong><?= e(Service::displayNo($ret)) ?></strong> a pošlete ho na vlastní náklady (ne na dobírku) na adresu <strong><?= e(cfg('shop.name')) ?>, <?= e(cfg('shop.address')) ?></strong>.</p></div>
     <?php elseif ($ret['packeta_password']): ?>
       <div class="code"><span class="kicker" style="color:var(--ink)">Podací kód Zásilkovny</span><span class="v"><?= e($ret['packeta_password']) ?></span><span style="font-size:13px">Kód jsme vám poslali i e-mailem.</span></div>
       <div class="card"><div class="steps dark">
@@ -32,23 +30,33 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
       <div class="code"><span class="kicker" style="color:var(--ink)">Podací kód Zásilkovny</span><span style="font-size:15px;font-weight:700">Pošleme vám ho e-mailem během pracovního dne.</span></div>
     <?php endif; ?>
   <?php endif; ?>
-  <div class="card"><span class="kicker">V <?= e($w['l']) ?></span>
-    <?php foreach ($lines as $l): ?>
-      <div style="font-size:14px;line-height:1.45"><span class="kicker" style="font-size:10px"><?= e(Service::actionLabel($l)) ?></span><br>
-        <strong><?= e($l['item_name']) ?><?= $l['qty'] > 1 ? ' × ' . (int) $l['qty'] : '' ?></strong><br>
-        <span style="color:var(--muted)"><?= e($l['action'] === 'vratit' ? $l['reason'] : ($l['action'] === 'vymenit' ? Service::swapText($l) : $l['defect_text'])) ?></span></div>
+  <?php
+    // stejná „účtenka“ jako v panelu formuláře
+    $ln = fn(string $k, string $n, string $v = '', bool $wait = false) => '<div class="ai-l"><span class="ai-lk">' . e($k) . '</span><span class="ai-ln' . ($wait ? ' ai-wait' : '') . '">' . e($n) . '</span>' . ($v !== '' ? '<span class="ai-lv">' . e($v) . '</span>' : '') . '</div>';
+    $bal = Service::balance($ret);
+  ?>
+  <div class="card"><span class="kicker">Vaše <?= e($w['n']) ?></span>
+    <div class="ai-list">
+    <?php foreach ($lines as $l): $nm = $l['item_name'] . ($l['qty'] > 1 ? ' × ' . (int) $l['qty'] . ' ks' : ''); $pr = money((float) $l['unit_price'] * (int) $l['qty']); ?>
+      <div class="ai"><span class="ai-k"><?= e($l['action'] === 'vymenit' && ($l['new_name'] ?? '') === '' ? 'Výměna velikosti' : Service::actionLabel($l)) ?></span>
+        <?php if ($l['action'] === 'vratit'): ?><?= $ln('Vracíte', $nm, $pr) ?>
+        <?php elseif ($l['action'] === 'vymenit' && ($l['new_name'] ?? '') !== ''): $nq = max(1, (int) ($l['new_qty'] ?? 1)); ?><?= $ln('Posíláte', $nm, $pr) ?><?= $ln('Dostanete', $l['new_name'] . ($nq > 1 ? ' × ' . $nq . ' ks' : ''), $l['new_price'] !== null ? money((float) $l['new_price'] * $nq) : '') ?>
+        <?php elseif ($l['action'] === 'vymenit'): ?><?= $ln('Posíláte', $nm) ?><?= $ln('Dostanete', 'velikost ' . $l['size_to']) ?>
+        <?php else: ?><?= $ln('Posíláte', $nm) ?><?= trim((string) $l['defect_text']) !== '' ? $ln('Vada', mb_strimwidth((string) $l['defect_text'], 0, 160, '…'), '', true) : '' ?><?php endif; ?>
+      </div>
     <?php endforeach; ?>
-    <?php $bal = Service::balance($ret); if ($ret['refund_total'] > 0 || abs($bal) > 0.005): ?>
-      <?php if ((float) ($ret['swap_diff'] ?? 0) != 0): ?><div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span><?= (float) $ret['swap_diff'] > 0 ? 'Nové zboží je levnější – rozdíl vrátíme' : 'Nové zboží je dražší – doplatek' ?></span><span><?= e(money(abs((float) $ret['swap_diff']))) ?></span></div><?php endif; ?>
-      <?php if ((float) ($ret['cod_fee'] ?? 0) > 0): ?><div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Dobírka</span><span>+ <?= e(money($ret['cod_fee'])) ?></span></div><?php endif; ?>
-      <?php if ($ret['postage_applies'] && $ret['postage'] !== null): ?><div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Poštovné za vrácení</span><span>−<?= e(money($ret['postage'])) ?></span></div><?php endif; ?>
-      <?php if ((float) ($ret['ship_charge'] ?? 0) > 0): ?><div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Doprava (zbytek objednávky je pod hranicí dopravy zdarma)</span><span>−<?= e(money($ret['ship_charge'])) ?></span></div><?php endif; ?>
-      <?php if ((float) ($ret['ship_refund'] ?? 0) > 0): ?><div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Vrácení dopravy</span><span>+<?= e(money($ret['ship_refund'])) ?></span></div><?php endif; ?>
-      <?php if ($bal < 0): ?>
-      <div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span><?= $ret['pay_method'] === 'dobirka' ? 'Doplatíte na dobírku při převzetí nového zboží' : 'Doplatíte převodem – fakturu pošleme, až vaše zboží dorazí' ?></span><strong><?= e(money(-$bal)) ?></strong></div>
-      <?php else: ?>
-      <div class="sumrow" style="border-top:1px solid var(--line2);border-bottom:0;padding-bottom:0"><span>Vrátíme na účet <?= e($ret['bank_account']) ?></span><strong><?= e(money($bal)) ?></strong></div>
-      <?php endif; ?>
+    </div>
+    <?php if ($ret['refund_total'] > 0 || abs($bal) > 0.005 || (float) ($ret['swap_diff'] ?? 0) != 0): ?>
+    <div class="ai-sum">
+      <?php if ((float) $ret['refund_total'] > 0): ?><div class="row"><span>Vrátíme za zboží</span><strong><?= e(money((float) $ret['refund_total'])) ?></strong></div><?php endif; ?>
+      <?php if ((float) ($ret['swap_diff'] ?? 0) != 0): ?><div class="row"><span><?= (float) $ret['swap_diff'] > 0 ? 'Vrátíme rozdíl – nové zboží je levnější' : 'Doplatek – nové zboží je dražší' ?></span><strong><?= e(money(abs((float) $ret['swap_diff']))) ?></strong></div><?php endif; ?>
+      <?php if ($ret['postage_applies'] && $ret['postage'] !== null): ?><div class="row"><span>Odečteme poštovné</span><strong><?= e(money($ret['postage'])) ?></strong></div><?php else: ?><div class="row"><span>Doprava</span><strong class="<?= $ret['ship_method'] === 'vlastni' ? '' : 'free' ?>"><?= $ret['ship_method'] === 'vlastni' ? 'na vaše náklady' : 'zdarma' ?></strong></div><?php endif; ?>
+      <?php if ((float) ($ret['ship_charge'] ?? 0) > 0): ?><div class="row"><span>Odečteme dopravu objednávky – zbytek je pod hranicí dopravy zdarma</span><strong><?= e(money($ret['ship_charge'])) ?></strong></div><?php endif; ?>
+      <?php if ((float) ($ret['ship_refund'] ?? 0) > 0): ?><div class="row"><span>Vrátíme i dopravu</span><strong><?= e(money($ret['ship_refund'])) ?></strong></div><?php endif; ?>
+      <?php if ((float) ($ret['cod_fee'] ?? 0) > 0): ?><div class="row"><span>Poplatek za dobírku</span><strong><?= e(money($ret['cod_fee'])) ?></strong></div><?php endif; ?>
+    </div>
+    <div class="ai-total"><span><?= $bal < -0.005 ? 'Doplatíte' : ($bal > 0.005 ? 'Vrátíme vám' : 'Vychází nastejno') ?></span><span class="v"><?= e(money(abs($bal))) ?></span></div>
+    <span class="hint"><?= $bal < -0.005 ? ($ret['pay_method'] === 'dobirka' ? 'Doplatek zaplatíte na dobírku při převzetí nového zboží.' : 'Doplatek zaplatíte převodem – fakturu pošleme, až vaše zboží dorazí.') : ($bal > 0.005 ? 'Peníze pošleme na účet ' . e($ret['bank_account']) . ', jakmile zboží zkontrolujeme.' : '') ?></span>
     <?php endif; ?>
   </div>
 </div>

@@ -186,11 +186,11 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
 <!-- 4 · souhrn -->
 <section class="step" data-step="4" data-title="<?= $steps[3] ?>">
   <h2 class="h2" style="padding:0 4px">SOUHRN</h2>
-  <div class="card" style="padding:4px 18px;gap:0" data-summary><span class="hint" style="padding:14px 0">Souhrn se zobrazí po výběru položek.</span></div>
-  <div class="total" data-total hidden><strong data-total-label>Vrátíme vám</strong><span class="v" data-total-value>0 Kč</span></div>
+  <div class="card" style="padding:4px 18px 18px;gap:0"><div data-summary><span class="hint" style="padding:14px 0;display:block">Souhrn se zobrazí po výběru položek.</span></div>
+  <div class="total" data-total hidden><strong data-total-label>Vrátíme vám</strong><span class="v" data-total-value>0 Kč</span></div></div>
   <label class="chk"><input type="checkbox" name="agree" value="1" <?= $o('agree') ? 'checked' : '' ?> required>
     <span>Souhlasím s <a href="<?= e(rtrim((string) cfg('shop.web'), '/')) ?>/obchodni-podminky/" target="_blank" rel="noopener">obchodními podmínkami</a> pro vrácení a reklamaci zboží.</span></label>
-  <button class="btn dark" type="submit">Odeslat a získat kód →</button>
+  <button class="btn dark" type="submit" data-submit>Odeslat →</button>
   <button type="button" class="link js-only" data-prev>Zpět</button>
 </section>
 
