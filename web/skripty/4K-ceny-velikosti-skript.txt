@@ -30,7 +30,7 @@
       if (hit !== null && map[hit] === undefined) map[hit] = p;
     }
     // jen když se ceny velikostí liší – při stejné ceně u všech nic nepřidávat
-    var seen = {}, n = 0;
+    for (var q = 0; q < tiles.length; q++) { var aq = tiles[q].querySelector('.availabilityInfo'); if (!aq || !/\bzelena\b/.test(aq.className)) delete map[tiles[q].getAttribute('data-value')]; } var seen = {}, n = 0; // cena jen u velikostí skladem / u dodavatele
     for (var key in map) if (!seen[Math.round(map[key])]) { seen[Math.round(map[key])] = 1; n++; }
     if (n < 2) map = {};
     for (var t = 0; t < tiles.length; t++) {
