@@ -202,7 +202,7 @@
   function validate(n) {
     var ch = chosen();
     if (n === 1 && !ch.length) return error('Vyberte aspoň jednu položku a co s ní chcete udělat.');
-    if (n === 2) {
+    if (n === 1) {
       for (var k = 0; k < ch.length; k++) {
         var i = ch[k];
         if (i.act === 'vratit' && !$('input[name="reason[' + i.id + ']"]:checked')) return error('Vyberte důvod vrácení u „' + i.name + '“.');
@@ -213,9 +213,9 @@
         if (i.act === 'reklamovat') { var d = form.querySelector('[name="defect[' + i.id + ']"]'); if (!d || d.value.trim().length < 5) return error('Popište vadu u „' + i.name + '“.'); }
       }
     }
-    if (n === 3 && !ship()) return error('Vyberte, jak nám zboží pošlete.');
-    if (n === 4 && calc().owes && !$('input[name="pay_method"]:checked')) return error('Vyberte, jak doplatíte rozdíl v ceně.');
-    if (n === 4 && calc().balance > 0.005) {
+    if (n === 2 && !ship()) return error('Vyberte, jak nám zboží pošlete.');
+    if (n === 3 && calc().owes && !$('input[name="pay_method"]:checked')) return error('Vyberte, jak doplatíte rozdíl v ceně.');
+    if (n === 3 && calc().balance > 0.005) {
       var a = ($('#account') || { value: '' }).value.replace(/\s+/g, '').toUpperCase();
       if (!/^(\d{1,6}-)?\d{2,10}\/\d{4}$/.test(a) && !/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(a)) return error('Vyplňte číslo účtu ve tvaru 123456789/0800.');
     }
@@ -309,7 +309,7 @@
       .catch(function () { box.innerHTML = '<div class="flash err" style="margin:0">Zboží se nepodařilo načíst. Zkuste to prosím znovu.</div>'; });
   }
   form.addEventListener('submit', function (e) {
-    for (var n = 1; n <= 4; n++) { if (!validate(n)) { e.preventDefault(); if (current !== n) { show(n); validate(n); } return; } }
+    for (var n = 1; n <= 3; n++) { if (!validate(n)) { e.preventDefault(); if (current !== n) { show(n); validate(n); } return; } }
     if (!$('input[name="agree"]').checked) { e.preventDefault(); error('Potvrďte prosím souhlas s obchodními podmínkami.'); return; }
     var b = form.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Odesílám…';
   });

@@ -5,7 +5,7 @@ use App\Modules\Vratky\Eshop;
 $o = fn(string $k, $id = null, $def = '') => $id === null ? ($old[$k] ?? $def) : ($old[$k][$id] ?? $def);
 $postage = cfg('vratky.return_postage');
 [$shipCharge, $goodsLeft, $freeFrom] = Service::freeShippingInfo($order);
-$steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
+$steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
 ?>
 <form id="vrform" class="layout" method="post" action="<?= url('/vratky/novy') ?>" enctype="multipart/form-data" novalidate
       data-postage="<?= $postage === null ? '' : e((string) $postage) ?>"
@@ -61,19 +61,7 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
         </select>
       </div>
     <?php else: ?><input type="hidden" name="qty[<?= $id ?>]" value="1"><?php endif; ?>
-    <?php endif; ?>
-  </div>
-  <?php endforeach; ?>
-  <div class="navrow"><button type="button" class="btn js-only" data-next>Pokračovat →</button></div>
-</section>
-
-<!-- 2 · upřesnění -->
-<section class="step" data-step="2" data-title="<?= $steps[1] ?>">
-  <h2 class="h2" style="padding:0 4px">UPŘESNĚTE</h2>
-  <?php foreach ($items as $it): $id = (int) $it['id']; if ($it['qty_left'] < 1) continue; ?>
-  <div class="card detail" data-detail="<?= $id ?>">
-    <span class="tag" data-tag></span>
-    <div class="item"><?php if (!empty($it['image'])): ?><img class="thumb" src="<?= e($it['image']) ?>" alt="" width="64" height="64"><?php else: ?><span class="thumb ph" aria-hidden="true"></span><?php endif; ?><div class="t"><span class="n"><?= e($it['name']) ?></span><span class="m"><?= e(money($it['unit_price'])) ?></span></div></div>
+    <div class="detail inl" data-detail="<?= $id ?>">
 
     <div data-for="vratit">
       <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
@@ -86,7 +74,6 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     </div>
 
     <div data-for="vymenit">
-      <div class="freeswap"><b>Doprava zdarma</b><span>Zpáteční zásilku přes Zásilkovnu i odeslání nového zboží platíme my.</span></div>
       <?php $kind = $o('swap_kind', $id, 'velikost') === 'jine' ? 'jine' : 'velikost'; ?>
       <fieldset class="seg" style="border:0;padding:0;margin:0">
         <legend class="sr">Za co chcete vyměnit</legend>
@@ -155,13 +142,15 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
         <span class="hint">Nejvýš 6 fotek, každá do 12 MB.</span></div>
       <div class="note">Poštovné u reklamace hradíme my. Reklamaci vyřídíme nejpozději do <?= (int) cfg('vratky.claim_resolve_days', 30) ?> dnů.</div>
     </div>
+    </div>
+    <?php endif; ?>
   </div>
   <?php endforeach; ?>
-  <div class="navrow"><button type="button" class="btn js-only" data-next>Pokračovat →</button><button type="button" class="link js-only" data-prev>Zpět</button></div>
+  <div class="navrow"><button type="button" class="btn js-only" data-next>Pokračovat →</button></div>
 </section>
 
-<!-- 3 · doprava -->
-<section class="step" data-step="3" data-title="<?= $steps[2] ?>">
+<!-- 2 · doprava -->
+<section class="step" data-step="2" data-title="<?= $steps[1] ?>">
   <h2 class="h2" style="padding:0 4px">JAK NÁM TO POŠLETE?</h2>
   <?php foreach (['zbox' => ['Z-BOX Zásilkovny', 'Kód zadáte do Z-BOXu, nic netisknete. Nonstop.'],
                   'vm' => ['Výdejní místo Zásilkovny', 'Kód nadiktujete obsluze na kterémkoli výdejním místě.'],
@@ -174,8 +163,8 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
   <div class="navrow"><button type="button" class="btn js-only" data-next>Pokračovat →</button><button type="button" class="link js-only" data-prev>Zpět</button></div>
 </section>
 
-<!-- 4 · kontakt a peníze -->
-<section class="step" data-step="4" data-title="<?= $steps[3] ?>">
+<!-- 3 · kontakt a peníze -->
+<section class="step" data-step="3" data-title="<?= $steps[2] ?>">
   <h2 class="h2" style="padding:0 4px">KONTAKT A PENÍZE</h2>
   <div class="card">
     <div class="field" data-account><label class="l" for="account">Číslo účtu pro vrácení peněz</label>
@@ -197,8 +186,8 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
   <div class="navrow"><button type="button" class="btn js-only" data-next>Pokračovat →</button><button type="button" class="link js-only" data-prev>Zpět</button></div>
 </section>
 
-<!-- 5 · souhrn -->
-<section class="step" data-step="5" data-title="<?= $steps[4] ?>">
+<!-- 4 · souhrn -->
+<section class="step" data-step="4" data-title="<?= $steps[3] ?>">
   <h2 class="h2" style="padding:0 4px">SOUHRN</h2>
   <div class="card" style="padding:4px 18px;gap:0" data-summary><span class="hint" style="padding:14px 0">Souhrn se zobrazí po výběru položek.</span></div>
   <div class="total" data-total hidden><strong data-total-label>Vrátíme vám</strong><span class="v" data-total-value>0 Kč</span></div>

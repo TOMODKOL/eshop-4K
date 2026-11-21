@@ -117,7 +117,7 @@ Http::get('/vratky/novy', function () use ($loadOrder) {
         Session::set('vr_old', $old);
     }
     View::page('vratky:form', ['title' => 'Co chcete udělat?', 'homeUrl' => '/vratky', 'order' => $o, 'items' => $items,
-        'dl' => Service::deadlines($o), 'old' => $old, 'errors' => [], 'start' => max(1, min(5, (int) ($_GET['krok'] ?? 1)))]);
+        'dl' => Service::deadlines($o), 'old' => $old, 'errors' => [], 'start' => 1]);
 });
 
 // rozpracovaný formulář před odchodem na e-shop (výběr zboží k výměně)
