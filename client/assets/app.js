@@ -74,7 +74,7 @@
     return { ch: ch, refund: refund, diff: diff, onlyReturn: onlyReturn, postageApplies: postageApplies, shipCharge: shipCharge, balance: balance - cod, cod: cod, owes: balance < -0.005 };
   }
   function detailText(i) {
-    if (i.act === 'vratit') { var r = $('input[name="reason[' + i.id + ']"]:checked'); return r ? r.value : ''; }
+    if (i.act === 'vratit') { var r = $('input[name="reason[' + i.id + ']"]:checked'); return r ? r.value : 'Bez udání důvodu'; }
     if (i.act === 'vymenit') {
       if (i.kind === 'jine') return i.newName ? 'Dostanete: ' + i.newName + (i.newQty > 1 ? ' × ' + i.newQty + ' ks' : '') : '';
       var sv = sizeVal(i.id); return sv ? 'Nová velikost: ' + sv : '';
@@ -205,7 +205,6 @@
     if (n === 1) {
       for (var k = 0; k < ch.length; k++) {
         var i = ch[k];
-        if (i.act === 'vratit' && !$('input[name="reason[' + i.id + ']"]:checked')) return error('Vyberte důvod vrácení u „' + i.name + '“.');
         if (i.act === 'vymenit' && i.kind === 'jine') {
           if (!form.querySelector('[data-other="' + i.id + '"] .otherprod')) return error('U „' + i.name + '“ vložte odkaz na nové zboží a klikněte na Načíst.');
           if (!i.picked) return error('U „' + i.name + '“ vyberte velikost nového zboží.');

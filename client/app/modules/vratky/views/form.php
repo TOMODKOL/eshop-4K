@@ -68,7 +68,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
 
     <div data-for="vratit">
       <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
-        <legend class="l" style="padding:0;margin-bottom:8px">Proč vracíte?</legend>
+        <legend class="l" style="padding:0;margin-bottom:8px">Proč vracíte? <span style="font-weight:400;color:var(--muted)">(nepovinné – do 14 dnů můžete vrátit i bez udání důvodu, pomůže nám to ale zlepšit nabídku)</span></legend>
         <div class="pills"><?php foreach (Service::REASONS as $r): ?>
           <label class="pill soft <?= $o('reason', $id) === $r ? 'on' : '' ?>" style="display:flex;align-items:center"><input class="sr" type="radio" name="reason[<?= $id ?>]" value="<?= e($r) ?>" <?= $o('reason', $id) === $r ? 'checked' : '' ?>><?= e($r) ?></label>
         <?php endforeach; ?></div>
