@@ -46,7 +46,8 @@ final class Service
     public static function findOrder(string $email, string $number): ?array
     {
         $email = mb_strtolower(trim($email));
-        $num = self::normalizeNumber($number);
+        // „FV 2601 01234“, „č. 8810123456“ → jen číslice (čísla e-shopových objednávek i faktur jsou číselná)
+        $num = preg_replace('/\D+/', '', $number) ?? '';
         if ($email === '' || $num === '') return null;
         return Db::one(
             "SELECT * FROM orders WHERE source = 'eshop' AND LOWER(email) = ? AND (order_no = ? OR invoice_no = ?) ORDER BY invoice_date DESC LIMIT 1",
@@ -59,8 +60,8 @@ final class Service
         return Db::one('SELECT * FROM orders WHERE id = ?', [$id]);
     }
 
-    /** Položky objednávky + kolik kusů z nich ještě jde vrátit/reklamovat. */
-    public static function items(int $orderId): array
+    /** Položky objednávky + kolik kusů z nich ještě jde vrátit/reklamovat. $eshop = načíst i velikosti z e-shopu (formulář zákazníka). */
+    public static function items(int $orderId, bool $eshop = false): array
     {
         $items = Db::all('SELECT * FROM order_items WHERE order_id = ? AND qty > 0 AND unit_price >= 0 ORDER BY line_no, id', [$orderId]);
         foreach ($items as &$i) {
@@ -70,6 +71,7 @@ final class Service
             $i['qty_int'] = (int) floor((float) $i['qty']);
             $i['qty_left'] = max(0, $i['qty_int'] - $used);
             $i['sizes'] = self::sizeOptions($i['name']);
+            $i['eshop'] = $eshop && $i['qty_left'] > 0 && !self::isServiceLine($i) ? Eshop::sizes(isset($i['stock_id']) ? (int) $i['stock_id'] : null) : null;
         }
         return array_values(array_filter($items, fn($i) => !self::isServiceLine($i)));
     }
@@ -155,7 +157,7 @@ final class Service
             if ($qty > $it['qty_left']) { $errors[] = 'U položky „' . $it['name'] . '“ lze vybrat nejvýš ' . $it['qty_left'] . ' ks.'; continue; }
             if (in_array($act, ['vratit', 'vymenit'], true) && !$dl['can_return']) { $errors[] = 'Lhůta pro vrácení a výměnu u této objednávky už uplynula. Zboží můžete reklamovat.'; continue; }
             if ($act === 'reklamovat' && !$dl['can_claim']) { $errors[] = 'Lhůta pro reklamaci (24 měsíců) už uplynula.'; continue; }
-            $line = ['item' => $it, 'action' => $act, 'qty' => $qty, 'reason' => '', 'size_to' => '', 'defect_text' => '', 'photos' => []];
+            $line = ['item' => $it, 'action' => $act, 'qty' => $qty, 'reason' => '', 'size_to' => '', 'new_code' => '', 'defect_text' => '', 'photos' => []];
             if ($act === 'vratit') {
                 $r = (string) ($post['reason'][$id] ?? '');
                 if (!in_array($r, self::REASONS, true)) $errors[] = 'Vyberte důvod vrácení u „' . $it['name'] . '“.';
@@ -163,6 +165,12 @@ final class Service
             } elseif ($act === 'vymenit') {
                 $s = trim((string) ($post['size_to'][$id] ?? ''));
                 if ($s === '' || mb_strlen($s) > 40) $errors[] = 'Napište, za jakou velikost chcete „' . $it['name'] . '“ vyměnit.';
+                elseif (!empty($it['eshop'])) {
+                    $tile = Eshop::find($it['eshop'], $s);
+                    if (!$tile) $errors[] = 'Vyberte velikost u „' . $it['name'] . '“.';
+                    elseif ($tile['current']) $errors[] = 'U „' . $it['name'] . '“ jste vybrali stejnou velikost, jakou máte. Vyberte jinou.';
+                    else $line['new_code'] = mb_substr($tile['sku'], 0, 60);
+                }
                 $line['size_to'] = $s;
             } else {
                 $t = trim((string) ($post['defect'][$id] ?? ''));
@@ -323,6 +331,7 @@ final class Service
                     'qty' => $l['qty'],
                     'reason' => $l['reason'],
                     'size_to' => $l['size_to'],
+                    'new_code' => $l['new_code'] ?? '',
                     'defect_text' => $l['defect_text'],
                 ]);
                 foreach ($l['photos'] as $p) Photos::attach($lid, $p);
@@ -732,6 +741,13 @@ final class Service
         $k = (string) Config::get('app_key', '');
         if ($k === '') throw new \RuntimeException('V config.php chybí app_key.');
         return $k;
+    }
+
+    /** Vratky a reklamace už zadané k objednávce – zákazník se přes ně dostane na stránku se stavem. */
+    public static function returnsForOrder(int $orderId): array
+    {
+        return Db::all('SELECT r.no, r.token, r.status, r.created_at, (SELECT l.action FROM return_lines l WHERE l.return_id = r.id ORDER BY l.id LIMIT 1) AS action
+            FROM returns r WHERE r.order_id = ? ORDER BY r.id DESC', [$orderId]);
     }
 
     public static function ordersByEmail(string $email): array

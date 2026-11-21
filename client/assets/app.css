@@ -222,3 +222,32 @@ label.pill.na{cursor:not-allowed}
 .l{font-size:13px;font-weight:700}
 .layout .main .col{margin:0}
 @media (min-width:900px){.navrow .link,.step>.link{align-self:flex-start;padding-left:0}}
+
+/* výměna = doprava zdarma */
+.freeswap{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:10px;background:#e8f4ec;border:1px solid #bfe0c9;font-size:13px;line-height:1.5;color:#24583a}
+.freeswap b{color:#1f7a3a;font-size:14px}
+.freeswap.big{padding:14px 16px}
+.freeswap.big b{font-size:16px;letter-spacing:.2px}
+.seg .pill{flex-direction:column;line-height:1.15}
+.pill .fr{display:block;font-size:10px;font-weight:700;color:#1f7a3a;letter-spacing:.2px}
+.pill.on .fr{color:#1f5a33}
+.prevret{display:flex;flex-direction:column;gap:8px}
+.prevret .ordrow{text-decoration:none;font-size:14px}
+
+/* velikosti jako na e-shopu (#PDVariantSelector) */
+.sizegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
+.sz{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:69px;padding:11px 5px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;text-align:center}
+.sz .v{font-size:14px;font-weight:700;color:var(--ink)}
+.sz .a{flex:1 1 auto;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1.1;color:#8a8a86}
+.sz .a.zelena{color:#1f7a3a}
+.sz .a.oranzova{color:#a85200}
+.sz:hover{border-color:var(--ink)}
+.sz:has(input:checked){background:var(--ink);border-color:var(--ink)}
+.sz:has(input:checked) .v{color:#fff}
+.sz:has(input:checked) .a{color:#cfe8d6}
+.sz:has(input:checked) .a.oranzova{color:#d8d8d4}
+.sz:has(input:focus-visible){outline:2px solid var(--yel);outline-offset:2px}
+.sz.cur{cursor:default;background:var(--soft);border-style:dashed}
+.sz.cur .v{color:#9a9a96}
+.sz.cur .a{color:var(--muted)}
+@media (max-width:480px){.sz .a{font-size:10px}}

@@ -47,7 +47,13 @@ final class Sync
                     Db::exec("UPDATE orders SET $sets WHERE id = :id", $row + ['id' => $id]);
                     // položky přepsat, jen pokud k nim ještě nevznikla vratka
                     $hasReturn = Db::value('SELECT COUNT(*) FROM return_lines l JOIN order_items i ON i.id = l.item_id WHERE i.order_id = ?', [$id]);
-                    if ((int) $hasReturn > 0) return;
+                    if ((int) $hasReturn > 0) {
+                        // jen doplnit ID zásoby (kvůli výběru velikosti), položky zůstanou
+                        foreach (array_values($o['items']) as $n => $it) {
+                            if (ctype_digit((string) ($it['stock_id'] ?? ''))) Db::exec('UPDATE order_items SET stock_id = ? WHERE order_id = ? AND line_no = ? AND stock_id IS NULL', [(int) $it['stock_id'], $id, $n]);
+                        }
+                        return;
+                    }
                     Db::exec('DELETE FROM order_items WHERE order_id = ?', [$id]);
                 } else {
                     $id = Db::insert('orders', $row + ['invoice_no' => $inv, 'created_at' => $now]);
@@ -57,6 +63,7 @@ final class Sync
                         'order_id' => $id,
                         'line_no' => $n,
                         'code' => mb_substr(trim((string) ($it['code'] ?? '')), 0, 60),
+                        'stock_id' => ctype_digit((string) ($it['stock_id'] ?? '')) ? (int) $it['stock_id'] : null,
                         'name' => mb_substr(trim((string) $it['name']), 0, 255),
                         'qty' => (float) ($it['qty'] ?? 1),
                         'unit_price' => (float) ($it['unit_price'] ?? 0),

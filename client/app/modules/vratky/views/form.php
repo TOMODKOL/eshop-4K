@@ -27,8 +27,14 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
   </div>
   <div class="grey">
     <?php if ($dl['can_return']): ?>Vrátit nebo vyměnit můžete do <strong style="color:var(--ink)"><?= e(date_cz($dl['return_until'])) ?></strong>. <?php else: ?>Lhůta pro vrácení a výměnu už uplynula, zboží můžete reklamovat. <?php endif; ?>
-    Reklamovat do <?= e(date_cz($dl['claim_until'])) ?>. <strong style="color:var(--ink)">Výměna je s poštovným zdarma.</strong>
+    Reklamovat do <?= e(date_cz($dl['claim_until'])) ?>.
   </div>
+  <?php $prev = Service::returnsForOrder((int) $order['id']); if ($prev): ?>
+  <div class="card prevret"><strong>Už zadané k této objednávce</strong>
+    <?php foreach ($prev as $p): ?><a class="ordrow" href="<?= url('/vratky/stav/' . $p['token']) ?>"><span class="t"><strong><?= e($p['action'] === 'reklamovat' ? 'Reklamace' : 'Vratka') ?> <?= e($p['no']) ?></strong> <?= e(Service::STATUS[$p['status']] ?? $p['status']) ?> · zadáno <?= e(date_cz(substr($p['created_at'], 0, 10))) ?></span><span aria-hidden="true">Stav →</span></a><?php endforeach; ?>
+  </div>
+  <?php endif; ?>
+  <?php if ($dl['can_return']): ?><div class="freeswap big"><b>Výměna velikosti = doprava zdarma</b><span>Nesedí velikost? Při výměně neplatíte nic za dopravu k nám ani za poslání nové velikosti. Při vrácení zboží se poštovné <?= e(money((float) $postage)) ?> odečte.</span></div><?php endif; ?>
   <?php if (!$items): ?><div class="card">V této objednávce není zboží, které by šlo vrátit. Zavolejte nám prosím na <?= e(cfg('shop.phone')) ?>.</div><?php endif; ?>
   <?php foreach ($items as $it): $id = (int) $it['id']; $cur = $o('act', $id); $left = $it['qty_left']; ?>
   <div class="card item-card" data-item="<?= $id ?>" data-price="<?= e((string) (float) $it['unit_price']) ?>" data-name="<?= e($it['name']) ?>">
@@ -42,7 +48,7 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
       <?php foreach (['vratit' => 'Vrátit', 'vymenit' => 'Vyměnit', 'reklamovat' => 'Reklamovat'] as $a => $lab):
         $dis = ($a !== 'reklamovat' && !$dl['can_return']) || ($a === 'reklamovat' && !$dl['can_claim']); ?>
         <label class="pill <?= $cur === $a ? 'on' : '' ?> <?= $dis ? 'na' : '' ?>" style="display:flex;align-items:center;justify-content:center">
-          <input class="sr" type="radio" name="act[<?= $id ?>]" value="<?= $a ?>" <?= $cur === $a ? 'checked' : '' ?> <?= $dis ? 'disabled' : '' ?>><?= $lab ?></label>
+          <input class="sr" type="radio" name="act[<?= $id ?>]" value="<?= $a ?>" <?= $cur === $a ? 'checked' : '' ?> <?= $dis ? 'disabled' : '' ?>><?= $lab ?><?php if ($a === 'vymenit' && !$dis): ?><small class="fr">doprava zdarma</small><?php endif; ?></label>
       <?php endforeach; ?>
     </fieldset>
     <button type="button" class="link js-only" data-clear="<?= $id ?>" style="align-self:flex-start;padding:0;font-size:13px<?= $cur ? '' : ';display:none' ?>">Zrušit výběr</button>
@@ -75,10 +81,26 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
           <label class="pill soft <?= $o('reason', $id) === $r ? 'on' : '' ?>" style="display:flex;align-items:center"><input class="sr" type="radio" name="reason[<?= $id ?>]" value="<?= e($r) ?>" <?= $o('reason', $id) === $r ? 'checked' : '' ?>><?= e($r) ?></label>
         <?php endforeach; ?></div>
       </fieldset>
-      <div class="note" style="margin-top:10px">Nesedí velikost? <strong>Vyměňte ji, poštovné je pak zdarma.</strong> <button type="button" class="link js-only" data-switch="<?= $id ?>" style="padding:0;color:var(--ink);font-weight:700">Změnit na výměnu →</button></div>
+      <div class="note" style="margin-top:10px">Nesedí velikost? <strong>Vyměňte ji – doprava je při výměně zdarma</strong>, poštovné <?= e(money((float) $postage)) ?> se pak neodečítá. <button type="button" class="link js-only" data-switch="<?= $id ?>" style="padding:0;color:var(--ink);font-weight:700">Změnit na výměnu →</button></div>
     </div>
 
     <div data-for="vymenit">
+      <div class="freeswap"><b>Doprava zdarma</b><span>Zpáteční zásilku přes Zásilkovnu i odeslání nové velikosti platíme my.</span></div>
+      <?php if (!empty($it['eshop'])): ?>
+        <fieldset class="sizes" style="border:0;padding:0;margin:0">
+          <legend class="l" style="padding:0;margin-bottom:8px">Za jakou velikost?</legend>
+          <div class="sizegrid">
+          <?php foreach ($it['eshop']['sizes'] as $sz): $cur = $sz['current']; ?>
+            <label class="sz<?= $cur ? ' cur' : '' ?>">
+              <input class="sr" type="radio" name="size_to[<?= $id ?>]" value="<?= e($sz['value']) ?>" <?= $cur ? 'disabled' : '' ?> <?= !$cur && $o('size_to', $id) === $sz['value'] ? 'checked' : '' ?>>
+              <span class="v"><?= e($sz['value']) ?></span>
+              <span class="a <?= e($sz['cls']) ?>"><?= $cur ? 'Vaše velikost' : e($sz['avail']) ?></span>
+            </label>
+          <?php endforeach; ?>
+          </div>
+        </fieldset>
+        <span class="hint">Dostupnost je stejná jako na e-shopu. Novou velikost pošleme hned, jak vaše zboží dorazí. Když není skladem, objednáme ji a dáme vám vědět, kdy dorazí.</span>
+      <?php else: ?>
       <label class="l" for="size-<?= $id ?>">Za jakou velikost?</label>
       <?php if ($it['sizes']): ?>
         <select class="f" id="size-<?= $id ?>" name="size_to[<?= $id ?>]">
@@ -89,7 +111,7 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
         <input class="f" id="size-<?= $id ?>" name="size_to[<?= $id ?>]" maxlength="40" value="<?= e($o('size_to', $id)) ?>" placeholder="např. M nebo 43">
       <?php endif; ?>
       <span class="hint">Dostupnost velikosti ověříme a novou pošleme hned, jak vaše zboží dorazí. Kdyby nebyla skladem, ozveme se.</span>
-      <div class="note"><strong>Poštovné zdarma</strong> – při výměně neplatíte zpáteční ani novou zásilku.</div>
+      <?php endif; ?>
     </div>
 
     <div data-for="reklamovat">

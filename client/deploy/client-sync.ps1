@@ -78,7 +78,7 @@ function Polozky($doklad, [string]$detail, [string]$polozka) {
         if (-not (Uzel $p 'stockItem')) { continue }
         if ($ks -le 0 -or $celkem -le 0) { continue }
         if ($nazev -match $NeniZbozi) { continue }
-        [void]$polozky.Add([ordered]@{ code = (Text $p 'code'); name = $nazev; qty = $ks; unit_price = [math]::Round($celkem / $ks, 2) })
+        [void]$polozky.Add([ordered]@{ code = (Text $p 'code'); stock_id = (Text $p 'stockItem/stockItem/id'); name = $nazev; qty = $ks; unit_price = [math]::Round($celkem / $ks, 2) })
     }
     return ,$polozky
 }

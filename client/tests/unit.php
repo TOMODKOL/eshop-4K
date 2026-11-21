@@ -186,6 +186,19 @@ $x3 = Service::create($o3, ['lines' => [$mk($i3[1], 'vratit')], 'ship' => 'zbox'
 t(Service::payout($x3) == 800 - 79 - 89, 'zákazník dostane 800 − 79 poštovné − 89 doprava = ' . Service::payout($x3));
 t(Service::shippingRule('2026-11-20')['free_from'] == 2500 && Service::shippingRule('2026-11-21')['free_from'] == 3000, 'objednávka před 23. 11. podle starých podmínek');
 
+// velikosti z e-shopu
+$es = \App\Modules\Vratky\Eshop::parse((string) file_get_contents(__DIR__ . '/fixtures/eshop_variant.html'));
+t($es !== null && count($es['sizes']) === 4, 'e-shop: 4 dlaždice velikostí');
+t($es['sizes'][1]['value'] === '43,5' && $es['sizes'][1]['sku'] === '3023795' && $es['sizes'][1]['avail'] === 'Skladem' && $es['sizes'][1]['cls'] === 'zelena', 'e-shop: 43,5 má kód (podle obrázku) a dostupnost');
+t($es['sizes'][0]['sku'] === '3023794' && $es['sizes'][2]['sku'] === '' && $es['sizes'][3]['current'], 'e-shop: kód podle názvu, 44 bez kódu, 48 = současná');
+t(\App\Modules\Vratky\Eshop::parse('<html><body>nic</body></html>') === null, 'e-shop: stránka bez variant → null');
+t((Service::findOrder('d@e.cz', 'FV 2601 02200')['order_no'] ?? '') === '8810009000', 'hledání podle čísla faktury (i s předponou) i objednávky');
+$itE = ['id' => 77, 'name' => 'tretry X 48', 'code' => 'K', 'unit_price' => 100, 'qty_left' => 1, 'eshop' => $es];
+[$e1, $d1] = Service::validate(['invoice_date' => date('Y-m-d')] + ['id' => 0], [$itE], ['act' => [77 => 'vymenit'], 'size_to' => [77 => '43,5'], 'ship' => 'zbox', 'phone' => '', 'bank_account' => '', 'name' => 'A'], []);
+t(($d1['lines'][0]['new_code'] ?? '') === '3023795', 'výměna: kód nové velikosti z e-shopu');
+[$e2] = Service::validate(['invoice_date' => date('Y-m-d')] + ['id' => 0], [$itE], ['act' => [77 => 'vymenit'], 'size_to' => [77 => '48'], 'ship' => 'zbox', 'phone' => '', 'bank_account' => '', 'name' => 'A'], []);
+t((bool) array_filter($e2, fn($x) => str_contains($x, 'stejnou velikost')), 'výměna: stejná velikost se odmítne');
+
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
 exit($fail ? 1 : 0);

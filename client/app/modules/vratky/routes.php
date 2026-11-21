@@ -86,7 +86,7 @@ $loadOrder = function (): array {
 
 Http::get('/vratky/novy', function () use ($loadOrder) {
     $o = $loadOrder();
-    $items = Service::items((int) $o['id']);
+    $items = Service::items((int) $o['id'], true);
     View::page('vratky:form', ['title' => 'Co chcete udělat?', 'homeUrl' => '/vratky', 'order' => $o, 'items' => $items,
         'dl' => Service::deadlines($o), 'old' => Session::get('vr_old', []), 'errors' => []]);
 });
@@ -94,7 +94,7 @@ Http::get('/vratky/novy', function () use ($loadOrder) {
 Http::post('/vratky/novy', function () use ($loadOrder) {
     Session::checkCsrf();
     $o = $loadOrder();
-    $items = Service::items((int) $o['id']);
+    $items = Service::items((int) $o['id'], true);
     [$errors, $data] = Service::validate($o, $items, $_POST, $_FILES);
     if ($errors) {
         http_response_code(422);

@@ -22,6 +22,14 @@
   function $$(sel, root) { return Array.prototype.slice.call((root || form).querySelectorAll(sel)); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
+  // vybraná velikost: dlaždice (radio) nebo select / textové pole
+  function sizeVal(id) {
+    var r = form.querySelector('input[type="radio"][name="size_to[' + id + ']"]:checked');
+    if (r) return r.value;
+    var s = form.querySelector('select[name="size_to[' + id + ']"], input[type="text"][name="size_to[' + id + ']"], input:not([type])[name="size_to[' + id + ']"]');
+    return s && s.value.trim() ? s.value.trim() : '';
+  }
+
   // ---------- data z formuláře ----------
   function items() {
     return $$('.item-card').map(function (card) {
@@ -49,7 +57,7 @@
   }
   function detailText(i) {
     if (i.act === 'vratit') { var r = $('input[name="reason[' + i.id + ']"]:checked'); return r ? r.value : ''; }
-    if (i.act === 'vymenit') { var s = form.querySelector('[name="size_to[' + i.id + ']"]'); return s && s.value ? 'Za velikost ' + s.value : ''; }
+    if (i.act === 'vymenit') { var sv = sizeVal(i.id); return sv ? 'Za velikost ' + sv : ''; }
     var d = form.querySelector('[name="defect[' + i.id + ']"]');
     var n = (form.querySelector('[data-photos="' + i.id + '"]') || { files: [] }).files.length;
     return (d && d.value ? 'Vada: ' + d.value.slice(0, 80) : '') + (n ? ' · ' + n + ' foto' : '');
@@ -161,7 +169,7 @@
       for (var k = 0; k < ch.length; k++) {
         var i = ch[k];
         if (i.act === 'vratit' && !$('input[name="reason[' + i.id + ']"]:checked')) return error('Vyberte důvod vrácení u „' + i.name + '“.');
-        if (i.act === 'vymenit') { var s = form.querySelector('[name="size_to[' + i.id + ']"]'); if (!s || !s.value.trim()) return error('Vyberte velikost pro výměnu u „' + i.name + '“.'); }
+        if (i.act === 'vymenit') { if (!sizeVal(i.id)) return error('Vyberte velikost pro výměnu u „' + i.name + '“.'); }
         if (i.act === 'reklamovat') { var d = form.querySelector('[name="defect[' + i.id + ']"]'); if (!d || d.value.trim().length < 5) return error('Popište vadu u „' + i.name + '“.'); }
       }
     }
