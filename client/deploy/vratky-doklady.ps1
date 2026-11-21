@@ -90,7 +90,7 @@ function Ucet([string]$u) {
 
 function ZpetObj([string]$no, [string]$stav, [string]$zf, [string]$chyba) {
     $json = ConvertTo-Json -InputObject @{ results = @(@{ no = $no; state = $stav; zf_no = $zf; error = $chyba }) } -Depth 5 -Compress
-    Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/objednavky') -Method Post -Body ([Text.Encoding]::UTF8.GetBytes($json)) `
+    Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/vymeny') -Method Post -Body ([Text.Encoding]::UTF8.GetBytes($json)) `
         -ContentType 'application/json; charset=utf-8' -Headers $apiHlav -TimeoutSec 60 | Out-Null
 }
 # Odpověď Pohody na import → číslo vzniklého dokladu, jinak výjimka s důvodem
@@ -123,7 +123,7 @@ function Zpet([string]$no, [string]$stav, [string]$cislo, [string]$chyba) {
 # ===== 1. Výměny: přijatá objednávka 991… + zálohová faktura na doplatek, hlídání platby =====
 try {
     $q = if ($OstreObj) { '?navrhy=1' } else { '' }
-    $obj = @((Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/objednavky' + $q) -Headers $apiHlav -TimeoutSec 60).returns)
+    $obj = @((Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/vymeny' + $q) -Headers $apiHlav -TimeoutSec 60).returns)
     foreach ($r in $obj) {
         $no = [string]$r.no
         try {

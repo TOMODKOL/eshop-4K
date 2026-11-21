@@ -606,7 +606,7 @@ final class Service
         $out = [];
         $states = $withDrafts ? "('ceka','navrh')" : "('ceka')";
         $rows = Db::all("SELECT r.*, o.invoice_no, o.order_no FROM returns r JOIN orders o ON o.id = r.order_id
-            WHERE r.xorder_no IS NOT NULL AND (r.xorder_state IN $states OR (r.xorder_state = 'hotovo' AND r.zf_no IS NOT NULL AND r.zf_paid = 0)) ORDER BY r.id");
+            WHERE r.xorder_no IS NOT NULL AND r.status <> 'zamitnuto' AND (r.xorder_state IN $states OR (r.xorder_state = 'hotovo' AND r.zf_no IS NOT NULL AND r.zf_paid = 0)) ORDER BY r.id");
         foreach ($rows as $r) {
             // objednávka = vracené zboží v minusu (textová položka, nehýbe skladem ani rezervací) + nové zboží; součet = doplatek / přeplatek
             $items = array_values(array_map(fn($i) => ['kind' => $i['kind'] === 'nove' ? 'nove' : 'stare', 'code' => $i['code'], 'name' => $i['name'], 'qty' => $i['qty'], 'unit_price' => $i['unit_price'],

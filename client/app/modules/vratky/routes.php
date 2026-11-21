@@ -298,13 +298,13 @@ Http::get('/api/sync/doklady', function () use ($syncAuth) {
     Http::json(['ok' => true, 'returns' => Service::docPending(Http::input('navrhy') === '1')]);
 });
 
-// výměny: GET = objednávky 991… k založení (?navrhy=1 i návrhy) a zálohy k hlídání platby, POST {"results":[{"no":"V-…","state":"hotovo","zf_no":"260800110"}]}
-Http::get('/api/sync/objednavky', function () use ($syncAuth) {
+// výměny (/api/sync/vymeny): GET = objednávky 991… k založení (?navrhy=1 i návrhy) a zálohy k hlídání platby, POST {"results":[{"no":"V-…","state":"hotovo","zf_no":"260800110"}]}
+Http::get('/api/sync/vymeny', function () use ($syncAuth) {
     $syncAuth();
     Http::json(['ok' => true, 'returns' => Service::xorderPending(Http::input('navrhy') === '1')]);
 });
 
-Http::post('/api/sync/objednavky', function () use ($syncAuth) {
+Http::post('/api/sync/vymeny', function () use ($syncAuth) {
     $d = $syncAuth();
     $n = 0;
     foreach ((array) ($d['results'] ?? []) as $x) if (is_array($x) && Service::xorderResult($x)) $n++;
