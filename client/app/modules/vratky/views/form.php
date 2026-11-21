@@ -9,7 +9,7 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
 ?>
 <form id="vrform" class="layout" method="post" action="<?= url('/vratky/novy') ?>" enctype="multipart/form-data" novalidate
       data-postage="<?= $postage === null ? '' : e((string) $postage) ?>"
-      data-ship-charge="<?= e((string) $shipCharge) ?>" data-goods-left="<?= e((string) $goodsLeft) ?>" data-free-from="<?= e((string) $freeFrom) ?>" data-cod-fee="<?= e((string) cfg('vratky.cod_fee', 69)) ?>" data-product-url="<?= url('/vratky/zbozi') ?>" data-search-url="<?= url('/vratky/hledat') ?>" data-draft-url="<?= url('/vratky/koncept') ?>" data-shop-url="<?= e(rtrim((string) cfg('shop.web'), '/')) ?>/" data-start="<?= (int) ($start ?? 1) ?>">
+      data-ship-charge="<?= e((string) $shipCharge) ?>" data-goods-left="<?= e((string) $goodsLeft) ?>" data-free-from="<?= e((string) $freeFrom) ?>" data-cod-fee="<?= e((string) cfg('vratky.cod_fee', 69)) ?>" data-product-url="<?= url('/vratky/zbozi') ?>" data-search-url="<?= url('/vratky/hledat') ?>" data-draft-url="<?= url('/vratky/koncept') ?>" data-shop-url="<?= e(rtrim((string) cfg('shop.web'), '/')) ?>/eshop-c372/" data-start="<?= (int) ($start ?? 1) ?>">
 <?= csrf_field() ?>
 <div class="main"><div class="col">
 

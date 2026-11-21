@@ -8,7 +8,8 @@ $u = \App\Core\Auth::user(); $active = $active ?? ''; ?>
 <meta name="robots" content="noindex">
 <title><?= e($title ?? 'Administrace') ?> · Client 4K</title>
 <link rel="stylesheet" href="<?= asset('app.css') ?>">
-<link rel="icon" href="<?= asset('logo-black.png') ?>">
+<link rel="icon" href="<?= asset('favicon.ico') ?>" sizes="any">
+<link rel="shortcut icon" href="<?= asset('favicon.ico') ?>">
 </head>
 <body>
 <header class="top"><div class="in">
