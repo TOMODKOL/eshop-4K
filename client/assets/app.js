@@ -222,6 +222,17 @@
     return true;
   }
 
+  // druhé kliknutí na vybranou volbu (Vrátit / Vyměnit / Reklamovat) výběr zruší
+  form.addEventListener('click', function (e) {
+    var l = e.target.closest('label.pill');
+    if (!l) return;
+    var r = l.querySelector('input[type=radio][name^="act["]');
+    if (!r || e.target === r || r.disabled || !r.checked) return;
+    e.preventDefault();
+    r.checked = false;
+    render();
+  }, true);
+
   form.addEventListener('click', function (e) {
     var t = e.target.closest('button, [data-clear], [data-switch]');
     if (!t) return;
