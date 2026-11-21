@@ -3,6 +3,7 @@ config/config.php
 storage/uploads/*
 storage/log/*
 storage/ratelimit/*
+storage/cache/*
 storage/*.sqlite
 !storage/**/.gitkeep
 storage/schema_v*
