@@ -74,7 +74,7 @@
     return { ch: ch, refund: refund, diff: diff, onlyReturn: onlyReturn, postageApplies: postageApplies, shipCharge: shipCharge, balance: balance - cod, cod: cod, owes: balance < -0.005 };
   }
   function detailText(i) {
-    if (i.act === 'vratit') { var r = $('input[name="reason[' + i.id + ']"]:checked'); return r ? r.value : 'Bez udání důvodu'; }
+    if (i.act === 'vratit') { var r = $('input[name="reason[' + i.id + ']"]:checked'); return r ? r.value : ''; }
     if (i.act === 'vymenit') {
       if (i.kind === 'jine') return i.newName ? 'Dostanete: ' + i.newName + (i.newQty > 1 ? ' × ' + i.newQty + ' ks' : '') : '';
       var sv = sizeVal(i.id); return sv ? 'Nová velikost: ' + sv : '';

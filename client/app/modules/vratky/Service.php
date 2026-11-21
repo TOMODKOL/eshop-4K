@@ -21,7 +21,7 @@ final class Service
         'zamitnuto' => 'Zamítnuto',
     ];
 
-    public const REASONS = ['Nesedí velikost', 'Nelíbí se mi', 'Jiné, než jsem čekal/a', 'Rozmyslel/a jsem si to', 'Přišlo poškozené nebo jiné zboží', 'Bez udání důvodu'];
+    public const REASONS = ['Nesedí velikost', 'Nelíbí se mi', 'Jiné, než jsem čekal/a', 'Rozmyslel/a jsem si to', 'Přišlo poškozené nebo jiné zboží'];
 
     public const SHIP = [
         'zbox'   => 'Z-BOX Zásilkovny',
@@ -181,9 +181,8 @@ final class Service
             $line = ['item' => $it, 'action' => $act, 'qty' => $qty, 'reason' => '', 'size_to' => '', 'new_code' => '', 'new_name' => '', 'new_price' => null, 'new_url' => '', 'new_qty' => 0, 'defect_text' => '', 'photos' => []];
             if ($act === 'vratit') {
                 $r = (string) ($post['reason'][$id] ?? '');
-                // důvod je nepovinný (do 14 dnů lze vrátit bez udání důvodu)
-                if ($r === '') $r = 'Bez udání důvodu';
-                if (!in_array($r, self::REASONS, true)) $errors[] = 'Neplatný důvod vrácení u „' . $it['name'] . '“.';
+                // na důvod se neptáme (do 14 dnů lze vrátit bez udání důvodu)
+                if (!in_array($r, self::REASONS, true)) $r = '';
                 $line['reason'] = $r;
             } elseif ($act === 'vymenit' && ($post['swap_kind'][$id] ?? '') === 'jine') {
                 // výměna za jiné zboží z e-shopu (jen skladem nebo skladem u dodavatele)
