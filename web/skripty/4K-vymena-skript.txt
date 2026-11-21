@@ -39,7 +39,7 @@
     '#vx-box #vx-go{display:block!important;width:100%!important;height:56px!important;min-height:56px!important;padding:0 16px!important;border:0!important;border-radius:10px!important;background:#ffc524!important;color:#231F20!important;font:700 18px/56px "Good Sans",Arial,sans-serif!important;cursor:pointer}' +
     '#vx-box #vx-go[disabled]{background:#ecece8!important;color:#8a8a86!important;cursor:not-allowed}' +
     '#vx-box #vx-info{height:auto!important;text-align:center;font-size:14px;line-height:1.4;color:#444}' +
-    '.PDAddToCart > :not(#vx-box){grid-row:2 !important}.PDAddToCart > #vx-box{grid-row:1 !important;grid-column:1/-1 !important;margin:0 0 12px !important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;align-self:start!important}';
+    '.PDAddToCart::before{grid-row:2 !important}.PDAddToCart > :not(#vx-box){grid-row:2 !important}.PDAddToCart > #vx-box{grid-row:1 !important;grid-column:1/-1 !important;margin:0 0 12px !important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;align-self:start!important}';
   document.head.appendChild(css);
 
   var bar = document.createElement('div');
