@@ -62,6 +62,7 @@ function MServer([string]$id, [string]$obsah, [string]$poznamka) {
   xmlns:ftr="http://www.stormware.cz/schema/version_2/filter.xsd"
   xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
   xmlns:ord="http://www.stormware.cz/schema/version_2/order.xsd"
+  xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
   xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
 $obsah
 </dat:dataPack>
@@ -244,6 +245,80 @@ $(if ($stredisko) { "<inv:centre><typ:ids>$(X $stredisko)</typ:ids></inv:centre>
     }
 } catch {
     Zapis-Log $uloha ('CHYBA objednávky {0}' -f $_.Exception.Message)
+}
+
+# ===== 1b. Daňový doklad k přijaté platbě (26IN) ke každé celé zaplacené zálohové faktuře 2608 =====
+# Jako ruční 26IN00321: text „Daňový doklad k přijaté platbě (zálohová faktura č. …)“, párový symbol = číslo zálohy,
+# DUZP = den platby (datum likvidace), položka „Zdanitelné plnění - přijetí úplaty“ podle sazeb zálohy, předkontace Nevím, členění UD.
+# Jen zálohy vystavené od $DdppOd (starší má prodejna vyřešené ručně). Když už k záloze 26IN s tímto párovým symbolem existuje, nic nedělá.
+$DdppOd = '2026-11-21'
+try {
+    $d = MServer 'ddpp_zalohy' ("<dat:dataPackItem id=`"zf`" version=`"2.0`"><lst:listInvoiceRequest version=`"2.0`" invoiceType=`"issuedAdvanceInvoice`" invoiceVersion=`"2.0`"><lst:requestInvoice><ftr:queryFilter><ftr:filter>FA.Datum &gt;= '$DdppOd' AND FA.KcLikv = 0</ftr:filter></ftr:queryFilter></lst:requestInvoice></lst:listInvoiceRequest></dat:dataPackItem>") 'Zaplacene zalohy - jen cteni'
+    $zalohy = @($d.SelectNodes("//*[local-name()='invoice' and namespace-uri()='http://www.stormware.cz/schema/version_2/list.xsd']"))
+    if ($zalohy.Count -gt 0) {
+        $di = MServer 'ddpp_interni' ("<dat:dataPackItem id=`"int`" version=`"2.0`"><lst:listIntDocRequest version=`"2.0`" intDocVersion=`"2.0`"><lst:requestIntDoc><ftr:filter><ftr:dateFrom>$DdppOd</ftr:dateFrom></ftr:filter></lst:requestIntDoc></lst:listIntDocRequest></dat:dataPackItem>") 'Interni doklady - jen cteni'
+        $maDdpp = @{}
+        foreach ($ih in $di.SelectNodes("//*[local-name()='intDocHeader']")) {
+            $sp = Text $ih 'symPar'; if ($sp) { $maDdpp[$sp] = $true }
+            if ((Text $ih 'text') -match 'zálohov\S* faktu\S* č\. ?(\d+)') { $maDdpp[$matches[1]] = $true }
+        }
+        foreach ($zf in $zalohy) {
+            $zh = Uzel $zf 'invoiceHeader'
+            $zfNo = Text $zh 'number/numberRequested'
+            if (-not $zfNo -or $maDdpp.ContainsKey($zfNo)) { continue }
+            if ($hotove.ContainsKey("DDPP-$zfNo") -and (-not $Ostre -or [string]$hotove["DDPP-$zfNo"] -ne 'navrh')) { continue }
+            try {
+                $den = Text $zh 'liquidation/date'; if (-not $den) { $den = (Get-Date).ToString('yyyy-MM-dd') }
+                $dnes = (Get-Date).ToString('yyyy-MM-dd')
+                # součet zálohy po sazbách DPH (ceny s DPH)
+                $sazby = [ordered]@{}
+                foreach ($zp in (Uzly $zf 'invoiceDetail/invoiceItem')) {
+                    $sz = Text $zp 'rateVAT'; if (-not $sz) { $sz = 'none' }
+                    $castka = [double]::Parse((Text $zp 'homeCurrency/priceSum'), [Globalization.CultureInfo]::InvariantCulture)
+                    if (-not $sazby.Contains($sz)) { $sazby[$sz] = 0.0 }
+                    $sazby[$sz] += $castka
+                }
+                $polozky = ($sazby.Keys | ForEach-Object { "<int:intDocItem><int:text>Zdanitelné plnění - přijetí úplaty</int:text><int:quantity>1</int:quantity><int:payVAT>true</int:payVAT><int:rateVAT>$_</int:rateVAT><int:homeCurrency><typ:unitPrice>$(Cislo $sazby[$_])</typ:unitPrice></int:homeCurrency></int:intDocItem>" }) -join "`n"
+                $partner = (Uzel $zh 'partnerIdentity').OuterXml -replace '<inv:partnerIdentity', '<int:partnerIdentity' -replace '</inv:partnerIdentity>', '</int:partnerIdentity>'
+                $stredisko = Text $zh 'centre/ids'; $cinnost = Text $zh 'activity/ids'
+                $ddppXml = @"
+<dat:dataPackItem id="ddpp_$zfNo" version="2.0"><int:intDoc version="2.0">
+<int:intDocHeader>
+<int:number><typ:ids>26IN</typ:ids></int:number>
+<int:symPar>$zfNo</int:symPar>
+<int:date>$dnes</int:date><int:dateTax>$den</int:dateTax><int:dateAccounting>$den</int:dateAccounting><int:dateKHDPH>$den</int:dateKHDPH>
+<int:accounting><typ:ids>Nevím</typ:ids></int:accounting><int:classificationVAT><typ:ids>UD</typ:ids></int:classificationVAT>
+<int:text>$(X "Daňový doklad k přijaté platbě (zálohová faktura č. $zfNo)")</int:text>
+$partner
+$(if ($stredisko) { "<int:centre><typ:ids>$(X $stredisko)</typ:ids></int:centre>" })$(if ($cinnost) { "<int:activity><typ:ids>$(X $cinnost)</typ:ids></int:activity>" })
+<int:intNote>Vystavil pomocník po zaplacení zálohy $zfNo</int:intNote>
+</int:intDocHeader>
+<int:intDocDetail>
+$polozky
+</int:intDocDetail>
+<int:intDocSummary><int:roundingDocument>none</int:roundingDocument><int:roundingVAT>none</int:roundingVAT></int:intDocSummary>
+</int:intDoc></dat:dataPackItem>
+"@
+                if (-not $Ostre) {
+                    Zajisti-Slozku $navrhDir
+                    [IO.File]::WriteAllText((Join-Path $navrhDir ("DDPP_{0}.xml" -f $zfNo)), $ddppXml, (New-Object Text.UTF8Encoding($true)))
+                    $hotove["DDPP-$zfNo"] = 'navrh'
+                    Set-Content -LiteralPath $hotoveF -Value ($hotove | ConvertTo-Json) -Encoding UTF8
+                    Zapis-Log $uloha ("NÁVRH daňový doklad k záloze {0} (platba {1})" -f $zfNo, $den)
+                    continue
+                }
+                $odp = MServer ("ddpp_" + $zfNo) $ddppXml ("Danovy doklad k zaloze $zfNo")
+                $cis = Vysledek $odp 'daňový doklad k přijaté platbě'
+                $hotove["DDPP-$zfNo"] = $cis
+                Set-Content -LiteralPath $hotoveF -Value ($hotove | ConvertTo-Json) -Encoding UTF8
+                Zapis-Log $uloha ("OK    daňový doklad {0} k záloze {1}" -f $cis, $zfNo)
+            } catch {
+                Zapis-Log $uloha ("CHYBA daňový doklad k záloze {0}: {1}" -f $zfNo, $_.Exception.Message)
+            }
+        }
+    }
+} catch {
+    Zapis-Log $uloha ('CHYBA daňové doklady k zálohám {0}' -f $_.Exception.Message)
 }
 
 # ===== 2. Doklad po kontrole vráceného zboží (ODD / faktura) =====
