@@ -67,17 +67,23 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     <div class="detail inl" data-detail="<?= $id ?>">
 
     <div data-for="vratit">
-      <div class="note">Chcete raději jinou velikost nebo jiné zboží? <strong>Při výměně je doprava zdarma</strong> a poštovné <?= e(money((float) $postage)) ?> se neodečítá. <button type="button" class="link js-only" data-switch="<?= $id ?>" style="padding:0;color:var(--ink);font-weight:700">Změnit na výměnu →</button></div>
+      <div class="note">Chcete raději <?= empty($it['no_size']) ? 'jinou velikost nebo jiné zboží' : 'jiné zboží' ?>? <strong>Při výměně je doprava zdarma</strong> a poštovné <?= e(money((float) $postage)) ?> se neodečítá. <button type="button" class="link js-only" data-switch="<?= $id ?>" style="padding:0;color:var(--ink);font-weight:700">Změnit na výměnu →</button></div>
     </div>
 
     <div data-for="vymenit">
-      <?php $kind = $o('swap_kind', $id, 'velikost') === 'jine' ? 'jine' : 'velikost'; ?>
+      <?php $kind = !empty($it['no_size']) || $o('swap_kind', $id, 'velikost') === 'jine' ? 'jine' : 'velikost'; ?>
+      <?php if (!empty($it['no_size'])): ?>
+      <input class="sr" type="radio" name="swap_kind[<?= $id ?>]" value="jine" checked tabindex="-1" aria-hidden="true">
+      <span class="hint" style="font-size:14px">Toto zboží nemá velikosti, vyměnit ho můžete za jiné zboží.</span>
+      <?php else: ?>
       <fieldset class="seg" style="border:0;padding:0;margin:0">
         <legend class="sr">Za co chcete vyměnit</legend>
         <?php foreach (['velikost' => 'Jinou velikost', 'jine' => 'Jiné zboží'] as $k => $lab): ?>
           <label class="pill <?= $kind === $k ? 'on' : '' ?>" style="display:flex;align-items:center;justify-content:center"><input class="sr" type="radio" name="swap_kind[<?= $id ?>]" value="<?= $k ?>" <?= $kind === $k ? 'checked' : '' ?>><?= $lab ?></label>
         <?php endforeach; ?>
       </fieldset>
+      <?php endif; ?>
+      <?php if (empty($it['no_size'])): ?>
       <div data-kind="velikost" class="kindbox">
         <?php if (!empty($it['eshop'])): ?>
           <fieldset class="sizes" style="border:0;padding:0;margin:0">
@@ -109,6 +115,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
         <span class="hint">Dostupnost velikosti ověříme a novou pošleme hned, jak vaše zboží dorazí. Kdyby nebyla skladem, ozveme se.</span>
         <?php endif; ?>
       </div>
+      <?php endif; ?>
       <div data-kind="jine" class="kindbox">
         <div class="shoppick js-only">
           <button type="button" class="btn" data-shop="<?= $id ?>" data-name="<?= e($it['name']) ?>" data-credit="<?= e((string) (float) $it['unit_price']) ?>">Vybrat na e-shopu →</button>

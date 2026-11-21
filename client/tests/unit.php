@@ -25,6 +25,7 @@ function t(bool $c, string $m): void { global $fail; echo ($c ? 'ok   ' : 'CHYBA
 t(Service::sizeOptions('dres POC M') === ['XXS', 'XS', 'S', 'L', 'XL', 'XXL', '3XL', '4XL'], 'velikosti oblečení');
 t(in_array('42,5', Service::sizeOptions('tretry LAKE CX239 REGULAR 43'), true), 'velikosti bot po půl čísle');
 t(Service::sizeOptions('helma POC Ventral Air MIPS M/L') === ['XS/S', 'S/M', 'L/XL', 'XL/XXL'], 'kombinované velikosti');
+t(!Service::nameHasSize('prací prášek ASSOS Active Wear Cleanser 1000ml') && Service::nameHasSize('dres POC M') && Service::nameHasSize('tretry LAKE 42,5') && Service::nameHasSize('ponožky XS-S'), 'pozná zboží bez velikosti');
 t(Service::sizeOptions('lahev Elite 750 ml') === [], 'bez velikosti → volné pole');
 
 // účet

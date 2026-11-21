@@ -21,6 +21,13 @@ final class Eshop
         return $p && !empty($p['sizes']) ? ['sizes' => $p['sizes']] : null;
     }
 
+    /** Zboží na e-shopu je, ale nemá výběr velikosti (prací prášek, doplňky…) → výměna jen za jiné zboží. */
+    public static function noSizes(?int $stockId): bool
+    {
+        $p = self::page($stockId);
+        return $p !== null && !empty($p['product']) && empty($p['sizes']);
+    }
+
     /** Náhled zboží (malý obrázek z CDN e-shopu), '' = není. */
     public static function image(?int $stockId): string
     {
@@ -41,7 +48,8 @@ final class Eshop
             return $mem[$stockId] = is_array($c) ? $c : null;
         }
         $html = self::fetch(rtrim((string) (Config::get('vratky.eshop_url') ?: 'https://www.4kluciodkol.cz'), '/') . "/x-p$stockId/");
-        $res = $html === null ? null : ['sizes' => self::parse($html)['sizes'] ?? [], 'image' => self::parseImage($html, $stockId)];
+        $res = $html === null ? null : ['sizes' => self::parse($html)['sizes'] ?? [], 'image' => self::parseImage($html, $stockId),
+            'product' => (bool) preg_match('~"@type"\s*:\s*"(Product|ProductGroup)"~', $html)];
         if (!is_dir($dir)) @mkdir($dir, 0775, true);
         @file_put_contents($file, json_encode($res ?? ['sizes' => [], 'image' => ''], JSON_UNESCAPED_UNICODE));
         return $mem[$stockId] = $res;

@@ -73,6 +73,8 @@ final class Service
             $i['sizes'] = self::sizeOptions($i['name']);
             $i['eshop'] = $eshop && $i['qty_left'] > 0 && !self::isServiceLine($i) ? Eshop::sizes(isset($i['stock_id']) ? (int) $i['stock_id'] : null) : null;
             $i['image'] = $eshop && !self::isServiceLine($i) ? Eshop::image(isset($i['stock_id']) ? (int) $i['stock_id'] : null) : '';
+            // zboží bez velikostí: e-shop ho ukazuje bez výběru velikosti, nebo (když e-shop nic neřekl) název nekončí velikostí
+            $i['no_size'] = $eshop && empty($i['eshop']) && !$i['sizes'] && (Eshop::noSizes(isset($i['stock_id']) ? (int) $i['stock_id'] : null) || !self::nameHasSize($i['name']));
         }
         return array_values(array_filter($items, fn($i) => !self::isServiceLine($i)));
     }
@@ -133,6 +135,13 @@ final class Service
     }
 
     /** Nabídka velikostí pro výměnu podle velikosti na konci názvu položky. */
+    /** Končí název něčím, co vypadá jako velikost (M, L/XL, 43, 42,5, XS-S…)? */
+    public static function nameHasSize(string $name): bool
+    {
+        if (!preg_match('/\s(\S+)$/u', trim($name), $m)) return false;
+        return (bool) preg_match('~^(X{0,3}[SML]|XXS|[2-4]XL|\d{1,2}([.,]5)?|[A-Z]{1,3}[/-][A-Z]{1,3}|\d{2}[/-]\d{2})$~u', mb_strtoupper($m[1]));
+    }
+
     public static function sizeOptions(string $name): array
     {
         $apparel = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
@@ -184,7 +193,7 @@ final class Service
                 // na důvod se neptáme (do 14 dnů lze vrátit bez udání důvodu)
                 if (!in_array($r, self::REASONS, true)) $r = '';
                 $line['reason'] = $r;
-            } elseif ($act === 'vymenit' && ($post['swap_kind'][$id] ?? '') === 'jine') {
+            } elseif ($act === 'vymenit' && (($post['swap_kind'][$id] ?? '') === 'jine' || !empty($it['no_size']))) {
                 // výměna za jiné zboží z e-shopu (jen skladem nebo skladem u dodavatele)
                 $prod = Eshop::product((string) ($post['other_url'][$id] ?? ''));
                 $opt = $prod ? Eshop::option($prod, (string) ($post['other_pick'][$id] ?? '')) : null;
