@@ -41,6 +41,22 @@ Http::post('/vratky', function () {
     Http::redirect('/vratky/novy');
 });
 
+// odkaz z účtu zákazníka na e-shopu: /vratky/objednavka?obj=8810…&email=… → rovnou formulář (stejné údaje jako ruční hledání)
+Http::get('/vratky/objednavka', function () {
+    $email = trim((string) ($_GET['email'] ?? ''));
+    $number = trim((string) ($_GET['obj'] ?? ''));
+    $o = RateLimit::hit('vr_find', 20, 3600) ? Service::findOrder($email, $number) : null;
+    if (!$o) {
+        Session::set('vr_email', $email);
+        Session::flash('Objednávku se nepodařilo otevřít automaticky. Zadejte prosím e-mail a číslo objednávky nebo faktury.', 'err');
+        Http::redirect('/vratky');
+    }
+    Session::set('vr_email', $email);
+    Session::set('vr_order', (int) $o['id']);
+    Session::forget('vr_old');
+    Http::redirect('/vratky/novy');
+});
+
 Http::post('/vratky/odkaz', function () {
     Session::checkCsrf();
     $email = mb_strtolower(Http::input('email'));
