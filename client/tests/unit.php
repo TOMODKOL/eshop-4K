@@ -198,6 +198,8 @@ $itE = ['id' => 77, 'name' => 'tretry X 48', 'code' => 'K', 'unit_price' => 100,
 t(($d1['lines'][0]['new_code'] ?? '') === '3023795', 'výměna: kód nové velikosti z e-shopu');
 [$e2] = Service::validate(['invoice_date' => date('Y-m-d')] + ['id' => 0], [$itE], ['act' => [77 => 'vymenit'], 'size_to' => [77 => '48'], 'ship' => 'zbox', 'phone' => '', 'bank_account' => '', 'name' => 'A'], []);
 t((bool) array_filter($e2, fn($x) => str_contains($x, 'stejnou velikost')), 'výměna: stejná velikost se odmítne');
+[$e2b] = Service::validate(['invoice_date' => date('Y-m-d')] + ['id' => 0], [$itE], ['act' => [77 => 'vymenit'], 'size_to' => [77 => '44'], 'ship' => 'zbox', 'phone' => '', 'bank_account' => '', 'name' => 'A'], []);
+t((bool) array_filter($e2b, fn($x) => str_contains($x, 'není skladem')), 'výměna: velikost, která není skladem ani u dodavatele, se odmítne');
 
 // výměna za jiné zboží
 use App\Modules\Vratky\Eshop;

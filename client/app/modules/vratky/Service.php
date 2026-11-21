@@ -208,6 +208,7 @@ final class Service
                     $tile = Eshop::find($it['eshop'], $s);
                     if (!$tile) $errors[] = 'Vyberte velikost u „' . $it['name'] . '“.';
                     elseif ($tile['current']) $errors[] = 'U „' . $it['name'] . '“ jste vybrali stejnou velikost, jakou máte. Vyberte jinou.';
+                    elseif ($tile['cls'] !== 'zelena') $errors[] = 'Velikost ' . $tile['value'] . ' u „' . $it['name'] . '“ teď není skladem ani u dodavatele. Vyberte jinou, nebo vyměňte za jiné zboží.';
                     else $line['new_code'] = mb_substr($tile['sku'], 0, 60);
                 }
                 $line['size_to'] = $s;

@@ -89,18 +89,18 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
           <fieldset class="sizes" style="border:0;padding:0;margin:0">
             <legend class="l" style="padding:0;margin-bottom:8px">Za jakou velikost?</legend>
             <div class="sizegrid">
-            <?php foreach ($it['eshop']['sizes'] as $sz): $cur = $sz['current']; ?>
-              <label class="sz<?= $cur ? ' cur' : '' ?>">
-                <input class="sr" type="radio" name="size_to[<?= $id ?>]" value="<?= e($sz['value']) ?>" <?= $cur ? 'disabled' : '' ?> <?= !$cur && $o('size_to', $id) === $sz['value'] ? 'checked' : '' ?>>
+            <?php foreach ($it['eshop']['sizes'] as $sz): $cur = $sz['current']; $na = !$cur && $sz['cls'] !== 'zelena'; ?>
+              <label class="sz<?= $cur ? ' cur' : '' ?><?= $na ? ' na' : '' ?>">
+                <input class="sr" type="radio" name="size_to[<?= $id ?>]" value="<?= e($sz['value']) ?>" <?= $cur || $na ? 'disabled' : '' ?> <?= !$cur && !$na && $o('size_to', $id) === $sz['value'] ? 'checked' : '' ?>>
                 <span class="v"><?= e($sz['value']) ?></span>
                 <span class="a <?= e($sz['cls']) ?>"><?= $cur ? 'Vaše velikost' : e($sz['avail']) ?></span>
               </label>
             <?php endforeach; ?>
             </div>
           </fieldset>
-          <span class="hint">Dostupnost je stejná jako na e-shopu. Novou velikost pošleme hned, jak vaše zboží dorazí. Když není skladem, objednáme ji a dáme vám vědět, kdy dorazí.</span>
+          <span class="hint">Vybrat můžete velikost skladem nebo skladem u dodavatele (dostupnost je stejná jako na e-shopu). Novou velikost pošleme hned, jak vaše zboží dorazí.</span>
           <?php if (!array_filter($it['eshop']['sizes'], fn($z) => !$z['current'] && $z['cls'] === 'zelena')): ?>
-            <div class="note">Jiná velikost teď není skladem ani u dodavatele. Můžete ji objednat, nebo <button type="button" class="link js-only" data-kindswitch="<?= $id ?>" style="padding:0;color:var(--ink);font-weight:700">vyměnit za jiné zboží →</button></div>
+            <div class="note">Jiná velikost teď není skladem ani u dodavatele. Zboží můžete vrátit, nebo <button type="button" class="link js-only" data-kindswitch="<?= $id ?>" style="padding:0;color:var(--ink);font-weight:700">vyměnit za jiné zboží →</button></div>
           <?php endif; ?>
         <?php else: ?>
         <label class="l" for="size-<?= $id ?>">Za jakou velikost?</label>
