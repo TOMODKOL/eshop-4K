@@ -76,8 +76,8 @@
   function detailText(i) {
     if (i.act === 'vratit') { var r = $('input[name="reason[' + i.id + ']"]:checked'); return r ? r.value : ''; }
     if (i.act === 'vymenit') {
-      if (i.kind === 'jine') return i.newName ? 'Za: ' + i.newName + (i.newQty > 1 ? ' × ' + i.newQty + ' ks' : '') : '';
-      var sv = sizeVal(i.id); return sv ? 'Za velikost ' + sv : '';
+      if (i.kind === 'jine') return i.newName ? 'Dostanete: ' + i.newName + (i.newQty > 1 ? ' × ' + i.newQty + ' ks' : '') : '';
+      var sv = sizeVal(i.id); return sv ? 'Nová velikost: ' + sv : '';
     }
     var d = form.querySelector('[name="defect[' + i.id + ']"]');
     var n = (form.querySelector('[data-photos="' + i.id + '"]') || { files: [] }).files.length;
@@ -147,10 +147,12 @@
 
     var aside = $('[data-aside]');
     if (aside) {
-      aside.innerHTML = rows.length ? rows.map(function (r) {
-        return '<div class="row"><span><span class="kicker" style="font-size:10px">' + esc(r.label) + '</span><br>' + esc(r.name) + '</span><strong style="white-space:nowrap">' + r.amount + '</strong></div>';
-      }).join('') + '<div class="row" style="border-top:1px solid var(--line2);padding-top:10px"><span>Doprava</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '">' + postTxt + '</strong></div>' + chargeRow +
-        codRow + '<div class="total" style="padding:14px"><strong style="font-size:14px">' + totLabel + '</strong><span class="v" style="font-size:28px">' + money(Math.abs(net)) + '</span></div>'
+      aside.innerHTML = rows.length ? '<div class="ai-list">' + rows.map(function (r) {
+        var amt = r.amount && r.amount !== '–' ? (/^\d/.test(r.amount) ? 'vrátíme ' + r.amount : r.amount) : '';
+        return '<div class="ai"><span class="ai-k">' + esc(r.label) + '</span><span class="ai-n">' + esc(r.name) + '</span>' +
+          (r.detail ? '<span class="ai-d">' + esc(r.detail) + '</span>' : '') + (amt ? '<span class="ai-a">' + amt + '</span>' : '') + '</div>';
+      }).join('') + '</div><div class="ai-sum"><div class="row"><span>Doprava</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '">' + postTxt + '</strong></div>' + chargeRow +
+        codRow + '</div><div class="total ai-total"><strong>' + totLabel + '</strong><span class="v">' + money(Math.abs(net)) + '</span></div>'
         : '<span style="font-size:13px;color:var(--muted)">Zatím nic nevybráno.</span>';
     }
     var sum = $('[data-summary]');

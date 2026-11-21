@@ -292,3 +292,16 @@ html.js .nojs-only{display:none}
 .item .thumb{width:64px;height:64px;flex:0 0 64px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid var(--line2)}
 .item .thumb.ph{background:var(--soft)}
 @media (max-width:480px){.item .thumb{width:52px;height:52px;flex-basis:52px}}
+
+/* panel „Vaše vratka“ */
+.ai-list{display:flex;flex-direction:column}
+.ai{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid var(--line2)}
+.ai:first-child{padding-top:2px}
+.ai-k{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.ai-n{font-size:14px;font-weight:700;line-height:1.35;color:var(--ink)}
+.ai-d{font-size:13px;line-height:1.35;color:var(--text)}
+.ai-a{font-size:13px;font-weight:700;color:var(--ink);margin-top:2px}
+.ai-sum{display:flex;flex-direction:column;gap:6px;padding:10px 0 2px}
+.ai-total{margin-top:10px;padding:14px 16px;align-items:center}
+.ai-total strong{font-size:14px}
+.ai-total .v{font-size:28px}
