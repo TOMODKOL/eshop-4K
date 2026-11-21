@@ -30,6 +30,7 @@ final class Notify
                 'url' => self::statusUrl($ret),
             ]);
             Mailer::send($ret['email'], 'Reklamace ' . Service::displayNo($ret) . ' – potvrzení', $html);
+            self::packetaMissing($ret);
             return;
         }
         $w = Service::words($lines);
@@ -41,6 +42,7 @@ final class Notify
             'url' => self::statusUrl($ret),
         ]);
         Mailer::send($ret['email'], $w['N'] . ' ' . Service::displayNo($ret) . ' – ' . self::shortNext($ret), $html);
+        self::packetaMissing($ret);
 
         $staff = (string) Config::get('vratky.notify_staff', '');
         if ($staff !== '') {
@@ -51,6 +53,18 @@ final class Notify
                 'order' => $ret['order_id'] ? Service::order((int) $ret['order_id']) : null]);
             Mailer::send($staff, 'Nová ' . $w['n'] . ' ' . Service::displayNo($ret) . ' – ' . ($ret['customer_name'] ?: $ret['email']), $html);
         }
+    }
+
+    /** Zákazník dostal „kód pošleme e-mailem“ → prodejně upozornění s postupem. */
+    public static function packetaMissing(array $ret): void
+    {
+        if (!Service::usesPacketa((string) $ret['ship_method']) || $ret['packeta_password']) return;
+        $staff = (string) Config::get('vratky.notify_staff', '');
+        if ($staff === '') return;
+        $ret = Service::get((int) $ret['id']) ?? $ret; // aktuální chyba od Zásilkovny
+        $html = View::render('vratky:email_staff_packeta', ['ret' => $ret, 'enabled' => Packeta::enabled(),
+            'admin' => rtrim((string) Config::get('app_url'), '/') . '/admin/vratky/' . $ret['no']]);
+        Mailer::send($staff, '⚠ Chybí podací kód Zásilkovny – ' . Service::displayNo($ret), $html);
     }
 
     public static function statusChanged(array $ret, string $note): void
