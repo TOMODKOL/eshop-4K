@@ -134,7 +134,7 @@
 
     // panel vpravo + souhrn
     var rows = c.ch.map(function (i) {
-      var amount = i.act === 'vratit' ? money(i.price * i.qty) : (i.newPrice !== null ? ((i.price * i.qty - i.newPrice * i.newQty) >= 0 ? '' : '− ') + money(Math.abs(i.price * i.qty - i.newPrice * i.newQty)) : '–');
+      var amount = i.act === 'vratit' ? money(i.price * i.qty) : (i.newPrice !== null ? (function (d) { return Math.abs(d) < 0.005 ? 'bez doplatku' : (d > 0 ? 'vrátíme ' + money(d) : 'doplatek ' + money(-d)); })(i.price * i.qty - i.newPrice * i.newQty) : '–');
       return { label: i.act === 'vymenit' && i.kind === 'jine' ? 'Výměna za jiné zboží' : LABEL[i.act], name: i.name + (i.qty > 1 ? ' × ' + i.qty : ''), detail: detailText(i), amount: amount };
     });
     var shipEl = $('input[name="ship"]:checked');
@@ -142,7 +142,7 @@
     var postTxt = ship() === 'vlastni' ? 'na vaše náklady' : (c.postageApplies ? (postage === null ? '− poštovné' : '− ' + money(postage)) : 'zdarma');
     var net = c.balance;
     var totLabel = net > 0.005 ? 'Vrátíme vám' : (net < -0.005 ? 'Doplatíte' : 'Bez peněz');
-    var codRow = c.cod ? '<div class="row"><span>Dobírka</span><strong style="white-space:nowrap">− ' + money(c.cod) + '</strong></div>' : '';
+    var codRow = c.cod ? '<div class="row"><span>Dobírka</span><strong style="white-space:nowrap">+ ' + money(c.cod) + '</strong></div>' : '';
     var chargeRow = c.shipCharge ? '<div class="row"><span>Doprava objednávky – zbytek je pod ' + money(freeFrom) + ', doprava už není zdarma</span><strong style="white-space:nowrap">− ' + money(c.shipCharge) + '</strong></div>' : '';
 
     var aside = $('[data-aside]');
@@ -159,7 +159,7 @@
         return '<div class="sumrow"><span><span class="kicker" style="font-size:11px">' + esc(r.label) + '</span><br><strong>' + esc(r.name) + '</strong>' + (r.detail ? '<br><span style="color:var(--muted)">' + esc(r.detail) + '</span>' : '') + '</span><strong style="white-space:nowrap">' + r.amount + '</strong></div>';
       }).join('') + (shipName ? '<div class="sumrow"><span>Doprava: ' + esc(shipName) + '</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '" style="white-space:nowrap">' + postTxt + '</strong></div>' : '') +
         (c.shipCharge ? '<div class="sumrow"><span>Doprava objednávky – zbytek objednávky je pod ' + esc(money(freeFrom)) + ', doprava už není zdarma</span><strong style="white-space:nowrap">− ' + money(c.shipCharge) + '</strong></div>' : '') +
-        (c.cod ? '<div class="sumrow"><span>Dobírka za doplatek</span><strong style="white-space:nowrap">− ' + money(c.cod) + '</strong></div>' : '');
+        (c.cod ? '<div class="sumrow"><span>Dobírka za doplatek</span><strong style="white-space:nowrap">+ ' + money(c.cod) + '</strong></div>' : '');
     }
     var tot = $('[data-total]');
     if (tot) {

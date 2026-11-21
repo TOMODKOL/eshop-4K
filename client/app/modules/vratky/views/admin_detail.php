@@ -122,8 +122,8 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
     <div class="card"><span class="kicker">Peníze</span>
       <?php $bal = Service::balance($ret); if (abs($bal) > 0.005 || $ret['refund_total'] > 0): ?>
         <div style="font-size:14px;line-height:1.6">Zboží: <?= e(money($ret['refund_total'])) ?>
-          <?php if ((float) ($ret['swap_diff'] ?? 0) != 0): ?><br>Rozdíl ceny při výměně za jiné zboží: <?= (float) $ret['swap_diff'] > 0 ? '+' : '−' ?><?= e(money(abs((float) $ret['swap_diff']))) ?><?php endif; ?>
-          <?php if ((float) ($ret['cod_fee'] ?? 0) > 0): ?><br>Dobírka: −<?= e(money($ret['cod_fee'])) ?><?php endif; ?>
+          <?php if ((float) ($ret['swap_diff'] ?? 0) != 0): ?><br><?= (float) $ret['swap_diff'] > 0 ? 'Jiné zboží levnější – vrátit rozdíl' : 'Jiné zboží dražší – doplatek zákazníka' ?>: <?= e(money(abs((float) $ret['swap_diff']))) ?><?php endif; ?>
+          <?php if ((float) ($ret['cod_fee'] ?? 0) > 0): ?><br>Dobírka (platí zákazník): <?= e(money($ret['cod_fee'])) ?><?php endif; ?>
           <?php if ($ret['postage_applies'] && $ret['postage'] !== null): ?><br>Poštovné za vrácení: −<?= e(money($ret['postage'])) ?><?php endif; ?>
           <?php if ((float) ($ret['ship_charge'] ?? 0) > 0): ?><br>Doprava (pod hranicí dopravy zdarma): −<?= e(money($ret['ship_charge'])) ?><?php endif; ?>
           <?php if ((float) $ret['ship_refund'] > 0): ?><br>Vrácení dopravy: +<?= e(money($ret['ship_refund'])) ?><?php endif; ?>
