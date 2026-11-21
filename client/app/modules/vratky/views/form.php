@@ -74,7 +74,6 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
       <?php $kind = !empty($it['no_size']) || $o('swap_kind', $id, 'velikost') === 'jine' ? 'jine' : 'velikost'; ?>
       <?php if (!empty($it['no_size'])): ?>
       <input class="sr" type="radio" name="swap_kind[<?= $id ?>]" value="jine" checked tabindex="-1" aria-hidden="true">
-      <span class="hint" style="font-size:14px">Toto zboží nemá velikosti, vyměnit ho můžete za jiné zboží.</span>
       <?php else: ?>
       <fieldset class="seg" style="border:0;padding:0;margin:0">
         <legend class="sr">Za co chcete vyměnit</legend>
