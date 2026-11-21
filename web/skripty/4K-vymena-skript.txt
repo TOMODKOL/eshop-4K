@@ -45,8 +45,8 @@
   var bar = document.createElement('div');
   bar.id = 'vx-bar';
   bar.innerHTML = '<div class="in"><span class="t"><span class="k">Vyměňujete</span>' + esc(v.n) + (v.c ? ' · kredit ' + nf(v.c) : '') +
-    '</span><span><a href="' + back + '">Zpět do vratky</a> &nbsp; <a href="#vymena-konec" onclick="setTimeout(function(){location.reload()},0)" style="font-weight:400">Ukončit výměnu</a></span></div>';
-  document.body.appendChild(bar);
+    '</span><span><button type="button" id="vx-back" style="background:none;border:0;padding:0;cursor:pointer;color:#231F20;font:700 14px \'Good Sans\',Arial,sans-serif;text-decoration:underline">Zpět do vratky</button> &nbsp; <a href="#vymena-konec" onclick="setTimeout(function(){location.reload()},0)" style="font-weight:400">Ukončit výměnu</a></span></div>';
+  document.body.appendChild(bar); bar.querySelector('#vx-back').addEventListener('click', function () { location.href = back; }); // e-shop přepisuje absolutní href v odkazech → tlačítko
   document.body.style.paddingBottom = '76px';
 
   function price() {
