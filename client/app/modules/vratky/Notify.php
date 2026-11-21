@@ -45,9 +45,11 @@ final class Notify
         $staff = (string) Config::get('vratky.notify_staff', '');
         if ($staff !== '') {
             $admin = rtrim((string) Config::get('app_url'), '/') . '/admin/vratky/' . $ret['no'];
-            $sum = implode("\n", array_map(fn($l) => Service::ACTIONS[$l['action']] . ': ' . $l['item_name'] . ' × ' . $l['qty'], $lines));
-            Mailer::send($staff, 'Nová ' . $w['n'] . ' ' . Service::displayNo($ret) . ' (' . $ret['customer_name'] . ')',
-                '<p>Nová ' . $w['n'] . ' ' . e(Service::displayNo($ret)) . ' od ' . e($ret['customer_name']) . ' (' . e($ret['email']) . ').</p><pre>' . e($sum) . '</pre><p><a href="' . e($admin) . '">Otevřít v administraci</a></p>');
+            $photos = 0;
+            foreach ($lines as $l) $photos += count(Photos::forLine((int) $l['id']));
+            $html = View::render('vratky:email_staff', ['ret' => $ret, 'lines' => $lines, 'admin' => $admin, 'photos' => $photos,
+                'order' => $ret['order_id'] ? Service::order((int) $ret['order_id']) : null]);
+            Mailer::send($staff, 'Nová ' . $w['n'] . ' ' . Service::displayNo($ret) . ' – ' . ($ret['customer_name'] ?: $ret['email']), $html);
         }
     }
 
