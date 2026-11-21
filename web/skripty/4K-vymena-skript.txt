@@ -38,7 +38,7 @@
     '#vx-box{width:100%;margin:12px 0;display:flex;flex-direction:column;gap:8px;font-family:"Good Sans",Arial,sans-serif}' +
     '#vx-box #vx-go{display:block!important;width:100%!important;height:56px!important;min-height:56px!important;padding:0 16px!important;border:0!important;border-radius:10px!important;background:#ffc524!important;color:#231F20!important;font:700 18px/56px "Good Sans",Arial,sans-serif!important;cursor:pointer}' +
     '#vx-box #vx-go[disabled]{background:#ecece8!important;color:#8a8a86!important;cursor:not-allowed}' +
-    '#vx-box #vx-info{height:auto!important;text-align:center;font-size:14px;line-height:1.4;color:#444}' +
+    '#vx-box #vx-info{height:auto!important;text-align:center;font-size:14px;line-height:1.4;color:#444}#vx-box #vx-go{transition:background-color .15s}#vx-box #vx-go:not([disabled]):hover{background:#e8b52b!important}.PDAddToCart::before{display:none!important}' +
     '.PDAddToCart::before{grid-row:2 !important}.PDAddToCart > :not(#vx-box){grid-row:2 !important}.PDAddToCart > #vx-box{grid-row:1 !important;grid-column:1/-1 !important;margin:0 0 12px !important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;align-self:start!important}';
   document.head.appendChild(css);
 
@@ -105,7 +105,7 @@
       var d = p !== null && v.c ? p - v.c : null;
       txt = (d === null ? '' : (Math.abs(d) < 1 ? 'Bez doplatku · ' : (d > 0 ? 'Doplatíte ' + nf(d) : 'Vrátíme vám ' + nf(-d)) + ' · ')) + 'doprava zdarma';
     }
-    if (go.disabled !== dis) go.disabled = dis;
+    if (go.disabled !== dis) go.disabled = dis; if (atc) for (var k = atc.firstElementChild; k; k = k.nextElementSibling) if (k !== box && k.style.display !== 'none') k.style.setProperty('display', 'none', 'important'); // při výměně bez „Koupit“
     if (info.textContent !== txt) info.textContent = txt;
   }
   render();
