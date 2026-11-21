@@ -39,7 +39,7 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
   <?php if (!$items): ?><div class="card">V této objednávce není zboží, které by šlo vrátit. Zavolejte nám prosím na <?= e(cfg('shop.phone')) ?>.</div><?php endif; ?>
   <?php foreach ($items as $it): $id = (int) $it['id']; $cur = $o('act', $id); $left = $it['qty_left']; ?>
   <div class="card item-card" data-item="<?= $id ?>" data-price="<?= e((string) (float) $it['unit_price']) ?>" data-name="<?= e($it['name']) ?>">
-    <div class="item"><div class="t"><span class="n"><?= e($it['name']) ?></span>
+    <div class="item"><?php if (!empty($it['image'])): ?><img class="thumb" src="<?= e($it['image']) ?>" alt="" width="64" height="64"><?php else: ?><span class="thumb ph" aria-hidden="true"></span><?php endif; ?><div class="t"><span class="n"><?= e($it['name']) ?></span>
       <span class="m"><?= e(money($it['unit_price'])) ?><?= $it['qty_int'] > 1 ? ' / ks · objednáno ' . $it['qty_int'] . ' ks' : '' ?><?= $it['code'] ? ' · kód ' . e($it['code']) : '' ?></span></div></div>
     <?php if ($left < 1): ?>
       <span class="hint">Tato položka už je ve vratce.</span>
@@ -73,7 +73,7 @@ $steps = ['Položky', 'Upřesnění', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
   <?php foreach ($items as $it): $id = (int) $it['id']; if ($it['qty_left'] < 1) continue; ?>
   <div class="card detail" data-detail="<?= $id ?>">
     <span class="tag" data-tag></span>
-    <div class="item"><div class="t"><span class="n"><?= e($it['name']) ?></span><span class="m"><?= e(money($it['unit_price'])) ?></span></div></div>
+    <div class="item"><?php if (!empty($it['image'])): ?><img class="thumb" src="<?= e($it['image']) ?>" alt="" width="64" height="64"><?php else: ?><span class="thumb ph" aria-hidden="true"></span><?php endif; ?><div class="t"><span class="n"><?= e($it['name']) ?></span><span class="m"><?= e(money($it['unit_price'])) ?></span></div></div>
 
     <div data-for="vratit">
       <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">

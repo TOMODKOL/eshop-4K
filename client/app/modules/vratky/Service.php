@@ -72,6 +72,7 @@ final class Service
             $i['qty_left'] = max(0, $i['qty_int'] - $used);
             $i['sizes'] = self::sizeOptions($i['name']);
             $i['eshop'] = $eshop && $i['qty_left'] > 0 && !self::isServiceLine($i) ? Eshop::sizes(isset($i['stock_id']) ? (int) $i['stock_id'] : null) : null;
+            $i['image'] = $eshop && !self::isServiceLine($i) ? Eshop::image(isset($i['stock_id']) ? (int) $i['stock_id'] : null) : '';
         }
         return array_values(array_filter($items, fn($i) => !self::isServiceLine($i)));
     }

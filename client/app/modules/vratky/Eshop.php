@@ -14,24 +14,55 @@ final class Eshop
 {
     private const TTL = 1800;
 
-    /**
-     * @return array{sizes: list<array{value:string, avail:string, cls:string, sku:string, current:bool}>}|null
-     *   null = velikosti nejde zjistit (karta bez variant, web nedostupný…) → formulář použije náhradní výběr
-     */
+    /** Velikosti zboží jako na e-shopu, null = nejdou zjistit (karta bez variant, web nedostupný…) → formulář použije náhradní výběr. */
     public static function sizes(?int $stockId): ?array
     {
+        $p = self::page($stockId);
+        return $p && !empty($p['sizes']) ? ['sizes' => $p['sizes']] : null;
+    }
+
+    /** Náhled zboží (malý obrázek z CDN e-shopu), '' = není. */
+    public static function image(?int $stockId): string
+    {
+        $p = self::page($stockId);
+        return (string) ($p['image'] ?? '');
+    }
+
+    /** Stránka zboží na e-shopu podle ID zásoby: velikosti + obrázek. Drží se 30 minut v storage/cache. */
+    private static function page(?int $stockId): ?array
+    {
+        static $mem = [];
         if (!$stockId) return null;
+        if (array_key_exists($stockId, $mem)) return $mem[$stockId];
         $dir = APP_ROOT . '/storage/cache';
         $file = "$dir/eshop_$stockId.json";
         if (is_file($file) && filemtime($file) > time() - self::TTL) {
             $c = json_decode((string) file_get_contents($file), true);
-            return is_array($c) && !empty($c['sizes']) ? $c : null;
+            return $mem[$stockId] = is_array($c) ? $c : null;
         }
         $html = self::fetch(rtrim((string) (Config::get('vratky.eshop_url') ?: 'https://www.4kluciodkol.cz'), '/') . "/x-p$stockId/");
-        $res = $html === null ? null : self::parse($html);
+        $res = $html === null ? null : ['sizes' => self::parse($html)['sizes'] ?? [], 'image' => self::parseImage($html, $stockId)];
         if (!is_dir($dir)) @mkdir($dir, 0775, true);
-        @file_put_contents($file, json_encode($res ?? ['sizes' => []], JSON_UNESCAPED_UNICODE));
-        return $res;
+        @file_put_contents($file, json_encode($res ?? ['sizes' => [], 'image' => ''], JSON_UNESCAPED_UNICODE));
+        return $mem[$stockId] = $res;
+    }
+
+    /** Obrázek varianty (podle ID zásoby) nebo celého zboží z JSON-LD, zmenšený na náhled (CDN …/0/… = 220 px). */
+    public static function parseImage(string $html, int $stockId = 0): string
+    {
+        if (!preg_match_all('~<script[^>]+application/ld\+json[^>]*>(.*?)</script>~is', $html, $m)) return '';
+        $img = '';
+        foreach ($m[1] as $json) {
+            $j = json_decode(trim($json), true) ?: json_decode(html_entity_decode(trim($json)), true);
+            if (!is_array($j) || !in_array($j['@type'] ?? '', ['ProductGroup', 'Product'], true)) continue;
+            $img = (string) (is_array($j['image'] ?? null) ? ($j['image'][0] ?? '') : ($j['image'] ?? ''));
+            foreach ((array) ($j['hasVariant'] ?? []) as $v) {
+                if ($stockId && (string) ($v['identifier'] ?? '') === (string) $stockId && !empty($v['image'])) { $img = (string) $v['image']; break; }
+            }
+            break;
+        }
+        if (!str_starts_with($img, 'https://')) return '';
+        return (string) preg_replace('~(/images/\d+/[0-9a-f]+/)\d+/~', '${1}0/', $img);
     }
 
     private static function fetch(string $url): ?string
