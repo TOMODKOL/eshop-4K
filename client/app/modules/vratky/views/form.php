@@ -38,7 +38,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     <?php foreach ($prev as $p): ?><a class="ordrow" href="<?= url('/vratky/stav/' . $p['token']) ?>"><span class="t"><strong><?= e($p['action'] === 'reklamovat' ? 'Reklamace' : 'Vratka') ?> <?= e($p['no']) ?></strong> <?= e(Service::STATUS[$p['status']] ?? $p['status']) ?> · zadáno <?= e(date_cz(substr($p['created_at'], 0, 10))) ?></span><span aria-hidden="true">Stav →</span></a><?php endforeach; ?>
   </div>
   <?php endif; ?>
-  <?php if ($dl['can_return']): ?><div class="freeswap big"><b>Výměna = doprava zdarma</b><span>Vyměňte zboží za jinou velikost nebo za jiné zboží a neplatíte nic za dopravu k nám ani za poslání nového zboží. Při vrácení zboží se poštovné <?= e(money((float) $postage)) ?> odečte.</span></div><?php endif; ?>
+  <?php if ($dl['can_return']): ?><div class="freeswap big"><b>Výměna = doprava zdarma</b><span>Vyměňte za jinou velikost nebo za jiné zboží a neplatíte nic za dopravu k nám ani k vám. Při vrácení zboží se poštovné <?= e(money((float) $postage)) ?> odečte.</span></div><?php endif; ?>
   <?php if (!$items): ?><div class="card">V této objednávce není zboží, které by šlo vrátit. Zavolejte nám prosím na <?= e(cfg('shop.phone')) ?>.</div><?php endif; ?>
   <?php foreach ($items as $it): $id = (int) $it['id']; $cur = $o('act', $id); $left = $it['qty_left']; ?>
   <div class="card item-card" data-item="<?= $id ?>" data-price="<?= e((string) (float) $it['unit_price']) ?>" data-name="<?= e($it['name']) ?>">
