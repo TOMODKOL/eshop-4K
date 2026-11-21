@@ -21,13 +21,14 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
     <?php elseif ($ret['ship_method'] === 'vlastni'): ?>
       <div class="card"><span class="kicker">Co teď</span><p style="margin:0">Zboží zabalte, přiložte papír s číslem <?= e($w['g']) ?> <strong><?= e(Service::displayNo($ret)) ?></strong> a pošlete ho na vlastní náklady (ne na dobírku) na adresu <strong><?= e(cfg('shop.name')) ?>, <?= e(cfg('shop.address')) ?></strong>.</p></div>
     <?php elseif ($ret['packeta_password']): ?>
-      <div class="code"><span class="kicker" style="color:var(--ink)">Podací kód Zásilkovny</span><span class="v"><?= e($ret['packeta_password']) ?></span><span style="font-size:13px">Kód jsme vám poslali i e-mailem.</span></div>
-      <div class="card"><div class="steps dark">
-        <div><b>1</b><span>Zboží zabalte, ideálně do původní krabice.</span></div>
-        <div><b>2</b><span>Na balík napište kód a „4 KLUCI OD KOL“.</span></div>
-        <div><b>3</b><span><?= $ret['ship_method'] === 'zbox' ? 'V Z-BOXu kód zadejte a balík vložte.' : 'Na výdejním místě kód nadiktujte obsluze.' ?></span></div></div></div>
+      <div class="zbox"><img class="logo" src="<?= asset('zasilkovna.svg') ?>" alt="Zásilkovna" width="159" height="56">
+        <div class="cd"><span class="k">Podací kód</span><span class="v"><?= e($ret['packeta_password']) ?></span></div>
+        <ol><li>Zboží zabalte, ideálně do původní krabice.</li><li>Na balík napište kód a „4 KLUCI OD KOL“.</li>
+          <li><?= $ret['ship_method'] === 'zbox' ? 'V Z-BOXu kód zadejte a balík vložte.' : 'Na výdejním místě kód nadiktujte obsluze.' ?></li></ol>
+        <span class="znote">Kód jsme vám poslali i e-mailem. Podání je zdarma.</span></div>
     <?php else: ?>
-      <div class="code"><span class="kicker" style="color:var(--ink)">Podací kód Zásilkovny</span><span style="font-size:15px;font-weight:700">Pošleme vám ho e-mailem během pracovního dne.</span></div>
+      <div class="zbox"><img class="logo" src="<?= asset('zasilkovna.svg') ?>" alt="Zásilkovna" width="159" height="56">
+        <div class="cd"><span class="k">Podací kód</span><span style="font-size:15px;font-weight:700">Pošleme vám ho e-mailem během pracovního dne.</span></div></div>
     <?php endif; ?>
   <?php endif; ?>
   <?php

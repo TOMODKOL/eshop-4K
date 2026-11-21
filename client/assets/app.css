@@ -323,3 +323,14 @@ label.opt.on:hover{border-color:#e8b52b}
 
 /* upřesnění rovnou v kartě položky */
 .detail.inl{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line2);padding-top:14px;margin-top:2px}
+
+/* box s podacím kódem Zásilkovny – barva a logo podle brand manuálu Zásilkovny (bílé logo na červené #BA1B02), rohy a písmo naše */
+.zbox{background:#BA1B02;color:#fff;border-radius:12px;padding:4px 20px 20px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.zbox .logo{display:block;height:56px;width:auto;margin:0 0 0 -20px;align-self:flex-start;max-width:none}
+.zbox .cd{background:#fff;color:#202020;border-radius:10px;padding:14px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.zbox .cd .k{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#707070}
+.zbox .cd .v{font-family:"FK Screamer",Impact,sans-serif;font-size:60px;line-height:1;letter-spacing:.06em;word-break:break-all}
+.zbox ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;counter-reset:z}
+.zbox li{display:flex;gap:12px;align-items:baseline;font-size:15px;line-height:1.4;counter-increment:z}
+.zbox li::before{content:counter(z);flex:0 0 26px;height:26px;border:1.5px solid #fff;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;box-sizing:border-box}
+.zbox .znote{font-size:13px;color:#FBDBDB}

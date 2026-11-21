@@ -9,9 +9,21 @@ require __DIR__ . '/email_head.php'; ?>
   <p style="margin:0;font-size:15px;line-height:1.6;color:#444"><?= nl2br(e($text)) ?></p>
 </td></tr>
 <?php if ($showCode && $ret['packeta_password']): ?>
-<tr><td style="padding:16px 28px 0"><div style="background:#ffc524;border-radius:12px;padding:18px;text-align:center">
-  <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Podací kód Zásilkovny</div>
-  <div style="font-size:34px;font-weight:700;letter-spacing:3px;margin-top:4px"><?= e($ret['packeta_password']) ?></div></div></td></tr>
+<tr><td style="padding:16px 28px 0">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#BA1B02;color:#ffffff;border-radius:12px;border-collapse:separate">
+    <tr><td style="padding:4px 0 0"><img src="<?= e(rtrim((string) cfg('app_url'), '/')) ?>/assets/zasilkovna.png" width="170" height="60" alt="Zásilkovna" style="display:block;border:0;width:170px;height:auto;border-radius:12px 0 0 0"></td></tr>
+    <tr><td style="padding:0 20px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;color:#202020;border-radius:10px;border-collapse:separate"><tr><td style="padding:14px 16px 16px;text-align:center">
+        <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#707070">Podací kód</div>
+        <div style="font-size:36px;font-weight:700;letter-spacing:4px;margin-top:4px"><?= e($ret['packeta_password']) ?></div>
+      </td></tr></table>
+    </td></tr>
+    <tr><td style="padding:14px 20px 20px;font-size:14px;line-height:1.5;color:#ffffff">
+      <b>1.</b> Zboží zabalte, ideálně do původní krabice.<br>
+      <b>2.</b> Na balík napište kód a „4 KLUCI OD KOL“.<br>
+      <b>3.</b> <?= $ret['ship_method'] === 'zbox' ? 'V Z-BOXu kód zadejte a balík vložte.' : 'Na výdejním místě kód nadiktujte obsluze.' ?>
+    </td></tr>
+  </table></td></tr>
 <?php endif; ?>
 <tr><td style="padding:18px 28px 0">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.45">

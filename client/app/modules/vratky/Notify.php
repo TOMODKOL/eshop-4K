@@ -83,11 +83,11 @@ final class Notify
         }
         if ($ret['ship_method'] === 'vlastni') {
             return 'Zboží zabalte, přiložte papír s číslem ' . Service::words(Service::lines((int) $ret['id']))['g'] . ' ' . Service::displayNo($ret)
-                . ' a pošlite ho na vlastní náklady (ne na dobírku) na adresu ' . Config::get('shop.name') . ', ' . Config::get('shop.address') . '.';
+                . ' a pošlete ho na vlastní náklady (ne na dobírku) na adresu ' . Config::get('shop.name') . ', ' . Config::get('shop.address') . '.';
         }
         if ($ret['packeta_password']) {
-            $where = $ret['ship_method'] === 'zbox' ? 'V Z-BOXu zadejte podací kód a balík vložte.' : 'Na výdejním místě Zásilkovny nadiktujte podací kód obsluze.';
-            return 'Zboží zabalte, na balík napište kód a „4 KLUCI OD KOL“. ' . $where . ' Nic nemusíte tisknout.';
+            // postup krok za krokem je v červeném boxu Zásilkovny pod textem
+            return 'Zboží pošlete přes Zásilkovnu – podání je zdarma a nic nemusíte tisknout.';
         }
         return 'Podací kód Zásilkovny vám pošleme e-mailem během pracovního dne.';
     }
