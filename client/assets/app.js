@@ -365,6 +365,18 @@
     document.addEventListener('click', close, true);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
   }
+  // zamítnutí jen s důvodem (zákazník ho dostane v e-mailu)
+  var st = document.getElementById('status'), nl = document.querySelector('[data-note-label]'), nt = document.getElementById('note');
+  if (st && nl && nt) {
+    var cur = st.value, ph = nt.getAttribute('placeholder');
+    var sync = function () {
+      var rej = st.value === 'zamitnuto' && cur !== 'zamitnuto';
+      nl.textContent = rej ? 'Důvod zamítnutí (dostane ho zákazník)' : 'Poznámka';
+      nt.required = rej;
+      nt.setAttribute('placeholder', rej ? 'Např. Zboží je použité / chybí původní krabice…' : ph);
+    };
+    st.addEventListener('change', sync); sync();
+  }
   document.querySelectorAll('form[data-once]').forEach(function (f) {
     f.addEventListener('submit', function (e) {
       if (f.dataset.sent) { e.preventDefault(); return; }

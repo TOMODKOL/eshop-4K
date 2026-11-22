@@ -63,13 +63,14 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
     <?php foreach ($lines as $l): $nm = $l['item_name'] . ($l['qty'] > 1 ? ' × ' . (int) $l['qty'] . ' ks' : ''); $pr = money((float) $l['unit_price'] * (int) $l['qty']); $io = $imgs[$l['id']]['old'] ?? ''; $in = $imgs[$l['id']]['new'] ?? ''; ?>
       <div class="ai"><span class="ai-k"><?= e($l['action'] === 'vymenit' && ($l['new_name'] ?? '') === '' ? 'Výměna velikosti' : Service::actionLabel($l)) ?></span>
         <?php if ($l['action'] === 'vratit'): ?><?= $ln('Vracíte', $nm, $pr, false, $io) ?>
+        <?php elseif ($l['action'] === 'vymenit' && $ret['status'] === 'zamitnuto'): ?><?= $ln('Posíláte', $nm, '', false, $io) ?>
         <?php elseif ($l['action'] === 'vymenit' && ($l['new_name'] ?? '') !== ''): $nq = max(1, (int) ($l['new_qty'] ?? 1)); ?><?= $ln('Posíláte', $nm, $pr, false, $io) ?><?= $ln('Dostanete', $l['new_name'] . ($nq > 1 ? ' × ' . $nq . ' ks' : ''), $l['new_price'] !== null ? money((float) $l['new_price'] * $nq) : '', false, $in) ?>
         <?php elseif ($l['action'] === 'vymenit'): ?><?= $ln('Posíláte', $nm, '', false, $io) ?><?= $ln('Dostanete', 'velikost ' . $l['size_to'], '', false, $in) ?>
         <?php else: ?><?= $ln('Posíláte', $nm, '', false, $io) ?><?= trim((string) $l['defect_text']) !== '' ? $ln('Vada', mb_strimwidth((string) $l['defect_text'], 0, 160, '…'), '', true) : '' ?><?php endif; ?>
       </div>
     <?php endforeach; ?>
     </div>
-    <?php if ($ret['refund_total'] > 0 || abs($bal) > 0.005 || (float) ($ret['swap_diff'] ?? 0) != 0): ?>
+    <?php if ($ret['status'] !== 'zamitnuto' && ($ret['refund_total'] > 0 || abs($bal) > 0.005 || (float) ($ret['swap_diff'] ?? 0) != 0)): ?>
     <div class="ai-sum">
       <?php if ((float) $ret['refund_total'] > 0): ?><div class="row"><span>Vrátíme za zboží</span><strong><?= e(money((float) $ret['refund_total'])) ?></strong></div><?php endif; ?>
       <?php if ((float) ($ret['swap_diff'] ?? 0) != 0): ?><div class="row"><span><?= (float) $ret['swap_diff'] > 0 ? 'Vrátíme rozdíl – nové zboží je levnější' : 'Doplatek – nové zboží je dražší' ?></span><strong><?= e(money(abs((float) $ret['swap_diff']))) ?></strong></div><?php endif; ?>

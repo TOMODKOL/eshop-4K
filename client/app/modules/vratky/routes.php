@@ -262,6 +262,10 @@ Http::post('/admin/vratky/{no}', function (string $no) {
     if ($status !== '' && !isset(Service::STATUS[$status])) $status = '';
     $note = mb_substr(Http::input('note'), 0, 3000);
     $notify = !empty($_POST['notify']);
+    if ($status === 'zamitnuto' && $status !== $ret['status'] && $note === '') {
+        Session::flash('Napište důvod zamítnutí – zákazník ho dostane v e-mailu.', 'err');
+        Http::redirect('/admin/vratky/' . $no);
+    }
     if (($status === '' || $status === $ret['status']) && $note === '') {
         // stejný stav bez poznámky = nic nového (i opakované kliknutí na Uložit) → žádný další e-mail
         Session::flash('Nic se nezměnilo – stav už je „' . (Service::STATUS[$ret['status']] ?? $ret['status']) . '“. E-mail se znovu neposlal.', 'err');

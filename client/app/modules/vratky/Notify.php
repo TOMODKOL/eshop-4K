@@ -96,7 +96,7 @@ final class Notify
             'kicker' => Service::title($ret, $lines),
             'heading' => $label,
             'ret' => $ret, 'lines' => $lines, 'showCode' => false,
-            'text' => $note !== '' ? $note : self::statusText($ret['status'], $w),
+            'text' => $ret['status'] === 'zamitnuto' ? self::statusText('zamitnuto', $w, $note) : ($note !== '' ? $note : self::statusText($ret['status'], $w)),
             'url' => self::statusUrl($ret),
         ]);
         Mailer::send($ret['email'], Service::title($ret, $lines) . ': ' . $label, $html);
@@ -133,13 +133,13 @@ final class Notify
         return 'Podací kód Zásilkovny vám pošleme e-mailem během pracovního dne.';
     }
 
-    public static function statusText(string $s, array $w = ['N' => 'Vratka', 'A' => 'Vratku', 'g' => 'vratky']): string
+    public static function statusText(string $s, array $w = [], string $reason = ''): string
     {
         return match ($s) {
             'na_ceste' => 'Balík je na cestě k nám. Jakmile dorazí, zkontrolujeme ho.',
             'dorazilo' => 'Balík dorazil a kontrolujeme ho. Ozveme se, jak to dopadlo.',
             'vyrizeno' => 'Vše je vyřízené. Děkujeme.',
-            'zamitnuto' => 'Bohužel jsme to nemohli přijmout. Podrobnosti vám napíšeme nebo zavoláme.',
+            'zamitnuto' => $reason !== '' ? 'Bohužel to nemůžeme přijmout. Důvod: ' . rtrim($reason, " .") . '. Máte-li dotaz, zavolejte nám.' : 'Bohužel to nemůžeme přijmout. Podrobnosti vám napíšeme nebo zavoláme.',
             default => 'Stav se změnil.',
         };
     }

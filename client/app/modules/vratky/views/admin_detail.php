@@ -44,7 +44,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
       <strong>Změnit stav nebo připsat poznámku</strong>
       <div class="field"><label class="l" for="status">Stav</label>
         <select class="f" id="status" name="status"><?php foreach (Service::STATUS as $k => $lab): ?><option value="<?= $k ?>" <?= $k === $ret['status'] ? 'selected' : '' ?>><?= e($lab) ?></option><?php endforeach; ?></select></div>
-      <div class="field"><label class="l" for="note">Poznámka</label><textarea class="f" id="note" name="note" rows="3" placeholder="Např. Peníze odeslány 21. 11. / Nová velikost M odeslána, sledování Z 123…"></textarea></div>
+      <div class="field"><label class="l" for="note" data-note-label>Poznámka</label><textarea class="f" id="note" name="note" rows="3" placeholder="Např. Peníze odeslány 21. 11. / Nová velikost M odeslána, sledování Z 123…"></textarea></div>
       <?php if ($ret['email'] !== ''): ?><label class="chk"><input type="checkbox" name="notify" value="1" checked><span>Poslat zákazníkovi e-mail (vidí stav i tuto poznámku)</span></label>
       <?php else: ?><span class="hint">Zákazník nemá e-mail – o změně ho informujte telefonem.</span><?php endif; ?>
       <button class="btn" style="align-self:flex-start">Uložit</button>
