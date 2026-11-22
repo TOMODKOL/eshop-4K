@@ -350,3 +350,13 @@ span.ai-img{background:var(--soft)}
 .pthumb{width:64px;height:64px;object-fit:contain;border:1px solid var(--line2);border-radius:8px;background:#fff;flex:0 0 auto}
 .pthumb.sm{width:44px;height:44px}
 .parr{font-weight:700;color:var(--muted)}
+
+/* 4K – potvrzení po uložení v administraci (nahoře uprostřed, samo zmizí) */
+.toast-wrap{position:fixed;left:0;right:0;top:calc(16px + env(safe-area-inset-top, 0px));z-index:1000;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 max(16px, env(safe-area-inset-left, 0px));pointer-events:none;transition:opacity .3s}
+.toast-wrap.hide{opacity:0}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:12px;max-width:560px;width:100%;box-sizing:border-box;background:var(--ink);color:#fff;border-radius:12px;padding:14px 16px;font-size:15px;font-weight:700;box-shadow:0 8px 28px rgba(0,0,0,.25)}
+.toast .ic{flex:0 0 28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--green);font-size:15px}
+.toast.err .ic{background:var(--red)}
+.toast .tx{flex:1;min-width:0;line-height:1.35}
+.toast .x{background:none;border:0;color:#fff;font-size:22px;line-height:1;cursor:pointer;padding:0 4px;opacity:.7}
+.toast .x:hover{opacity:1}

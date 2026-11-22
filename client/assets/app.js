@@ -353,3 +353,21 @@
 
   show(parseInt(form.getAttribute('data-start'), 10) || 1);
 })();
+
+/* 4K – administrace: potvrzení po uložení + jedno odeslání formuláře */
+(function () {
+  var t = document.querySelector('[data-toast]');
+  if (t) {
+    var hide = function () { t.classList.add('hide'); setTimeout(function () { t.remove(); }, 300); };
+    var tm = setTimeout(hide, 6000);
+    t.addEventListener('click', function (e) { if (e.target.closest('[data-toast-close]')) { clearTimeout(tm); hide(); } });
+  }
+  document.querySelectorAll('form[data-once]').forEach(function (f) {
+    f.addEventListener('submit', function (e) {
+      if (f.dataset.sent) { e.preventDefault(); return; }
+      f.dataset.sent = '1';
+      var b = f.querySelector('button:not([type="button"])');
+      if (b) { b.disabled = true; b.textContent = 'Ukládám…'; }
+    });
+  });
+})();

@@ -32,7 +32,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
     </div>
     <?php endforeach; ?>
 
-    <form class="card" method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>">
+    <form class="card" method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" data-once>
       <?= csrf_field() ?>
       <strong>Změnit stav nebo připsat poznámku</strong>
       <div class="field"><label class="l" for="status">Stav</label>
@@ -89,7 +89,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
       <?php elseif (Service::usesPacketa((string) $ret['ship_method'])): ?>
         <?php if ($ret['packeta_error']): ?><div class="warn" style="font-size:13px"><?= e($ret['packeta_error']) ?></div><?php endif; ?>
         <?php if (Packeta::enabled()): ?>
-        <form method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0"><?= csrf_field() ?><input type="hidden" name="act" value="packeta"><button class="pill">Vytvořit podací kód a poslat zákazníkovi</button></form>
+        <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0"><?= csrf_field() ?><input type="hidden" name="act" value="packeta"><button class="pill">Vytvořit podací kód a poslat zákazníkovi</button></form>
         <?php else: ?><span class="hint">Zásilkovna zatím není zapnutá – kód vytvořte v klientské sekci a pošlete zákazníkovi poznámkou.</span><?php endif; ?>
       <?php endif; ?>
     </div>
@@ -116,7 +116,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
         <?php endforeach; ?>
         <?php if ($docState === 'chyba'): ?><div class="warn" style="font-size:13px"><?= e((string) $ret['doc_error']) ?></div><?php endif; ?>
         <?php if (in_array($ret['status'], ['dorazilo', 'v_reseni'], true)): ?>
-        <form method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
+        <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
           <input type="hidden" name="act" value="<?= $docState === 'chyba' ? 'doklad_znovu' : 'doklad' ?>">
           <?php foreach ($lines as $l): if ($l['action'] !== 'vymenit') continue; ?>
             <div class="field" style="margin:0"><label class="l" for="nc<?= (int) $l['id'] ?>">Kód zásoby – <?= e(($l['new_name'] ?? '') !== '' ? $l['new_name'] : 'nová velikost ' . $l['size_to']) ?></label>
