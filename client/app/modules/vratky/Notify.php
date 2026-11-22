@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Modules\Vratky;
 
 use App\Core\Config;
+use App\Core\Db;
 use App\Core\Mailer;
 use App\Core\View;
 
@@ -34,14 +35,13 @@ final class Notify
             return;
         }
         $w = Service::words($lines);
-        $html = View::render('vratky:email', [
-            'kicker' => Service::title($ret, $lines),
-            'heading' => 'Děkujeme, máme to',
-            'ret' => $ret, 'lines' => $lines, 'showCode' => true,
-            'text' => self::nextStepText($ret),
-            'url' => self::statusUrl($ret),
-        ]);
-        Mailer::send($ret['email'], Service::title($ret, $lines) . ' – ' . self::shortNext($ret), $html);
+        // výměna s doplatkem převodem: potvrzení počká na zálohovou fakturu (pomocník ji vystaví do pár minut),
+        // aby zákazník dostal jeden e-mail i s platebními údaji a QR kódem; nejpozději po 15 minutách odejde samo
+        if (Service::advanceAmount($ret) > 0.005 && !empty($ret['xorder_no']) && in_array($ret['xorder_state'] ?? '', ['ceka', ''], true)) {
+            Db::exec('UPDATE returns SET notify_pending = 1 WHERE id = ?', [$ret['id']]);
+        } else {
+            self::confirm($ret, $lines);
+        }
         self::packetaMissing($ret);
 
         $staff = (string) Config::get('vratky.notify_staff', '');
@@ -53,6 +53,29 @@ final class Notify
                 'order' => $ret['order_id'] ? Service::order((int) $ret['order_id']) : null]);
             Mailer::send($staff, Service::title($ret, $lines) . ' (' . Service::displayNo($ret) . ') – ' . ($ret['customer_name'] ?: $ret['email']), $html);
         }
+    }
+
+    /** Potvrzení zákazníkovi (s platebními údaji, když už je zálohová faktura). */
+    public static function confirm(array $ret, ?array $lines = null): void
+    {
+        if ($ret['email'] === '') return;
+        $lines ??= Service::lines((int) $ret['id']);
+        $pay = $ret['zf_no'] && !$ret['zf_paid'] ? self::payData($ret) : null;
+        $html = View::render('vratky:email', [
+            'kicker' => Service::title($ret, $lines),
+            'heading' => 'Děkujeme, máme to',
+            'ret' => $ret, 'lines' => $lines, 'showCode' => true,
+            'text' => self::nextStepText($ret),
+            'pay' => $pay,
+            'url' => self::statusUrl($ret),
+        ]);
+        Mailer::send($ret['email'], Service::title($ret, $lines) . ' – ' . self::shortNext($ret) . ($pay ? ', doplatek ' . money($pay['amount']) : ''), $html);
+    }
+
+    private static function payData(array $ret): array
+    {
+        return ['amount' => Service::advanceAmount($ret), 'account' => (string) Config::get('shop.bank_account', ''), 'vs' => Service::payVs($ret),
+            'qr' => Service::spayd($ret) !== '' ? rtrim((string) Config::get('app_url'), '/') . '/vratky/qr/' . $ret['token'] : ''];
     }
 
     /** Zálohová faktura na doplatek výměny je v Pohodě → zákazníkovi platební údaje (podruhé jako upomínka po splatnosti). */
@@ -69,8 +92,7 @@ final class Notify
                 ? 'Doplatek za výměnu jsme zatím nedostali. Pošlete ho prosím převodem podle údajů níže, nové zboží pro vás pořád držíme. Pokud jste už platili, děkujeme – platby se nám propojí do pár dnů.'
                 : 'Nové zboží máme pro vás zarezervované. Doplatek prosím pošlete převodem do ' . Service::PAY_DUE_DAYS . ' dnů podle údajů níže. '
                     . 'Nové zboží odešleme, jakmile k nám dorazí vaše zboží a platba.',
-            'pay' => ['amount' => $amount, 'account' => (string) Config::get('shop.bank_account', ''), 'vs' => Service::payVs($ret),
-                'qr' => Service::spayd($ret) !== '' ? rtrim((string) Config::get('app_url'), '/') . '/vratky/qr/' . $ret['token'] : ''],
+            'pay' => self::payData($ret),
             'url' => self::statusUrl($ret),
         ]);
         Mailer::send($ret['email'], Service::title($ret, $lines) . ($reminder ? ' – připomínáme doplatek ' : ' – doplatek ') . money($amount), $html);

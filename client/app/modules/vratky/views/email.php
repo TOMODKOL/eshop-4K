@@ -8,16 +8,6 @@ require __DIR__ . '/email_head.php'; ?>
   <p style="margin:0 0 12px;font-size:22px;font-weight:700"><?= e($heading) ?></p>
   <p style="margin:0;font-size:15px;line-height:1.6;color:#444"><?= nl2br(e($text)) ?></p>
 </td></tr>
-<?php if (!empty($pay)): ?>
-<tr><td style="padding:16px 28px 0">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f7f5;border-radius:12px;border-collapse:separate;font-size:15px;line-height:1.5">
-    <tr><td style="padding:16px 18px 4px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#777" colspan="2">Platební údaje</td></tr>
-    <tr><td style="padding:4px 18px;color:#777">Částka</td><td style="padding:4px 18px;font-weight:700;text-align:right"><?= e(money($pay['amount'])) ?></td></tr>
-    <tr><td style="padding:4px 18px;color:#777">Číslo účtu</td><td style="padding:4px 18px;font-weight:700;text-align:right"><?= e($pay['account']) ?></td></tr>
-    <tr><td style="padding:4px 18px <?= !empty($pay['qr']) ? '4px' : '16px' ?>;color:#777">Variabilní symbol</td><td style="padding:4px 18px <?= !empty($pay['qr']) ? '4px' : '16px' ?>;font-weight:700;text-align:right"><?= e($pay['vs']) ?></td></tr>
-    <?php if (!empty($pay['qr'])): ?><tr><td colspan="2" style="padding:10px 18px 18px;text-align:center"><img src="<?= e($pay['qr']) ?>" width="180" height="180" alt="QR platba" style="display:inline-block;width:180px;height:180px;border-radius:8px;background:#ffffff"><br><span style="font-size:13px;color:#777">QR platba – naskenujte v bankovní aplikaci</span></td></tr><?php endif; ?>
-  </table></td></tr>
-<?php endif; ?>
 <?php if ($showCode && $ret['packeta_password']): ?>
 <tr><td style="padding:16px 28px 0">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#BA1B02;color:#ffffff;border-radius:12px;border-collapse:separate">
@@ -70,10 +60,20 @@ require __DIR__ . '/email_head.php'; ?>
     <?php foreach ($rows as [$k, $v]): ?><tr><td style="padding:4px 0;color:#777"><?= e($k) ?></td><td style="padding:4px 0;text-align:right;white-space:nowrap"><?= e($v) ?></td></tr><?php endforeach; ?>
     <tr><td style="padding:12px 0 0;border-top:2px solid #231F20;font-size:16px;font-weight:700"><?= $bal < -0.005 ? (!empty($ret['zf_paid']) ? 'Celkem jste doplatili' : 'Celkem doplatíte') : ($bal > 0.005 ? 'Celkem vám vrátíme' : 'Celkem') ?></td>
       <td style="padding:12px 0 0;border-top:2px solid #231F20;font-size:20px;font-weight:700;text-align:right;white-space:nowrap"><?= abs($bal) > 0.005 ? e(money(abs($bal))) : 'vychází nastejno' ?></td></tr>
-    <?php if ($bal < -0.005): ?><tr><td colspan="2" style="padding:4px 0 0;font-size:13px;color:#777"><?= ($ret['pay_method'] ?? '') === 'dobirka' ? 'Zaplatíte na dobírku při převzetí nového zboží.' : (!empty($pay) ? 'Zaplatíte převodem podle platebních údajů výše.' : (!empty($ret['zf_paid']) ? 'Doplatek jsme přijali, děkujeme.' : 'Zaplatíte převodem – platební údaje vám pošleme e-mailem.')) ?></td></tr>
+    <?php if ($bal < -0.005): ?><tr><td colspan="2" style="padding:4px 0 0;font-size:13px;color:#777"><?= ($ret['pay_method'] ?? '') === 'dobirka' ? 'Zaplatíte na dobírku při převzetí nového zboží.' : (!empty($pay) ? 'Zaplatíte převodem do ' . Service::PAY_DUE_DAYS . ' dnů podle platebních údajů níže.' : (!empty($ret['zf_paid']) ? 'Doplatek jsme přijali, děkujeme.' : 'Zaplatíte převodem – platební údaje vám pošleme e-mailem.')) ?></td></tr>
     <?php elseif ($bal > 0.005 && ($ret['bank_account'] ?? '') !== ''): ?><tr><td colspan="2" style="padding:4px 0 0;font-size:13px;color:#777">Pošleme na účet <?= e($ret['bank_account']) ?>, jakmile zboží zkontrolujeme.</td></tr><?php endif; ?>
   </table>
   <?php endif; ?>
 </td></tr>
+<?php if (!empty($pay)): ?>
+<tr><td style="padding:16px 28px 0">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f7f5;border-radius:12px;border-collapse:separate;font-size:15px;line-height:1.5">
+    <tr><td style="padding:16px 18px 4px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#777" colspan="2">Platební údaje</td></tr>
+    <tr><td style="padding:4px 18px;color:#777">Částka</td><td style="padding:4px 18px;font-weight:700;text-align:right"><?= e(money($pay['amount'])) ?></td></tr>
+    <tr><td style="padding:4px 18px;color:#777">Číslo účtu</td><td style="padding:4px 18px;font-weight:700;text-align:right"><?= e($pay['account']) ?></td></tr>
+    <tr><td style="padding:4px 18px <?= !empty($pay['qr']) ? '4px' : '16px' ?>;color:#777">Variabilní symbol</td><td style="padding:4px 18px <?= !empty($pay['qr']) ? '4px' : '16px' ?>;font-weight:700;text-align:right"><?= e($pay['vs']) ?></td></tr>
+    <?php if (!empty($pay['qr'])): ?><tr><td colspan="2" style="padding:10px 18px 18px;text-align:center"><img src="<?= e($pay['qr']) ?>" width="180" height="180" alt="QR platba" style="display:inline-block;width:180px;height:180px;border-radius:8px;background:#ffffff"><br><span style="font-size:13px;color:#777">QR platba – naskenujte v bankovní aplikaci</span></td></tr><?php endif; ?>
+  </table></td></tr>
+<?php endif; ?>
 <tr><td style="padding:20px 28px 0"><a href="<?= e($url) ?>" style="display:inline-block;background:#231F20;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 20px;border-radius:10px">Zobrazit stav →</a></td></tr>
 <?php require __DIR__ . '/email_foot.php'; ?>

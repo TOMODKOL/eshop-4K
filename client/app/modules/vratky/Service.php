@@ -658,7 +658,12 @@ final class Service
     public static function reminders(?int $now = null): array
     {
         $now ??= time();
-        $out = ['remind' => 0, 'stale' => 0, 'pay' => 0];
+        $out = ['remind' => 0, 'stale' => 0, 'pay' => 0, 'held' => 0];
+        // potvrzení čekající na zálohovou fakturu – po 15 minutách odejde i bez ní (kdykoli, ne jen 8–20 h)
+        foreach (Db::all('SELECT * FROM returns WHERE notify_pending = 1 AND created_at < ?', [date('Y-m-d H:i:s', $now - 900)]) as $r) {
+            Db::exec('UPDATE returns SET notify_pending = 0 WHERE id = ?', [$r['id']]);
+            Notify::confirm($r); $out['held']++;
+        }
         $h = (int) date('G', $now);
         if ($h < 8 || $h >= 20) return $out;
         $ago = fn(int $d) => date('Y-m-d H:i:s', $now - $d * 86400);
@@ -719,8 +724,15 @@ final class Service
             Db::insert('return_events', ['return_id' => $r['id'], 'status' => null,
                 'note' => 'Přijatá objednávka ' . $r['xorder_no'] . ' založena v Pohodě (nové zboží zarezervováno)' . ($zf !== '' ? ', zálohová faktura ' . $zf . ' na doplatek.' : '.'),
                 'public' => 0, 'user_id' => null, 'created_at' => Db::now()]);
-            if ($zf !== '') Notify::advance(self::get((int) $r['id']));
-        } elseif ($state === 'chyba') {
+            $fresh = self::get((int) $r['id']);
+            if (!empty($r['notify_pending'])) { Db::exec('UPDATE returns SET notify_pending = 0 WHERE id = ?', [$r['id']]); Notify::confirm($fresh); }
+            elseif ($zf !== '') Notify::advance($fresh);
+        } elseif (!empty($r['notify_pending'])) {
+            // objednávka jen jako návrh nebo chyba → potvrzení bez platebních údajů hned
+            Db::exec('UPDATE returns SET notify_pending = 0 WHERE id = ?', [$r['id']]);
+            Notify::confirm(self::get((int) $r['id']));
+        }
+        if ($state === 'chyba') {
             Db::insert('return_events', ['return_id' => $r['id'], 'status' => null, 'note' => 'Objednávku ' . $r['xorder_no'] . ' se nepodařilo založit v Pohodě: ' . $err,
                 'public' => 0, 'user_id' => null, 'created_at' => Db::now()]);
         }
