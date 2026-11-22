@@ -360,3 +360,13 @@ span.ai-img{background:var(--soft)}
 .toast .tx{flex:1;min-width:0;line-height:1.35}
 .toast .x{background:none;border:0;color:#fff;font-size:22px;line-height:1;cursor:pointer;padding:0 4px;opacity:.7}
 .toast .x:hover{opacity:1}
+/* 4K – administrace: co posílá → co dostane */
+.swap{display:flex;flex-direction:column;gap:10px}
+.swap.two{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:16px}
+.swap .pit{display:flex;gap:12px;align-items:center;min-width:0}
+.swap .pt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.swap .pt strong{font-size:15px;line-height:1.3}
+.swap .pk{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.swap .parr{font-size:22px}
+.pthumb.ph{display:block;background:var(--soft)}
+@media (max-width:760px){.swap.two{grid-template-columns:1fr}.swap.two .parr{transform:rotate(90deg);justify-self:start;margin-left:22px}}
