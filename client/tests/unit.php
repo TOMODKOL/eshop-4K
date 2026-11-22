@@ -254,6 +254,10 @@ t(Sync::parcel("(číslo balíku)\nGLSParcel: 5045482534\nzaplaceno") === ['gls'
 t(Sync::parcel('Odběrné místo: Praha') === ['', ''], 'bez čísla balíku');
 $trk = '<response><status>ok</status><result><record><dateTime>2026-11-18T10:00:00</dateTime><statusCode>2</statusCode><codeText>arrived</codeText></record><record><dateTime>2026-11-20T16:45:12</dateTime><statusCode>7</statusCode><codeText>delivered</codeText></record></result></response>';
 t(Tracking::parsePacketa($trk) === '2026-11-20' && Tracking::parsePacketa('<response><status>ok</status><result><record><statusCode>5</statusCode><dateTime>2026-11-19T10:00:00</dateTime></record></result></response>') === null, 'Zásilkovna: datum vyzvednutí (stav 7)');
+$pr = Tracking::parseReturn($trk);
+t($pr === ['sent' => '2026-11-18 10:00:00', 'delivered' => '2026-11-20 16:45:12'] && Tracking::parseReturn('<response><status>ok</status><result><record><dateTime>2026-11-18T10:00:00</dateTime><statusCode>1</statusCode></record></result></response>') === ['sent' => null, 'delivered' => null], 'zpětná zásilka: podáno a doručeno');
+$sx = time() + 3600;
+t(Service::checkValid('V-2026-0001', $sx, Service::checkSig('V-2026-0001', $sx)) && !Service::checkValid('V-2026-0002', $sx, Service::checkSig('V-2026-0001', $sx)) && !Service::checkValid('V-2026-0001', time() - 5, Service::checkSig('V-2026-0001', time() - 5)), 'podepsaný odkaz ke kontrole zboží');
 $dd = Service::deadlines(['invoice_date' => '2026-11-10', 'delivered_date' => '2026-11-20']);
 t($dd['basis'] === 'delivered' && $dd['return_until'] === '2026-12-04' && $dd['claim_until'] === '2028-11-20', 'lhůta 14 dní a reklamace 24 měsíců od převzetí');
 $di = Service::deadlines(['invoice_date' => '2026-11-18']);

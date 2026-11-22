@@ -128,6 +128,17 @@ final class Notify
         Mailer::send($ret['email'], Service::title($ret, $lines) . ' – zboží zatím nedorazilo', $html);
     }
 
+    /** Zboží dorazilo → prodejně e-mail s tlačítky „v pořádku“ / „problém“ (podepsaný odkaz, bez přihlášení). */
+    public static function checkStaff(array $ret): void
+    {
+        $staff = (string) Config::get('vratky.notify_staff', '');
+        if ($staff === '') return;
+        $lines = Service::lines((int) $ret['id']);
+        $html = View::render('vratky:email_staff_check', ['ret' => $ret, 'lines' => $lines, 'url' => Service::checkUrl($ret),
+            'admin' => rtrim((string) Config::get('app_url'), '/') . '/admin/vratky/' . $ret['no']]);
+        Mailer::send($staff, 'Zkontrolujte zboží – ' . Service::title($ret, $lines) . ' (' . ($ret['customer_name'] ?: $ret['email']) . ')', $html);
+    }
+
     /** Po 14 dnech pořád nic → prodejně upozornění (u výměny drží rezervaci nového zboží). */
     public static function staleStaff(array $ret): void
     {

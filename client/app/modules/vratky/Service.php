@@ -647,6 +647,112 @@ final class Service
         return ($ret['pay_method'] ?? '') === 'prevod' ? self::toPay($ret) : 0.0;
     }
 
+    // ---------- automatizace (volá pomocník každých 5 minut přes /api/sync/vymeny) ----------
+
+    /** Všechno, co se má dít samo: zpětné zásilky, podací kódy, připomínky. */
+    public static function cron(): array
+    {
+        $out = ['track' => 0, 'codes' => 0];
+        try { $out['track'] = self::trackReturns(); } catch (\Throwable $e) {}
+        try { $out['codes'] = self::retryCodes(); } catch (\Throwable $e) {}
+        return $out + self::reminders();
+    }
+
+    /** Zpětné zásilky Zásilkovny: podáno → „Na cestě k nám“, doručeno → „Dorazilo“ + prodejně e-mail ke kontrole. Každá vratka nejvýš 1× za hodinu. */
+    public static function trackReturns(int $limit = 15): int
+    {
+        if (!Packeta::enabled()) return 0;
+        $n = 0;
+        $rows = Db::all("SELECT * FROM returns WHERE packeta_id IS NOT NULL AND packeta_id <> '' AND status IN ('novy','na_ceste')
+            AND (packeta_checked_at IS NULL OR packeta_checked_at < ?) ORDER BY packeta_checked_at LIMIT " . (int) $limit, [date('Y-m-d H:i:s', time() - 3600)]);
+        foreach ($rows as $r) {
+            $st = Tracking::packetaReturn((string) $r['packeta_id']);
+            Db::exec('UPDATE returns SET packeta_checked_at = ? WHERE id = ?', [Db::now(), $r['id']]);
+            if (!$st) continue;
+            if ($st['delivered']) { self::arrived($r, 'Balík k nám dorazil.'); $n++; }
+            elseif ($st['sent'] && $r['status'] === 'novy') {
+                self::setStatus($r, 'na_ceste', '', true, null);
+                Notify::statusChanged(self::get((int) $r['id']), '');
+                $n++;
+            }
+        }
+        return $n;
+    }
+
+    /** Zboží je u nás → stav „Dorazilo“, e-mail zákazníkovi a prodejně e-mail se dvěma tlačítky (v pořádku / problém). */
+    public static function arrived(array $r, string $note = ''): void
+    {
+        if (!in_array($r['status'], ['dorazilo', 'v_reseni', 'vyrizeno', 'zamitnuto'], true)) {
+            self::setStatus($r, 'dorazilo', $note, true, null);
+            Notify::statusChanged(self::get((int) $r['id']), '');
+        }
+        $r = self::get((int) $r['id']);
+        if (!$r['check_mail_at'] && !$r['checked_at'] && self::needsCheck($r)) {
+            Db::exec('UPDATE returns SET check_mail_at = ? WHERE id = ?', [Db::now(), $r['id']]);
+            Notify::checkStaff($r);
+        }
+    }
+
+    /** Je co kontrolovat (vrácení / výměna)? Čistou reklamaci řeší Pohoda. */
+    public static function needsCheck(array $r): bool
+    {
+        foreach (self::lines((int) $r['id']) as $l) if ($l['action'] !== 'reklamovat') return true;
+        return false;
+    }
+
+    /** Podací kód Zásilkovny se nepovedl → zkoušet znovu každou hodinu, nejvýš 6×; povede-li se, zákazník dostane kód e-mailem. */
+    public static function retryCodes(): int
+    {
+        if (!Packeta::enabled()) return 0;
+        $n = 0;
+        $rows = Db::all("SELECT * FROM returns WHERE ship_method IN ('zbox','vm') AND (packeta_password IS NULL OR packeta_password = '') AND status = 'novy'
+            AND packeta_tries < 6 AND created_at < ? AND (packeta_checked_at IS NULL OR packeta_checked_at < ?) LIMIT 5",
+            [date('Y-m-d H:i:s', time() - 600), date('Y-m-d H:i:s', time() - 3600)]);
+        foreach ($rows as $r) {
+            Db::exec('UPDATE returns SET packeta_tries = packeta_tries + 1, packeta_checked_at = ? WHERE id = ?', [Db::now(), $r['id']]);
+            if (Packeta::createClaim($r)) {
+                $r = self::get((int) $r['id']);
+                self::setStatus($r, '', 'Podací kód Zásilkovny vytvořen automaticky a poslán zákazníkovi.', false, null);
+                Notify::confirm($r);
+                $n++;
+            }
+        }
+        return $n;
+    }
+
+    /** Prodejna: zboží zkontrolováno a v pořádku → doklad v Pohodě (hned, nebo až přijde doplatek). Vrací chybu nebo null. */
+    public static function checkOk(array $r, ?int $userId, array $codes = []): ?string
+    {
+        if (in_array($r['status'], ['novy', 'na_ceste'], true)) { self::setStatus($r, 'dorazilo', '', true, $userId); Notify::statusChanged(self::get((int) $r['id']), ''); $r = self::get((int) $r['id']); }
+        if (!$r['checked_at']) {
+            Db::exec('UPDATE returns SET checked_at = ? WHERE id = ?', [Db::now(), $r['id']]);
+            self::setStatus($r, '', 'Zboží zkontrolováno – v pořádku.', false, $userId);
+            $r = self::get((int) $r['id']);
+        }
+        if (in_array((string) ($r['doc_state'] ?? ''), ['ceka', 'navrh', 'hotovo'], true)) return null;
+        if ($codes) foreach ($codes as $lid => $c) Db::exec("UPDATE return_lines SET new_code = ? WHERE id = ? AND return_id = ? AND action = 'vymenit'", [mb_substr(trim((string) $c), 0, 60), (int) $lid, $r['id']]);
+        if (!empty($r['zf_no']) && empty($r['zf_paid'])) return null; // doklad se vystaví sám, až přijde doplatek
+        if (!self::docPlan($r)['type']) return null;                     // jen reklamace – řeší Pohoda
+        return self::requestDoc($r, $codes, $userId);
+    }
+
+    /** Podepsaný odkaz z e-mailu prodejně (bez přihlášení), platí 30 dní. */
+    public static function checkUrl(array $r): string
+    {
+        $exp = time() + 30 * 86400;
+        return rtrim((string) Config::get('app_url'), '/') . '/vratky/kontrola/' . rawurlencode((string) $r['no']) . '?e=' . $exp . '&s=' . self::checkSig((string) $r['no'], $exp);
+    }
+
+    public static function checkSig(string $no, int $exp): string
+    {
+        return substr(hash_hmac('sha256', 'kontrola|' . $no . '|' . $exp, self::key()), 0, 32);
+    }
+
+    public static function checkValid(string $no, int $exp, string $sig): bool
+    {
+        return $exp >= time() && hash_equals(self::checkSig($no, $exp), $sig);
+    }
+
     public const REMIND_DAYS = 7;      // zákazník neposlal zboží → připomínka
     public const STALE_DAYS = 14;      // pořád nic → upozornění prodejně (nové zboží je zarezervované)
     public const PAY_DUE_DAYS = 3;     // splatnost zálohy na doplatek
@@ -713,6 +819,11 @@ final class Service
             Db::insert('return_events', ['return_id' => $r['id'], 'status' => null, 'note' => 'Doplatek ' . money(self::advanceAmount($r)) . ' jsme přijali. Děkujeme.',
                 'public' => 1, 'user_id' => null, 'created_at' => Db::now()]);
             Notify::paid(self::get((int) $r['id']));
+            $r = self::get((int) $r['id']);
+            if ($r['checked_at'] && (string) ($r['doc_state'] ?? '') === '') { // zboží už bylo v pořádku → doklad hned
+                $err = self::requestDoc($r, [], null);
+                if ($err) self::setStatus($r, '', 'Doklad se nevystavil automaticky: ' . $err, false, null);
+            }
             return true;
         }
         if (!in_array($r['xorder_state'], ['ceka', 'navrh'], true) || !in_array($state, ['hotovo', 'navrh', 'chyba'], true)) return false;

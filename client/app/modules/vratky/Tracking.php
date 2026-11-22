@@ -49,6 +49,46 @@ final class Tracking
         return is_string($body) ? self::parsePacketa($body) : null;
     }
 
+    /**
+     * Zpětná zásilka (vratka k nám): kdy ji zákazník podal a kdy k nám dorazila.
+     * Stavy packetTracking: 1 = jen data, 2–6 = v přepravě, 7 = doručeno (u zpětné zásilky = u nás), 11 = zrušeno.
+     * @return array{sent:?string, delivered:?string}|null  null = nejde zjistit
+     */
+    public static function packetaReturn(string $packetId): ?array
+    {
+        $id = preg_replace('/\D/', '', $packetId) ?? '';
+        if ($id === '' || !Packeta::enabled()) return null;
+        $x = new \XMLWriter();
+        $x->openMemory();
+        $x->startElement('packetTracking');
+        $x->writeElement('apiPassword', (string) Config::get('packeta.api_password'));
+        $x->writeElement('packetId', $id);
+        $x->endElement();
+        $ch = curl_init((string) Config::get('packeta.endpoint'));
+        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $x->outputMemory(),
+            CURLOPT_HTTPHEADER => ['Content-Type: text/xml; charset=utf-8'], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8]);
+        $body = curl_exec($ch);
+        curl_close($ch);
+        return is_string($body) ? self::parseReturn($body) : null;
+    }
+
+    /** @return array{sent:?string, delivered:?string}|null */
+    public static function parseReturn(string $body): ?array
+    {
+        $prev = libxml_use_internal_errors(true);
+        $r = simplexml_load_string($body);
+        libxml_use_internal_errors($prev);
+        if (!$r || (string) $r->status !== 'ok') return null;
+        $out = ['sent' => null, 'delivered' => null];
+        foreach ($r->result->record ?? [] as $rec) {
+            $c = (int) $rec->statusCode; $t = strtotime((string) $rec->dateTime);
+            if (!$t) continue;
+            if ($c >= 2 && $c <= 7 && $out['sent'] === null) $out['sent'] = date('Y-m-d H:i:s', $t);
+            if ($c === 7) $out['delivered'] = date('Y-m-d H:i:s', $t);
+        }
+        return $out;
+    }
+
     /** Z odpovědi packetTracking vezme datum stavu 7 (delivered). Veřejné kvůli testům. */
     public static function parsePacketa(string $body): ?string
     {

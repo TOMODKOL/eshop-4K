@@ -21,11 +21,26 @@ $open = ($counts['novy'] ?? 0) + ($counts['na_ceste'] ?? 0) + ($counts['dorazilo
   </div>
   <nav class="chips" aria-label="Filtr podle stavu">
     <a class="pill <?= $stav === '' ? 'on' : '' ?>" href="<?= url('/admin/vratky') ?>" style="display:inline-flex;align-items:center;text-decoration:none">Otevřené (<?= $open ?>)</a>
+    <a class="pill <?= $stav === 'proplatit' ? 'on' : '' ?>" href="<?= url('/admin/vratky?stav=proplatit') ?>" style="display:inline-flex;align-items:center;text-decoration:none<?= ($counts['proplatit'] ?? 0) ? ';border-color:var(--ink);font-weight:700' : '' ?>">K proplacení (<?= (int) ($counts['proplatit'] ?? 0) ?>)</a>
     <?php foreach (Service::STATUS as $k => $lab): ?>
       <a class="pill <?= $stav === $k ? 'on' : '' ?>" href="<?= url('/admin/vratky?stav=' . $k) ?>" style="display:inline-flex;align-items:center;text-decoration:none"><?= e($lab) ?></a>
     <?php endforeach; ?>
   </nav>
   <?php \App\Modules\Vratky\Eshop::$budget = 6; // výpis nečeká na desítky stránek e-shopu ?>
+  <?php if ($stav === 'proplatit'): ?>
+  <form class="card" method="post" action="<?= url('/admin/vratky/odeslano') ?>" data-once>
+    <?= csrf_field() ?>
+    <strong>Peníze k odeslání</strong>
+    <span class="hint">Opravný daňový doklad je v Pohodě. Pošlete peníze příkazem a pak tady označte, které odešly – vratka se uzavře a zákazník dostane e-mail.</span>
+    <?php if (!$rows): ?><span class="hint">Nic nečeká.</span><?php endif; ?>
+    <?php foreach ($rows as $r): ?>
+      <label class="chk" style="align-items:flex-start"><input type="checkbox" name="ids[]" value="<?= (int) $r['id'] ?>" checked>
+        <span><strong><?= e(money(Service::payout($r))) ?></strong> · účet <span style="user-select:all"><?= e($r['bank_account']) ?></span> · VS <span style="user-select:all"><?= e((string) $r['doc_no']) ?></span><br>
+        <span class="hint"><?= e($r['customer_name'] ?: $r['email']) ?> · obj. <?= e($r['order_no'] ?: $r['invoice_no']) ?> · <?= e(Service::displayNo($r)) ?></span></span></label>
+    <?php endforeach; ?>
+    <?php if ($rows): ?><button class="btn" style="align-self:flex-start">Peníze odeslány – uzavřít</button><?php endif; ?>
+  </form>
+  <?php endif; ?>
   <div class="vr">
     <?php foreach ($rows as $r):
       $claim = Service::hasAction($r['lines'], 'reklamovat');

@@ -111,7 +111,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
     <div class="card"<?= $docState === 'chyba' ? ' style="border:2px solid var(--red,#d33)"' : '' ?>><span class="kicker">Doklad v Pohodě</span>
       <?php if ($docState === 'hotovo'): ?>
         <div style="font-size:14px"><?= e(Service::DOC_TYPE[$ret['doc_type']] ?? 'Doklad') ?> <strong style="user-select:all"><?= e((string) $ret['doc_no']) ?></strong> je vystavený.</div>
-        <span class="hint"><?= $ret['doc_type'] === 'odd' ? 'Peníze pošlete příkazem k úhradě z Pohody, zákazníkovi pošlete doklad svou šablonou a pak změňte stav na Vyřízeno.' : 'Novou velikost odešlete a změňte stav na Vyřízeno.' ?></span>
+        <span class="hint"><?= $ret['doc_type'] === 'odd' ? 'Peníze pošlete příkazem k úhradě. Pak ve výpisu vratek „K proplacení“ označte odeslané – zákazník dostane e-mail.' : 'Novou velikost odešlete a změňte stav na Vyřízeno.' ?></span>
       <?php elseif ($docState === 'ceka'): ?>
         <div style="font-size:14px"><?= e(Service::DOC_TYPE[$ret['doc_type']] ?? 'Doklad') ?> čeká na vystavení. Pomocník na KANCL ho vystaví <?= e(Service::pohodaEta()) ?>.</div>
       <?php elseif ($docState === 'navrh'): ?>
@@ -122,16 +122,18 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
           <div style="font-size:13px;display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line2);padding-top:6px"><span><?= e($i['name']) ?><?= $i['code'] !== '' ? ' <span class="hint">(' . e($i['code']) . ')</span>' : '' ?></span><span style="white-space:nowrap"><?= (int) $i['qty'] ?> × <?= e(money($i['unit_price'])) ?></span></div>
         <?php endforeach; ?>
         <?php if ($docState === 'chyba'): ?><div class="warn" style="font-size:13px"><?= e((string) $ret['doc_error']) ?></div><?php endif; ?>
-        <?php if (in_array($ret['status'], ['dorazilo', 'v_reseni'], true)): ?>
+        <?php if ($ret['checked_at'] && !empty($ret['zf_no']) && empty($ret['zf_paid'])): ?><span class="hint">Zboží je zkontrolované. Doklad se vystaví sám, až přijde doplatek.</span>
+        <?php elseif (!in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true)): ?>
         <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
           <input type="hidden" name="act" value="<?= $docState === 'chyba' ? 'doklad_znovu' : 'doklad' ?>">
-          <?php foreach ($lines as $l): if ($l['action'] !== 'vymenit') continue; ?>
+          <?php foreach ($lines as $l): if ($l['action'] !== 'vymenit') continue; if ((string) ($l['new_code'] ?? '') !== ''): ?><input type="hidden" name="new_code[<?= (int) $l['id'] ?>]" value="<?= e((string) $l['new_code']) ?>"><?php continue; endif; ?>
             <div class="field" style="margin:0"><label class="l" for="nc<?= (int) $l['id'] ?>">Kód zásoby – <?= e(($l['new_name'] ?? '') !== '' ? $l['new_name'] : 'nová velikost ' . $l['size_to']) ?></label>
               <input class="f" id="nc<?= (int) $l['id'] ?>" name="new_code[<?= (int) $l['id'] ?>]" value="<?= e((string) ($l['new_code'] ?? '')) ?>" placeholder="kód z Pohody" required></div>
           <?php endforeach; ?>
-          <button class="btn" style="align-self:flex-start"><?= $docState === 'chyba' ? 'Zkusit znovu' : 'Zboží je v pořádku – vystavit doklad' ?></button>
+          <button class="btn" style="align-self:flex-start"><?= $docState === 'chyba' ? 'Zkusit znovu' : (in_array($ret['status'], ['novy', 'na_ceste'], true) ? 'Zboží převzato a je v pořádku ✓' : 'Zboží je v pořádku ✓') ?></button>
+          <span class="hint">Doklad v Pohodě i e-mail zákazníkovi pak půjdou samy.</span>
         </form>
-        <?php else: ?><span class="hint">Doklad půjde vystavit, až zboží dorazí a zkontrolujete ho.</span><?php endif; ?>
+        <?php endif; ?>
       <?php endif; ?>
     </div>
     <?php endif; ?>

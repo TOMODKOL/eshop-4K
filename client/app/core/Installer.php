@@ -25,7 +25,7 @@ final class Installer
     }
 
     /** Doplnění sloupců do už nainstalované databáze (na Forpsi). Značka v storage/ zajistí, že se to spustí jen jednou. */
-    public const SCHEMA = 10;
+    public const SCHEMA = 11;
     public static function migrate(): void
     {
         $mark = APP_ROOT . '/storage/schema_v' . self::SCHEMA;
@@ -74,6 +74,11 @@ final class Installer
             'ALTER TABLE returns ADD COLUMN reminded_at DATETIME NULL',
             'ALTER TABLE returns ADD COLUMN stale_alerted_at DATETIME NULL',
             'ALTER TABLE returns ADD COLUMN pay_reminded_at DATETIME NULL',
+            // v11: automatizace – sledování zpětné zásilky Zásilkovny, opakované vytvoření kódu, kontrola zboží jedním klikem
+            'ALTER TABLE returns ADD COLUMN packeta_checked_at DATETIME NULL',
+            'ALTER TABLE returns ADD COLUMN packeta_tries INT NOT NULL DEFAULT 0',
+            'ALTER TABLE returns ADD COLUMN checked_at DATETIME NULL',
+            'ALTER TABLE returns ADD COLUMN check_mail_at DATETIME NULL',
         ];
         foreach ($cols as $sql) {
             try { Db::exec($sql); } catch (\Throwable $e) {

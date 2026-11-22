@@ -195,6 +195,35 @@ Http::get('/vratky/qr/{token}', function (string $token) {
     exit;
 });
 
+// kontrola zboží z e-mailu prodejně (podepsaný odkaz, bez přihlášení; GET jen ukáže potvrzení – kvůli náhledům odkazů v poště)
+$checkPage = function (string $no, ?string $done = null, ?string $err = null) {
+    $ret = Service::byNo($no);
+    $e = (string) ($_REQUEST['e'] ?? ''); $s = (string) ($_REQUEST['s'] ?? ''); $a = ($_REQUEST['a'] ?? '') === 'problem' ? 'problem' : 'ok';
+    if (!$ret || !Service::checkValid($no, (int) $e, $s)) { http_response_code(403); View::page('layout/message', ['title' => 'Odkaz neplatí', 'text' => 'Odkaz už neplatí. Otevřete prosím vratku v administraci.']); return; }
+    View::page('vratky:check', ['title' => 'Kontrola zboží', 'ret' => $ret, 'lines' => Service::lines((int) $ret['id']), 'a' => $a, 'e' => $e, 's' => $s, 'done' => $done, 'err' => $err]);
+};
+Http::get('/vratky/kontrola/{no}', fn(string $no) => $checkPage($no));
+Http::post('/vratky/kontrola/{no}', function (string $no) use ($checkPage) {
+    $ret = Service::byNo($no);
+    if (!$ret || !Service::checkValid($no, (int) Http::input('e'), Http::input('s'))) { $checkPage($no); return; }
+    if (Http::input('a') === 'problem') {
+        $why = mb_substr(trim(Http::input('why')), 0, 2000);
+        if ($why === '') { $checkPage($no, null, 'Napište, co je špatně.'); return; }
+        if (Http::input('what') === 'zamitnout' && $ret['status'] !== 'zamitnuto') {
+            Service::setStatus($ret, 'zamitnuto', $why, true, null);
+            Notify::statusChanged(Service::get((int) $ret['id']), $why);
+            $checkPage($no, 'Zamítnuto. Zákazník dostal e-mail s důvodem.');
+        } else {
+            Service::setStatus($ret, '', 'Problém se zbožím: ' . $why, false, null);
+            $checkPage($no, 'Poznamenáno. Vratka čeká na vás v administraci.');
+        }
+        return;
+    }
+    $err = Service::checkOk($ret, null);
+    $r = Service::get((int) $ret['id']);
+    $checkPage($no, $err ? null : (!empty($r['zf_no']) && empty($r['zf_paid']) ? 'Zapsáno. Doklad se vystaví sám, až přijde doplatek.' : 'Zapsáno. Doklad se vystaví v Pohodě ' . Service::pohodaEta() . '.'), $err);
+});
+
 // ================= administrace =================
 
 Http::get('/admin/vratky', function () {
@@ -203,7 +232,8 @@ Http::get('/admin/vratky', function () {
     $q = Http::input('q');
     $where = [];
     $p = [];
-    if ($stav !== '' && isset(Service::STATUS[$stav])) { $where[] = 'r.status = ?'; $p[] = $stav; }
+    if ($stav === 'proplatit') { $where[] = "r.doc_type = 'odd' AND r.doc_state = 'hotovo' AND r.status NOT IN ('vyrizeno','zamitnuto')"; }
+    elseif ($stav !== '' && isset(Service::STATUS[$stav])) { $where[] = 'r.status = ?'; $p[] = $stav; }
     elseif ($stav === '') { $where[] = "r.status NOT IN ('vyrizeno','zamitnuto')"; }
     if ($q !== '') { $where[] = '(r.no LIKE ? OR r.pohoda_no LIKE ? OR r.email LIKE ? OR r.customer_name LIKE ? OR o.order_no LIKE ? OR o.invoice_no LIKE ?)'; array_push($p, "%$q%", "%$q%", "%$q%", "%$q%", "%$q%", "%$q%"); }
     $rows = Db::all('SELECT r.*, o.order_no, o.invoice_no FROM returns r LEFT JOIN orders o ON o.id = r.order_id' .
@@ -212,8 +242,26 @@ Http::get('/admin/vratky', function () {
     $counts = [];
     foreach (Db::all('SELECT status, COUNT(*) c FROM returns GROUP BY status') as $c) $counts[$c['status']] = (int) $c['c'];
     $lastSync = Db::one('SELECT * FROM sync_log ORDER BY id DESC LIMIT 1');
+    $counts['proplatit'] = (int) Db::value("SELECT COUNT(*) FROM returns WHERE doc_type = 'odd' AND doc_state = 'hotovo' AND status NOT IN ('vyrizeno','zamitnuto')");
     View::page('vratky:admin_list', ['title' => 'Vratky', 'active' => 'vratky', 'rows' => $rows, 'counts' => $counts,
         'stav' => $stav, 'q' => $q, 'lastSync' => $lastSync], 'admin');
+});
+
+// hromadně: peníze odeslány (po zadání příkazů v bance) → Vyřízeno + e-mail zákazníkovi
+Http::post('/admin/vratky/odeslano', function () {
+    $u = Auth::require();
+    Session::checkCsrf();
+    $n = 0;
+    foreach ((array) ($_POST['ids'] ?? []) as $id) {
+        $r = Service::get((int) $id);
+        if (!$r || $r['doc_type'] !== 'odd' || $r['doc_state'] !== 'hotovo' || in_array($r['status'], ['vyrizeno', 'zamitnuto'], true)) continue;
+        $note = 'Peníze ' . money(Service::payout($r)) . ' jsme poslali na účet ' . $r['bank_account'] . '. Na účtu by měly být do 1–2 pracovních dnů.';
+        Service::setStatus($r, 'vyrizeno', $note, true, (int) $u['id']);
+        Notify::statusChanged(Service::get((int) $r['id']), $note);
+        $n++;
+    }
+    Session::flash($n ? 'Hotovo: ' . $n . ' × Vyřízeno, zákazníci dostali e-mail.' : 'Nic jste neoznačili.', $n ? 'ok' : 'err');
+    Http::redirect('/admin/vratky?stav=proplatit');
 });
 
 Http::get('/admin/vratky/foto/{id}', function (string $id) {
@@ -249,8 +297,9 @@ Http::post('/admin/vratky/{no}', function (string $no) {
         Http::redirect('/admin/vratky/' . $no);
     }
     if ($act === 'doklad') {
-        $err = Service::requestDoc($ret, (array) ($_POST['new_code'] ?? []), (int) $u['id']);
-        Session::flash($err ?? 'Doklad se vystaví v Pohodě ' . Service::pohodaEta() . '.', $err ? 'err' : 'ok');
+        $err = Service::checkOk($ret, (int) $u['id'], (array) ($_POST['new_code'] ?? []));
+        $r = Service::get((int) $ret['id']);
+        Session::flash($err ?? (!empty($r['zf_no']) && empty($r['zf_paid']) ? 'Zapsáno – doklad se vystaví sám, až přijde doplatek.' : 'Doklad se vystaví v Pohodě ' . Service::pohodaEta() . '.'), $err ? 'err' : 'ok');
         Http::redirect('/admin/vratky/' . $no);
     }
     if ($act === 'doklad_znovu' && ($ret['doc_state'] ?? '') === 'chyba') {
@@ -323,7 +372,7 @@ Http::get('/api/sync/doklady', function () use ($syncAuth) {
 // výměny (/api/sync/vymeny): GET = objednávky 991… k založení (?navrhy=1 i návrhy) a zálohy k hlídání platby, POST {"results":[{"no":"V-…","state":"hotovo","zf_no":"260800110"}]}
 Http::get('/api/sync/vymeny', function () use ($syncAuth) {
     $syncAuth();
-    $rem = Service::reminders();
+    $rem = Service::cron();
     Http::json(['ok' => true, 'returns' => Service::xorderPending(Http::input('navrhy') === '1'), 'reminders' => $rem]);
 });
 
