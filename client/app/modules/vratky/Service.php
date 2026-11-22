@@ -605,13 +605,19 @@ final class Service
     }
 
     /** QR Platba (SPAYD) k doplatku výměny, '' když se neplatí převodem nebo zatím není záloha. */
+    /** Variabilní symbol doplatku = číslo nové objednávky 991… (zálohová faktura ho má jako VS). */
+    public static function payVs(array $ret): string
+    {
+        return preg_replace('~\D~', '', (string) (($ret['xorder_no'] ?? '') ?: ($ret['zf_no'] ?? '')));
+    }
+
     public static function spayd(array $ret): string
     {
         $amount = self::advanceAmount($ret);
         $iban = self::iban((string) Config::get('shop.bank_account', ''));
         if ($amount <= 0.005 || !$ret['zf_no'] || $ret['zf_paid'] || $iban === '') return '';
-        $msg = 'Doplatek vymena ' . self::displayNo($ret);
-        return 'SPD*1.0*ACC:' . $iban . '*AM:' . number_format($amount, 2, '.', '') . '*CC:CZK*X-VS:' . preg_replace('~\D~', '', (string) $ret['zf_no'])
+        $msg = 'Doplatek vymena obj ' . self::ref($ret);
+        return 'SPD*1.0*ACC:' . $iban . '*AM:' . number_format($amount, 2, '.', '') . '*CC:CZK*X-VS:' . self::payVs($ret)
             . '*MSG:' . strtoupper(preg_replace('~[^A-Za-z0-9 -]~', '', iconv('UTF-8', 'ASCII//TRANSLIT', $msg) ?: $msg));
     }
 
@@ -907,6 +913,31 @@ final class Service
      * Jak doklad nazývat: jen reklamované položky = „reklamace“, jinak „vratka“ (obojí ženský rod).
      * n = 1. pád, g = 2. pád, a = 4. pád, l = 6. pád, N = 1. pád s velkým písmenem.
      */
+    /** Co zákazník řeší – bez slova „vratka“: Vrácení / Výměna / Reklamace (i kombinace). */
+    public static function kind(array $lines): string
+    {
+        $k = [];
+        foreach ([['vratit', 'vrácení'], ['vymenit', 'výměna'], ['reklamovat', 'reklamace']] as [$a, $n]) if (self::hasAction($lines, $a)) $k[] = $n;
+        $t = $k ? implode(' a ', $k) : 'vrácení';
+        return mb_strtoupper(mb_substr($t, 0, 1)) . mb_substr($t, 1);
+    }
+
+    /** Číslo, které zákazník zná: číslo objednávky z e-shopu (jinak faktury, jinak naše interní). */
+    public static function ref(array $ret): string
+    {
+        static $c = [];
+        $oid = (int) ($ret['order_id'] ?? 0);
+        if ($oid && !array_key_exists($oid, $c)) { $o = Db::one('SELECT order_no, invoice_no FROM orders WHERE id = ?', [$oid]); $c[$oid] = $o ? (string) ($o['order_no'] ?: $o['invoice_no']) : ''; }
+        return ($oid ? $c[$oid] : '') ?: self::displayNo($ret);
+    }
+
+    /** Nadpis pro zákazníka: „Výměna k objednávce 8810012345“. */
+    public static function title(array $ret, array $lines): string
+    {
+        $r = self::ref($ret);
+        return self::kind($lines) . ($r !== self::displayNo($ret) ? ' k objednávce ' : ' ') . $r;
+    }
+
     public static function words(array $lines): array
     {
         $claim = $lines && count(array_filter($lines, fn($l) => $l['action'] !== 'reklamovat')) === 0;
@@ -957,7 +988,7 @@ final class Service
     /** Vratky a reklamace už zadané k objednávce – zákazník se přes ně dostane na stránku se stavem. */
     public static function returnsForOrder(int $orderId): array
     {
-        return Db::all('SELECT r.no, r.token, r.status, r.created_at, (SELECT l.action FROM return_lines l WHERE l.return_id = r.id ORDER BY l.id LIMIT 1) AS action
+        return Db::all('SELECT r.id, r.no, r.token, r.status, r.created_at, (SELECT l.action FROM return_lines l WHERE l.return_id = r.id ORDER BY l.id LIMIT 1) AS action
             FROM returns r WHERE r.order_id = ? ORDER BY r.id DESC', [$orderId]);
     }
 

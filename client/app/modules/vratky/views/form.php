@@ -35,7 +35,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
   </div>
   <?php $prev = Service::returnsForOrder((int) $order['id']); if ($prev): ?>
   <div class="card prevret"><strong>Už zadané k této objednávce</strong>
-    <?php foreach ($prev as $p): ?><a class="ordrow" href="<?= url('/vratky/stav/' . $p['token']) ?>"><span class="t"><strong><?= e($p['action'] === 'reklamovat' ? 'Reklamace' : 'Vratka') ?> <?= e($p['no']) ?></strong> <?= e(Service::STATUS[$p['status']] ?? $p['status']) ?> · zadáno <?= e(date_cz(substr($p['created_at'], 0, 10))) ?></span><span aria-hidden="true">Stav →</span></a><?php endforeach; ?>
+    <?php foreach ($prev as $p): ?><a class="ordrow" href="<?= url('/vratky/stav/' . $p['token']) ?>"><span class="t"><strong><?= e(Service::kind(Service::lines((int) $p['id']))) ?></strong> <?= e(Service::STATUS[$p['status']] ?? $p['status']) ?> · zadáno <?= e(date_cz(substr($p['created_at'], 0, 10))) ?></span><span aria-hidden="true">Stav →</span></a><?php endforeach; ?>
   </div>
   <?php endif; ?>
   <?php if ($dl['can_return']): ?><div class="freeswap big"><b>Výměna = doprava zdarma</b><span>Vyměňte za jinou velikost nebo za jiné zboží a neplatíte nic za dopravu k nám ani k vám. Při vrácení zboží se poštovné <?= e(money((float) $postage)) ?> odečte.</span></div><?php endif; ?>
@@ -45,7 +45,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     <div class="item"><?php if (!empty($it['image'])): ?><img class="thumb" src="<?= e($it['image']) ?>" alt="" width="64" height="64"><?php else: ?><span class="thumb ph" aria-hidden="true"></span><?php endif; ?><div class="t"><span class="n"><?= e($it['name']) ?></span>
       <span class="m"><?= e(money($it['unit_price'])) ?><?= $it['qty_int'] > 1 ? ' / ks · objednáno ' . $it['qty_int'] . ' ks' : '' ?><?= $it['code'] ? ' · kód ' . e($it['code']) : '' ?></span></div></div>
     <?php if ($left < 1): ?>
-      <span class="hint">Tato položka už je ve vratce.</span>
+      <span class="hint">Tuto položku už vracíte nebo měníte.</span>
     <?php else: ?>
     <fieldset class="seg" style="border:0;padding:0;margin:0">
       <legend class="sr">Co chcete udělat s: <?= e($it['name']) ?></legend>
@@ -166,7 +166,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
   <div class="card">
     <div class="field" data-account><label class="l" for="account">Číslo účtu pro vrácení peněz</label>
       <input class="f" id="account" name="account" inputmode="text" autocomplete="off" placeholder="např. 123456789/0800" value="<?= e($o('account')) ?>">
-      <span class="hint">Peníze pošleme nejpozději do 14 dnů od doručení vratky, obvykle mnohem dřív.</span></div>
+      <span class="hint">Peníze pošleme nejpozději do 14 dnů od doručení zboží k nám, obvykle mnohem dřív.</span></div>
     <div class="field" data-paybox><span class="l">Jak doplatíte rozdíl v ceně?</span>
       <?php $pm = $o('pay_method'); foreach (['prevod' => ['Převodem', 'Fakturu s platebními údaji pošleme, až vaše zboží dorazí. Nové zboží odešleme po zaplacení.'],
                     'dobirka' => ['Na dobírku', 'Zaplatíte při převzetí nového zboží. Dobírka stojí ' . money((float) cfg('vratky.cod_fee', 69)) . '.']] as $k => [$t, $d]): ?>
@@ -196,10 +196,10 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
 
 </div></div>
 
-<aside class="aside" aria-label="Vaše vratka">
+<aside class="aside" aria-label="Přehled">
   <div class="card"><span class="kicker">Objednávka <?= e($order['order_no'] ?: $order['invoice_no']) ?></span>
     <span style="font-size:13px;color:var(--text)"><?= e($order['customer_name']) ?> · faktura <?= e(date_cz($order['invoice_date'])) ?><?php if ($dl['basis'] === 'delivered'): ?><br>Převzato <?= e(date_cz($dl['delivered'])) ?><?php endif; ?><?php if ($dl['can_return'] && $dl['basis'] !== 'waiting'): ?><br>Vrátit lze do <?= e(date_cz($dl['return_until'])) ?><?php endif; ?></span></div>
-  <div class="card"><span class="kicker">Vaše vratka</span><div data-aside><span style="font-size:13px;color:var(--muted)">Zatím nic nevybráno.</span></div></div>
+  <div class="card"><span class="kicker">Přehled</span><div data-aside><span style="font-size:13px;color:var(--muted)">Zatím nic nevybráno.</span></div></div>
   <div class="note">Nevíte si rady? Zavolejte na <strong><?= e(cfg('shop.phone')) ?></strong>, <?= e(cfg('shop.hours')) ?>.</div>
 </aside>
 </form>

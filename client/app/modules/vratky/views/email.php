@@ -55,5 +55,5 @@ require __DIR__ . '/email_head.php'; ?>
   <?php endforeach; ?>
   </table>
 </td></tr>
-<tr><td style="padding:20px 28px 0"><a href="<?= e($url) ?>" style="display:inline-block;background:#231F20;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 20px;border-radius:10px">Stav <?= e($w['g']) ?> <?= e(Service::displayNo($ret)) ?> →</a></td></tr>
+<tr><td style="padding:20px 28px 0"><a href="<?= e($url) ?>" style="display:inline-block;background:#231F20;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 20px;border-radius:10px">Zobrazit stav →</a></td></tr>
 <?php require __DIR__ . '/email_foot.php'; ?>

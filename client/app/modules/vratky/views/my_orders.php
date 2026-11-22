@@ -1,7 +1,7 @@
 <?php use App\Modules\Vratky\Service; ?>
 <div class="col">
   <h1 class="h2">VAŠE OBJEDNÁVKY</h1>
-  <span class="hint" style="padding:0 4px"><?= e($email) ?> · vyberte objednávku, které se vratka týká. U objednávek uvidíte i stav vratek a reklamací, které už jste zadali.</span>
+  <span class="hint" style="padding:0 4px"><?= e($email) ?> · vyberte objednávku. U objednávek uvidíte i stav toho, co už jste zadali.</span>
   <?php if (!$orders): ?><div class="card">Za posledních 24 měsíců jsme žádnou objednávku nenašli.</div><?php endif; ?>
   <?php foreach ($orders as $o): $dl = Service::deadlines($o); ?>
   <form method="post" action="<?= url('/vratky/vybrat') ?>" style="margin:0">
@@ -11,7 +11,7 @@
       <?= $dl['can_return'] ? 'vrátit lze do ' . e(date_cz($dl['return_until'])) : 'lze už jen reklamovat' ?></span><span aria-hidden="true">→</span></button>
   </form>
   <?php foreach (Service::returnsForOrder((int) $o['id']) as $p): ?>
-    <a class="link" style="padding:0 4px;font-size:13px" href="<?= url('/vratky/stav/' . $p['token']) ?>"><?= e($p['action'] === 'reklamovat' ? 'Reklamace' : 'Vratka') ?> <?= e($p['no']) ?>: <?= e(Service::STATUS[$p['status']] ?? $p['status']) ?> – zobrazit stav →</a>
+    <a class="link" style="padding:0 4px;font-size:13px" href="<?= url('/vratky/stav/' . $p['token']) ?>"><?= e(Service::kind(Service::lines((int) $p['id']))) ?> zadáno <?= e(date_cz(substr($p['created_at'], 0, 10))) ?>: <?= e(Service::STATUS[$p['status']] ?? $p['status']) ?> – zobrazit stav →</a>
   <?php endforeach; ?>
   <?php endforeach; ?>
 </div>

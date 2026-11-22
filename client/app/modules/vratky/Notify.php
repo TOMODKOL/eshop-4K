@@ -21,7 +21,7 @@ final class Notify
         if ($byStaff) {
             if ($ret['email'] === '') return;
             $html = View::render('vratky:email', [
-                'kicker' => 'Reklamace ' . Service::displayNo($ret) . ' přijata',
+                'kicker' => Service::title($ret, $lines),
                 'heading' => 'Reklamaci jsme přijali',
                 'ret' => $ret, 'lines' => $lines, 'showCode' => Service::usesPacketa((string) $ret['ship_method']),
                 'text' => !Service::usesPacketa((string) $ret['ship_method'])
@@ -29,19 +29,19 @@ final class Notify
                     : self::nextStepText($ret),
                 'url' => self::statusUrl($ret),
             ]);
-            Mailer::send($ret['email'], 'Reklamace ' . Service::displayNo($ret) . ' – potvrzení', $html);
+            Mailer::send($ret['email'], Service::title($ret, $lines) . ' – potvrzení', $html);
             self::packetaMissing($ret);
             return;
         }
         $w = Service::words($lines);
         $html = View::render('vratky:email', [
-            'kicker' => $w['N'] . ' ' . Service::displayNo($ret) . ' vytvořena',
-            'heading' => 'Děkujeme, ' . $w['a'] . ' máme',
+            'kicker' => Service::title($ret, $lines),
+            'heading' => 'Děkujeme, máme to',
             'ret' => $ret, 'lines' => $lines, 'showCode' => true,
             'text' => self::nextStepText($ret),
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], $w['N'] . ' ' . Service::displayNo($ret) . ' – ' . self::shortNext($ret), $html);
+        Mailer::send($ret['email'], Service::title($ret, $lines) . ' – ' . self::shortNext($ret), $html);
         self::packetaMissing($ret);
 
         $staff = (string) Config::get('vratky.notify_staff', '');
@@ -51,7 +51,7 @@ final class Notify
             foreach ($lines as $l) $photos += count(Photos::forLine((int) $l['id']));
             $html = View::render('vratky:email_staff', ['ret' => $ret, 'lines' => $lines, 'admin' => $admin, 'photos' => $photos,
                 'order' => $ret['order_id'] ? Service::order((int) $ret['order_id']) : null]);
-            Mailer::send($staff, 'Nová ' . $w['n'] . ' ' . Service::displayNo($ret) . ' – ' . ($ret['customer_name'] ?: $ret['email']), $html);
+            Mailer::send($staff, Service::title($ret, $lines) . ' (' . Service::displayNo($ret) . ') – ' . ($ret['customer_name'] ?: $ret['email']), $html);
         }
     }
 
@@ -62,16 +62,16 @@ final class Notify
         $lines = Service::lines((int) $ret['id']);
         $amount = Service::advanceAmount($ret);
         $html = View::render('vratky:email', [
-            'kicker' => 'Výměna ' . Service::displayNo($ret),
+            'kicker' => Service::title($ret, $lines),
             'heading' => 'Doplatek za výměnu',
             'ret' => $ret, 'lines' => $lines, 'showCode' => false,
-            'text' => 'Nové zboží máme pro vás zarezervované (objednávka ' . $ret['xorder_no'] . '). Doplatek prosím pošlete převodem podle údajů níže. '
-                . 'Doplatek vedeme pod zálohovou fakturou ' . $ret['zf_no'] . '. Nové zboží odešleme, jakmile dorazí vaše vracené zboží a platba.',
-            'pay' => ['amount' => $amount, 'account' => (string) Config::get('shop.bank_account', ''), 'vs' => (string) $ret['zf_no'],
+            'text' => 'Nové zboží máme pro vás zarezervované. Doplatek prosím pošlete převodem podle údajů níže. '
+                . 'Nové zboží odešleme, jakmile k nám dorazí vaše zboží a platba.',
+            'pay' => ['amount' => $amount, 'account' => (string) Config::get('shop.bank_account', ''), 'vs' => Service::payVs($ret),
                 'qr' => Service::spayd($ret) !== '' ? rtrim((string) Config::get('app_url'), '/') . '/vratky/qr/' . $ret['token'] : ''],
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], 'Výměna ' . Service::displayNo($ret) . ' – doplatek ' . money($amount), $html);
+        Mailer::send($ret['email'], Service::title($ret, $lines) . ' – doplatek ' . money($amount), $html);
     }
 
     /** Zákazník dostal „kód pošleme e-mailem“ → prodejně upozornění s postupem. */
@@ -93,13 +93,21 @@ final class Notify
         $lines = Service::lines((int) $ret['id']);
         $w = Service::words($lines);
         $html = View::render('vratky:email', [
-            'kicker' => $w['N'] . ' ' . Service::displayNo($ret),
+            'kicker' => Service::title($ret, $lines),
             'heading' => $label,
             'ret' => $ret, 'lines' => $lines, 'showCode' => false,
             'text' => $note !== '' ? $note : self::statusText($ret['status'], $w),
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], $w['N'] . ' ' . Service::displayNo($ret) . ': ' . $label, $html);
+        Mailer::send($ret['email'], Service::title($ret, $lines) . ': ' . $label, $html);
+    }
+
+    /** „číslo objednávky 8810012345“ (7. pád: „číslem objednávky …“). */
+    public static function refText(array $ret, bool $instr = false): string
+    {
+        $r = Service::ref($ret);
+        $o = $r !== Service::displayNo($ret);
+        return ($instr ? ($o ? 'číslem objednávky ' : 'číslem ') : ($o ? 'číslo objednávky ' : 'číslo ')) . $r;
     }
 
     public static function shortNext(array $ret): string
@@ -112,10 +120,10 @@ final class Notify
     public static function nextStepText(array $ret): string
     {
         if ($ret['ship_method'] === 'osobne') {
-            return 'Zboží přineste na prodejnu ' . Config::get('shop.address') . ' (' . Config::get('shop.hours') . ') a řekněte číslo ' . Service::words(Service::lines((int) $ret['id']))['g'] . ' ' . Service::displayNo($ret) . '.';
+            return 'Zboží přineste na prodejnu ' . Config::get('shop.address') . ' (' . Config::get('shop.hours') . ') a řekněte ' . self::refText($ret) . '.';
         }
         if ($ret['ship_method'] === 'vlastni') {
-            return 'Zboží zabalte, přiložte papír s číslem ' . Service::words(Service::lines((int) $ret['id']))['g'] . ' ' . Service::displayNo($ret)
+            return 'Zboží zabalte, přiložte papír s ' . self::refText($ret, true)
                 . ' a pošlete ho na vlastní náklady (ne na dobírku) na adresu ' . Config::get('shop.name') . ', ' . Config::get('shop.address') . '.';
         }
         if ($ret['packeta_password']) {
@@ -130,9 +138,9 @@ final class Notify
         return match ($s) {
             'na_ceste' => 'Balík je na cestě k nám. Jakmile dorazí, zkontrolujeme ho.',
             'dorazilo' => 'Balík dorazil a kontrolujeme ho. Ozveme se, jak to dopadlo.',
-            'vyrizeno' => $w['N'] . ' je vyřízená. Děkujeme.',
-            'zamitnuto' => $w['A'] . ' jsme bohužel nemohli přijmout. Podrobnosti vám napíšeme nebo zavoláme.',
-            default => 'Stav ' . $w['g'] . ' se změnil.',
+            'vyrizeno' => 'Vše je vyřízené. Děkujeme.',
+            'zamitnuto' => 'Bohužel jsme to nemohli přijmout. Podrobnosti vám napíšeme nebo zavoláme.',
+            default => 'Stav se změnil.',
         };
     }
 }

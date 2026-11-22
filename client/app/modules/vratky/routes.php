@@ -78,7 +78,7 @@ Http::get('/vratky/odkaz-odeslan', function () {
 Http::get('/vratky/moje/{token}', function (string $token) {
     $email = Service::linkEmail($token);
     if (!$email) {
-        View::page('layout/message', ['title' => 'Odkaz už neplatí', 'text' => 'Odkaz platí 24 hodin. Požádejte prosím o nový na stránce vratek.']);
+        View::page('layout/message', ['title' => 'Odkaz už neplatí', 'text' => 'Odkaz platí 24 hodin. Požádejte prosím o nový.']);
         return;
     }
     Session::set('vr_link_email', $email);
@@ -176,8 +176,8 @@ Http::post('/vratky/novy', function () use ($loadOrder) {
 
 Http::get('/vratky/stav/{token}', function (string $token) {
     $ret = preg_match('/^[a-f0-9]{40}$/', $token) ? Service::byToken($token) : null;
-    if (!$ret) { http_response_code(404); View::page('layout/notfound', ['title' => 'Vratka nenalezena']); return; }
-    View::page('vratky:status', ['title' => Service::words(Service::lines((int) $ret['id']))['N'] . ' ' . $ret['no'], 'homeUrl' => '/vratky', 'ret' => $ret,
+    if (!$ret) { http_response_code(404); View::page('layout/notfound', ['title' => 'Stránka nenalezena']); return; }
+    View::page('vratky:status', ['title' => Service::title($ret, Service::lines((int) $ret['id'])), 'homeUrl' => '/vratky', 'ret' => $ret,
         'lines' => Service::lines((int) $ret['id']), 'events' => Service::events((int) $ret['id'], true)]);
 });
 

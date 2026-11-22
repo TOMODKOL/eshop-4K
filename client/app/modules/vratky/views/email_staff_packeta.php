@@ -21,5 +21,5 @@ require __DIR__ . '/email_head.php'; ?>
   Napojení na Zásilkovnu je v klientovi vypnuté. Kód vytvořte v klientské sekci Zásilkovny a pošlete ho zákazníkovi poznámkou u vratky.
   <?php endif; ?>
 </td></tr>
-<tr><td style="padding:20px 28px 0"><a href="<?= e($admin) ?>" style="display:inline-block;background:#231F20;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 20px;border-radius:10px">Otevřít vratku <?= e(Service::displayNo($ret)) ?> →</a></td></tr>
+<tr><td style="padding:20px 28px 0"><a href="<?= e($admin) ?>" style="display:inline-block;background:#231F20;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 20px;border-radius:10px">Otevřít v administraci (<?= e(Service::displayNo($ret)) ?>) →</a></td></tr>
 <?php require __DIR__ . '/email_foot.php'; ?>

@@ -9,17 +9,18 @@ $isNew = $ret['status'] === 'novy' && (time() - strtotime($ret['created_at'])) <
 $hasSwap = Service::hasAction($lines, 'vymenit');
 $hasClaim = Service::hasAction($lines, 'reklamovat');
 $w = Service::words($lines);
+$title = Service::title($ret, $lines); $ref = Service::ref($ret); $byOrder = $ref !== Service::displayNo($ret);
 $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zboží odesláno' : ($hasClaim ? 'Reklamace vyřízena' : 'Vyřízeno'));
 ?>
 <div class="donegrid">
 <div class="col">
-  <div class="prog" aria-hidden="true"><div class="bars"><?php for ($i = 0; $i < 4; $i++): ?><i class="on"></i><?php endfor; ?></div><span class="kicker" style="color:var(--green)">✓ <?= e($w['N']) ?> <?= e(Service::displayNo($ret)) ?><?= $isNew ? ' vytvořena' : '' ?></span></div>
+  <div class="prog" aria-hidden="true"><div class="bars"><?php for ($i = 0; $i < 4; $i++): ?><i class="on"></i><?php endfor; ?></div><span class="kicker" style="color:var(--green)">✓ <?= e($title) ?><?= $isNew ? ' · přijato' : '' ?></span></div>
   <h2 class="h2" style="padding:0 4px"><?= $isNew ? 'HOTOVO, DÍKY!' : e(mb_strtoupper(Service::STATUS[$ret['status']] ?? '')) ?></h2>
   <?php if ($ret['status'] === 'novy'): ?>
     <?php if ($ret['ship_method'] === 'osobne'): ?>
-      <div class="card"><span class="kicker">Co teď</span><p style="margin:0">Zboží přineste na prodejnu <strong><?= e(cfg('shop.address')) ?></strong> (<?= e(cfg('shop.hours')) ?>) a řekněte číslo <?= e($w['g']) ?> <strong><?= e(Service::displayNo($ret)) ?></strong>.</p></div>
+      <div class="card"><span class="kicker">Co teď</span><p style="margin:0">Zboží přineste na prodejnu <strong><?= e(cfg('shop.address')) ?></strong> (<?= e(cfg('shop.hours')) ?>) a řekněte <?= $byOrder ? 'číslo objednávky' : 'číslo' ?> <strong><?= e($ref) ?></strong>.</p></div>
     <?php elseif ($ret['ship_method'] === 'vlastni'): ?>
-      <div class="card"><span class="kicker">Co teď</span><p style="margin:0">Zboží zabalte, přiložte papír s číslem <?= e($w['g']) ?> <strong><?= e(Service::displayNo($ret)) ?></strong> a pošlete ho na vlastní náklady (ne na dobírku) na adresu <strong><?= e(cfg('shop.name')) ?>, <?= e(cfg('shop.address')) ?></strong>.</p></div>
+      <div class="card"><span class="kicker">Co teď</span><p style="margin:0">Zboží zabalte, přiložte papír s <?= $byOrder ? 'číslem objednávky' : 'číslem' ?> <strong><?= e($ref) ?></strong> a pošlete ho na vlastní náklady (ne na dobírku) na adresu <strong><?= e(cfg('shop.name')) ?>, <?= e(cfg('shop.address')) ?></strong>.</p></div>
     <?php elseif ($ret['packeta_password']): ?>
       <div class="zbox"><img class="logo" src="<?= asset('zasilkovna.svg') ?>" alt="Zásilkovna" width="159" height="56">
         <div class="cd"><span class="k">Podací kód</span><span class="v"><?= e($ret['packeta_password']) ?></span></div>
@@ -39,8 +40,8 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
         <div class="ai-sum" style="padding:0">
           <div class="row"><span>Částka</span><strong><?= e(money($adv)) ?></strong></div>
           <div class="row"><span>Číslo účtu</span><strong><?= e(cfg('shop.bank_account')) ?></strong></div>
-          <div class="row"><span>Variabilní symbol</span><strong><?= e($ret['zf_no']) ?></strong></div>
-          <span class="hint" style="margin-top:10px"><?= Service::spayd($ret) !== '' ? 'Nejrychleji zaplatíte načtením QR kódu v bankovní aplikaci. ' : '' ?>Platební údaje máte i v e-mailu, číslo zálohové faktury je <?= e($ret['zf_no']) ?>.</span>
+          <div class="row"><span>Variabilní symbol</span><strong><?= e(Service::payVs($ret)) ?></strong></div>
+          <span class="hint" style="margin-top:10px"><?= Service::spayd($ret) !== '' ? 'Nejrychleji zaplatíte načtením QR kódu v bankovní aplikaci. ' : '' ?>Platební údaje máte i v e-mailu.</span>
         </div>
         <?php if (Service::spayd($ret) !== ''): ?><figure class="qr"><img src="<?= url('/vratky/qr/' . $ret['token']) ?>" width="148" height="148" alt="QR platba"><figcaption>QR platba</figcaption></figure><?php endif; ?>
       </div>
@@ -57,7 +58,7 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
     $ln = fn(string $k, string $n, string $v = '', bool $wait = false, ?string $img = null) => '<div class="ai-l' . ($img !== null ? ' img' : '') . '">' . ($img !== null ? ($img !== '' ? '<img class="ai-img" src="' . e($img) . '" alt="" loading="lazy">' : '<span class="ai-img"></span>') : '') . '<span class="ai-lk">' . e($k) . '</span><span class="ai-ln' . ($wait ? ' ai-wait' : '') . '">' . e($n) . '</span>' . ($v !== '' ? '<span class="ai-lv">' . e($v) . '</span>' : '') . '</div>';
     $bal = Service::balance($ret);
   ?>
-  <div class="card"><span class="kicker">Vaše <?= e($w['n']) ?></span>
+  <div class="card"><span class="kicker">Přehled</span>
     <div class="ai-list">
     <?php foreach ($lines as $l): $nm = $l['item_name'] . ($l['qty'] > 1 ? ' × ' . (int) $l['qty'] . ' ks' : ''); $pr = money((float) $l['unit_price'] * (int) $l['qty']); $io = $imgs[$l['id']]['old'] ?? ''; $in = $imgs[$l['id']]['new'] ?? ''; ?>
       <div class="ai"><span class="ai-k"><?= e($l['action'] === 'vymenit' && ($l['new_name'] ?? '') === '' ? 'Výměna velikosti' : Service::actionLabel($l)) ?></span>
@@ -83,12 +84,12 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
   </div>
 </div>
 <div class="col">
-  <div class="card"><span class="kicker">Stav <?= e($w['g']) ?> <?= e(Service::displayNo($ret)) ?></span>
+  <div class="card"><span class="kicker">Průběh</span>
     <?php if ($ret['status'] === 'zamitnuto'): ?>
-      <div class="tl"><div class="done"><i></i><?= e($w['N']) ?> vytvořena</div><div class="now"><i style="background:var(--red);border-color:var(--red)"></i>Zamítnuto</div></div>
+      <div class="tl"><div class="done"><i></i>Zadáno</div><div class="now"><i style="background:var(--red);border-color:var(--red)"></i>Zamítnuto</div></div>
     <?php else: ?>
     <div class="tl">
-      <?php $tl = [['novy', $w['N'] . ' vytvořena'], ['na_ceste', ($ret['ship_method'] === 'osobne' ? 'Předáno na prodejně' : ($ret['ship_method'] === 'vlastni' ? 'Odesláno' : 'Podáno u Zásilkovny'))], ['dorazilo', 'Dorazilo k nám, kontrolujeme']];
+      <?php $tl = [['novy', 'Zadáno'], ['na_ceste', ($ret['ship_method'] === 'osobne' ? 'Předáno na prodejně' : ($ret['ship_method'] === 'vlastni' ? 'Odesláno' : 'Podáno u Zásilkovny'))], ['dorazilo', 'Dorazilo k nám, kontrolujeme']];
         if ($hasClaimLine) $tl[] = ['v_reseni', 'Posuzuje dodavatel'];
         $tl[] = ['vyrizeno', $last];
         foreach ($tl as $k => [$s, $lab]):
@@ -101,6 +102,6 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
     <?php foreach ($notes as $ev): ?><div class="grey"><span class="hint"><?= e(date_cz($ev['created_at'], true)) ?></span><br><?= nl2br(e($ev['note'])) ?></div><?php endforeach; ?>
     <span class="hint">O každé změně vám pošleme e-mail. Tuto stránku si můžete uložit, najdete ji i v e-mailu.</span>
   </div>
-  <a class="btn ghost" href="<?= url('/vratky') ?>" style="text-align:center;text-decoration:none;line-height:46px">Další vratka</a>
+  <a class="btn ghost" href="<?= url('/vratky') ?>" style="text-align:center;text-decoration:none;line-height:46px">Vrátit nebo vyměnit další zboží</a>
 </div>
 </div>
