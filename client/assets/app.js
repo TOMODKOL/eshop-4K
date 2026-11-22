@@ -192,6 +192,11 @@
     }
     var sb = $('[data-submit]');
     if (sb) { var sk = ship(); sb.textContent = sk === 'zbox' || sk === 'vm' ? 'Odeslat a získat kód →' : 'Odeslat →'; }
+    $$('[data-mtotal]').forEach(function (m) {
+      m.hidden = !c.ch.length;
+      $('[data-mtotal-label]', m).textContent = net > 0.005 ? 'Vrátíme vám' : (net < -0.005 ? 'Doplatíte' : 'Vychází nastejno');
+      $('[data-mtotal-value]', m).textContent = Math.abs(net) > 0.005 ? money(Math.abs(net)) : '';
+    });
     var tot = $('[data-total]');
     if (tot) {
       tot.hidden = !c.ch.length;

@@ -647,6 +647,36 @@ final class Service
         return ($ret['pay_method'] ?? '') === 'prevod' ? self::toPay($ret) : 0.0;
     }
 
+    public const REMIND_DAYS = 7;      // zákazník neposlal zboží → připomínka
+    public const STALE_DAYS = 14;      // pořád nic → upozornění prodejně (nové zboží je zarezervované)
+    public const PAY_DUE_DAYS = 3;     // splatnost zálohy na doplatek
+
+    /**
+     * Připomínky (volá pomocník přes /api/sync/vymeny, posílá se jen 8–20 h, každá jednou).
+     * @return array{remind:int, stale:int, pay:int}
+     */
+    public static function reminders(?int $now = null): array
+    {
+        $now ??= time();
+        $out = ['remind' => 0, 'stale' => 0, 'pay' => 0];
+        $h = (int) date('G', $now);
+        if ($h < 8 || $h >= 20) return $out;
+        $ago = fn(int $d) => date('Y-m-d H:i:s', $now - $d * 86400);
+        foreach (Db::all("SELECT * FROM returns WHERE status = 'novy' AND reminded_at IS NULL AND created_at < ?", [$ago(self::REMIND_DAYS)]) as $r) {
+            Db::exec('UPDATE returns SET reminded_at = ? WHERE id = ?', [Db::now(), $r['id']]);
+            Notify::remindSend($r); $out['remind']++;
+        }
+        foreach (Db::all("SELECT * FROM returns WHERE status = 'novy' AND stale_alerted_at IS NULL AND created_at < ?", [$ago(self::STALE_DAYS)]) as $r) {
+            Db::exec('UPDATE returns SET stale_alerted_at = ? WHERE id = ?', [Db::now(), $r['id']]);
+            Notify::staleStaff($r); $out['stale']++;
+        }
+        foreach (Db::all("SELECT * FROM returns WHERE zf_no IS NOT NULL AND zf_paid = 0 AND pay_reminded_at IS NULL AND status <> 'zamitnuto' AND zf_at IS NOT NULL AND zf_at < ?", [$ago(self::PAY_DUE_DAYS + 1)]) as $r) {
+            Db::exec('UPDATE returns SET pay_reminded_at = ? WHERE id = ?', [Db::now(), $r['id']]);
+            Notify::advance($r, true); $out['pay']++;
+        }
+        return $out;
+    }
+
     /** Pro pomocníka: objednávky k založení (+ návrhy) a zálohy, u kterých hlídá zaplacení. */
     public static function xorderPending(bool $withDrafts = false): array
     {
@@ -677,13 +707,14 @@ final class Service
             Db::exec('UPDATE returns SET zf_paid = 1, updated_at = ? WHERE id = ?', [Db::now(), $r['id']]);
             Db::insert('return_events', ['return_id' => $r['id'], 'status' => null, 'note' => 'Doplatek ' . money(self::advanceAmount($r)) . ' jsme přijali. Děkujeme.',
                 'public' => 1, 'user_id' => null, 'created_at' => Db::now()]);
+            Notify::paid(self::get((int) $r['id']));
             return true;
         }
         if (!in_array($r['xorder_state'], ['ceka', 'navrh'], true) || !in_array($state, ['hotovo', 'navrh', 'chyba'], true)) return false;
         $zf = mb_substr(trim((string) ($x['zf_no'] ?? '')), 0, 20);
         $err = mb_substr(trim((string) ($x['error'] ?? '')), 0, 2000);
-        Db::exec('UPDATE returns SET xorder_state = ?, xorder_error = ?, zf_no = ?, updated_at = ? WHERE id = ?',
-            [$state, $state === 'chyba' ? ($err ?: 'neznámá chyba') : null, $state === 'hotovo' && $zf !== '' ? $zf : null, Db::now(), $r['id']]);
+        Db::exec('UPDATE returns SET xorder_state = ?, xorder_error = ?, zf_no = ?, zf_at = ?, updated_at = ? WHERE id = ?',
+            [$state, $state === 'chyba' ? ($err ?: 'neznámá chyba') : null, $state === 'hotovo' && $zf !== '' ? $zf : null, $state === 'hotovo' && $zf !== '' ? Db::now() : null, Db::now(), $r['id']]);
         if ($state === 'hotovo') {
             Db::insert('return_events', ['return_id' => $r['id'], 'status' => null,
                 'note' => 'Přijatá objednávka ' . $r['xorder_no'] . ' založena v Pohodě (nové zboží zarezervováno)' . ($zf !== '' ? ', zálohová faktura ' . $zf . ' na doplatek.' : '.'),

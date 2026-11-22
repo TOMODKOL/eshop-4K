@@ -55,23 +55,66 @@ final class Notify
         }
     }
 
-    /** Zálohová faktura na doplatek výměny je v Pohodě → zákazníkovi platební údaje. */
-    public static function advance(?array $ret): void
+    /** Zálohová faktura na doplatek výměny je v Pohodě → zákazníkovi platební údaje (podruhé jako upomínka po splatnosti). */
+    public static function advance(?array $ret, bool $reminder = false): void
     {
         if (!$ret || $ret['email'] === '' || !$ret['zf_no']) return;
         $lines = Service::lines((int) $ret['id']);
         $amount = Service::advanceAmount($ret);
         $html = View::render('vratky:email', [
             'kicker' => Service::title($ret, $lines),
-            'heading' => 'Doplatek za výměnu',
+            'heading' => $reminder ? 'Připomínáme doplatek' : 'Doplatek za výměnu',
             'ret' => $ret, 'lines' => $lines, 'showCode' => false,
-            'text' => 'Nové zboží máme pro vás zarezervované. Doplatek prosím pošlete převodem podle údajů níže. '
-                . 'Nové zboží odešleme, jakmile k nám dorazí vaše zboží a platba.',
+            'text' => $reminder
+                ? 'Doplatek za výměnu jsme zatím nedostali. Pošlete ho prosím převodem podle údajů níže, nové zboží pro vás pořád držíme. Pokud jste už platili, děkujeme – platby se nám propojí do pár dnů.'
+                : 'Nové zboží máme pro vás zarezervované. Doplatek prosím pošlete převodem do ' . Service::PAY_DUE_DAYS . ' dnů podle údajů níže. '
+                    . 'Nové zboží odešleme, jakmile k nám dorazí vaše zboží a platba.',
             'pay' => ['amount' => $amount, 'account' => (string) Config::get('shop.bank_account', ''), 'vs' => Service::payVs($ret),
                 'qr' => Service::spayd($ret) !== '' ? rtrim((string) Config::get('app_url'), '/') . '/vratky/qr/' . $ret['token'] : ''],
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], Service::title($ret, $lines) . ' – doplatek ' . money($amount), $html);
+        Mailer::send($ret['email'], Service::title($ret, $lines) . ($reminder ? ' – připomínáme doplatek ' : ' – doplatek ') . money($amount), $html);
+    }
+
+    /** Doplatek přišel (pomocník ho uvidí zlikvidovaný v Pohodě). */
+    public static function paid(?array $ret): void
+    {
+        if (!$ret || $ret['email'] === '') return;
+        $lines = Service::lines((int) $ret['id']);
+        $html = View::render('vratky:email', [
+            'kicker' => Service::title($ret, $lines),
+            'heading' => 'Doplatek jsme přijali',
+            'ret' => $ret, 'lines' => $lines, 'showCode' => false,
+            'text' => 'Doplatek ' . money(Service::advanceAmount($ret)) . ' za výměnu jsme přijali. Děkujeme.',
+            'url' => self::statusUrl($ret),
+        ]);
+        Mailer::send($ret['email'], Service::title($ret, $lines) . ' – doplatek přijat', $html);
+    }
+
+    /** Zákazník po 7 dnech zboží neposlal → připomínka s postupem. */
+    public static function remindSend(array $ret): void
+    {
+        if ($ret['email'] === '') return;
+        $lines = Service::lines((int) $ret['id']);
+        $html = View::render('vratky:email', [
+            'kicker' => Service::title($ret, $lines),
+            'heading' => 'Zboží jsme od vás zatím nedostali',
+            'ret' => $ret, 'lines' => $lines, 'showCode' => true,
+            'text' => 'Připomínáme, že zboží k nám ještě nedorazilo. ' . self::nextStepText($ret) . ' Pokud jste ho už poslali, děkujeme – tuto zprávu prosím neřešte.',
+            'url' => self::statusUrl($ret),
+        ]);
+        Mailer::send($ret['email'], Service::title($ret, $lines) . ' – zboží zatím nedorazilo', $html);
+    }
+
+    /** Po 14 dnech pořád nic → prodejně upozornění (u výměny drží rezervaci nového zboží). */
+    public static function staleStaff(array $ret): void
+    {
+        $staff = (string) Config::get('vratky.notify_staff', '');
+        if ($staff === '') return;
+        $lines = Service::lines((int) $ret['id']);
+        $html = View::render('vratky:email_staff_stale', ['ret' => $ret, 'lines' => $lines, 'days' => Service::STALE_DAYS,
+            'admin' => rtrim((string) Config::get('app_url'), '/') . '/admin/vratky/' . $ret['no']]);
+        Mailer::send($staff, '⚠ Zboží nedorazilo ' . Service::STALE_DAYS . ' dní – ' . Service::title($ret, $lines), $html);
     }
 
     /** Zákazník dostal „kód pošleme e-mailem“ → prodejně upozornění s postupem. */

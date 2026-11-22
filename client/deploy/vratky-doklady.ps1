@@ -208,7 +208,7 @@ $($radky.ToString())
 <inv:invoiceType>issuedAdvanceInvoice</inv:invoiceType>
 <inv:number><typ:ids>2608</typ:ids></inv:number>
 <inv:symVar>$xo</inv:symVar>
-<inv:date>$dnes</inv:date><inv:dateAccounting>$dnes</inv:dateAccounting><inv:dateDue>$((Get-Date).AddDays(7).ToString('yyyy-MM-dd'))</inv:dateDue>
+<inv:date>$dnes</inv:date><inv:dateAccounting>$dnes</inv:dateAccounting><inv:dateDue>$((Get-Date).AddDays(3).ToString('yyyy-MM-dd'))</inv:dateDue>
 <inv:accounting><typ:ids>Nevím</typ:ids></inv:accounting>
 <inv:text>$(X "Záloha – doplatek za výměnu zboží, objednávka $xo")</inv:text>
 $partnerZ

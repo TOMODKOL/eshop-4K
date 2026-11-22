@@ -68,7 +68,7 @@ require __DIR__ . '/email_head.php'; ?>
     if (!$rej && (count($lines) > 1 || $rows || abs($bal) > 0.005)): ?>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.45;margin-top:6px">
     <?php foreach ($rows as [$k, $v]): ?><tr><td style="padding:4px 0;color:#777"><?= e($k) ?></td><td style="padding:4px 0;text-align:right;white-space:nowrap"><?= e($v) ?></td></tr><?php endforeach; ?>
-    <tr><td style="padding:12px 0 0;border-top:2px solid #231F20;font-size:16px;font-weight:700"><?= $bal < -0.005 ? 'Celkem doplatíte' : ($bal > 0.005 ? 'Celkem vám vrátíme' : 'Celkem') ?></td>
+    <tr><td style="padding:12px 0 0;border-top:2px solid #231F20;font-size:16px;font-weight:700"><?= $bal < -0.005 ? (!empty($ret['zf_paid']) ? 'Celkem jste doplatili' : 'Celkem doplatíte') : ($bal > 0.005 ? 'Celkem vám vrátíme' : 'Celkem') ?></td>
       <td style="padding:12px 0 0;border-top:2px solid #231F20;font-size:20px;font-weight:700;text-align:right;white-space:nowrap"><?= abs($bal) > 0.005 ? e(money(abs($bal))) : 'vychází nastejno' ?></td></tr>
     <?php if ($bal < -0.005): ?><tr><td colspan="2" style="padding:4px 0 0;font-size:13px;color:#777"><?= ($ret['pay_method'] ?? '') === 'dobirka' ? 'Zaplatíte na dobírku při převzetí nového zboží.' : (!empty($pay) ? 'Zaplatíte převodem podle platebních údajů výše.' : (!empty($ret['zf_paid']) ? 'Doplatek jsme přijali, děkujeme.' : 'Zaplatíte převodem – platební údaje vám pošleme e-mailem.')) ?></td></tr>
     <?php elseif ($bal > 0.005 && ($ret['bank_account'] ?? '') !== ''): ?><tr><td colspan="2" style="padding:4px 0 0;font-size:13px;color:#777">Pošleme na účet <?= e($ret['bank_account']) ?>, jakmile zboží zkontrolujeme.</td></tr><?php endif; ?>

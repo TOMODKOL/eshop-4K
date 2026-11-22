@@ -102,10 +102,9 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
         <?php else: ?>
         <label class="l" for="size-<?= $id ?>">Za jakou velikost?</label>
         <?php if ($it['sizes']): ?>
-          <select class="f" id="size-<?= $id ?>" name="size_to[<?= $id ?>]">
-            <option value="">Vyberte velikost</option>
-            <?php foreach ($it['sizes'] as $sz): ?><option <?= $o('size_to', $id) === $sz ? 'selected' : '' ?>><?= e($sz) ?></option><?php endforeach; ?>
-          </select>
+          <div class="sizegrid" id="size-<?= $id ?>">
+            <?php foreach ($it['sizes'] as $sz): ?><label class="sz"><input class="sr" type="radio" name="size_to[<?= $id ?>]" value="<?= e($sz) ?>" <?= $o('size_to', $id) === $sz ? 'checked' : '' ?>><span class="v"><?= e($sz) ?></span></label><?php endforeach; ?>
+          </div>
         <?php else: ?>
           <input class="f" id="size-<?= $id ?>" name="size_to[<?= $id ?>]" maxlength="40" value="<?= e($o('size_to', $id)) ?>" placeholder="např. M nebo 43">
         <?php endif; ?>
@@ -141,6 +140,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     <?php endif; ?>
   </div>
   <?php endforeach; ?>
+  <div class="mtotal" data-mtotal hidden><span data-mtotal-label>Vrátíme vám</span><strong data-mtotal-value>0 Kč</strong></div>
   <div class="navrow"><button type="button" class="btn js-only" data-next>Pokračovat →</button></div>
 </section>
 
@@ -155,6 +155,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     <span class="b"><span class="r"><strong><?= e($t) ?></strong><strong style="font-size:13px;white-space:nowrap" data-shipprice="<?= $k ?>"></strong></span><span class="d"><?= e($d) ?></span></span></label>
   <?php endforeach; ?>
   <div class="grey" data-postage-note hidden>Poštovné za vrácení odečteme z vrácené částky. Při výměně nebo reklamaci je zdarma.</div>
+  <div class="mtotal" data-mtotal hidden><span data-mtotal-label>Vrátíme vám</span><strong data-mtotal-value>0 Kč</strong></div>
   <div class="navrow"><button type="button" class="btn js-only" data-next>Pokračovat →</button><button type="button" class="link js-only" data-prev>Zpět</button></div>
 </section>
 
@@ -178,6 +179,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
       <textarea class="f" id="note" name="note" rows="3" maxlength="2000"><?= e($o('note')) ?></textarea></div>
     <span class="hint">Potvrzení a podací kód pošleme na <?= e($order['email']) ?>.</span>
   </div>
+  <div class="mtotal" data-mtotal hidden><span data-mtotal-label>Vrátíme vám</span><strong data-mtotal-value>0 Kč</strong></div>
   <div class="navrow"><button type="button" class="btn js-only" data-next>Pokračovat →</button><button type="button" class="link js-only" data-prev>Zpět</button></div>
 </section>
 
