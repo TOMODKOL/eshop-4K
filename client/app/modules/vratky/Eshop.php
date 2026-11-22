@@ -29,8 +29,14 @@ final class Eshop
     }
 
     /** Náhled zboží (malý obrázek z CDN e-shopu), '' = není. */
+    /** Kolik stránek e-shopu smí jeden požadavek nově stáhnout (null = bez omezení) – výpis v administraci. */
+    public static ?int $budget = null;
+
     public static function image(?int $stockId): string
     {
+        // obrázek se mění zřídka → i starší cache stačí, ať výpisy nečekají na e-shop
+        $f = APP_ROOT . "/storage/cache/eshop_" . (int) $stockId . '.json';
+        if ($stockId && is_file($f)) { $c = json_decode((string) file_get_contents($f), true); if (!empty($c['image'])) return (string) $c['image']; }
         $p = self::page($stockId);
         return (string) ($p['image'] ?? '');
     }
@@ -47,6 +53,7 @@ final class Eshop
             $c = json_decode((string) file_get_contents($file), true);
             return $mem[$stockId] = is_array($c) ? $c : null;
         }
+        if (self::$budget !== null) { if (self::$budget <= 0) return null; self::$budget--; }
         $html = self::fetch(rtrim((string) (Config::get('vratky.eshop_url') ?: 'https://www.4kluciodkol.cz'), '/') . "/x-p$stockId/");
         $res = $html === null ? null : ['sizes' => self::parse($html)['sizes'] ?? [], 'image' => self::parseImage($html, $stockId),
             'product' => (bool) preg_match('~"@type"\s*:\s*"(Product|ProductGroup)"~', $html)];
@@ -178,6 +185,20 @@ final class Eshop
      * @return array{name:string, image:string, url:string, single:bool, options:list<array{value:string, avail:string, cls:string, sku:string, price:?float, ok:bool}>}|null
      *   ok = lze vybrat (skladem nebo skladem u dodavatele, se známou cenou a kódem)
      */
+    /** Náhled zboží podle adresy (výměna za jiné zboží); starší cache stačí. */
+    public static function productImage(string $url): string
+    {
+        $u = self::productUrl($url);
+        if (!$u) return '';
+        $f = APP_ROOT . '/storage/cache/eshop_url_' . md5($u) . '.json';
+        $c = is_file($f) ? json_decode((string) file_get_contents($f), true) : null;
+        if (empty($c['image'])) {
+            if (self::$budget !== null) { if (self::$budget <= 0) return ''; self::$budget--; }
+            $c = self::product($u);
+        }
+        return (string) preg_replace('~(/images/\d+/[0-9a-f]+/)\d+/~', '${1}0/', (string) ($c['image'] ?? ''));
+    }
+
     public static function product(string $url): ?array
     {
         $url = self::productUrl($url);

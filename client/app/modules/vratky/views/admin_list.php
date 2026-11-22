@@ -25,6 +25,7 @@ $open = ($counts['novy'] ?? 0) + ($counts['na_ceste'] ?? 0) + ($counts['dorazilo
       <a class="pill <?= $stav === $k ? 'on' : '' ?>" href="<?= url('/admin/vratky?stav=' . $k) ?>" style="display:inline-flex;align-items:center;text-decoration:none"><?= e($lab) ?></a>
     <?php endforeach; ?>
   </nav>
+  <?php \App\Modules\Vratky\Eshop::$budget = 6; // výpis nečeká na desítky stránek e-shopu ?>
   <div class="vr">
     <?php foreach ($rows as $r):
       $claim = Service::hasAction($r['lines'], 'reklamovat');
@@ -32,8 +33,8 @@ $open = ($counts['novy'] ?? 0) + ($counts['na_ceste'] ?? 0) + ($counts['dorazilo
     <a class="vcard" href="<?= url('/admin/vratky/' . $r['no']) ?>" style="border-left-color:<?= $colors[$r['status']] ?? '#dcdcd8' ?>;text-decoration:none;color:inherit">
       <div class="hd"><span class="no"><?= e(Service::displayNo($r)) ?></span><span class="st"><?= e(Service::STATUS[$r['status']] ?? $r['status']) ?></span></div>
       <div class="meta"><span><?= e(date_cz($r['created_at'], true)) ?></span><span><?= e($r['customer_name'] ?: $r['email']) ?></span><span><?= e(Service::SHIP[$r['ship_method']] ?? '') ?></span><?php if ($r['order_no'] || $r['invoice_no']): ?><span>obj. <?= e($r['order_no'] ?: $r['invoice_no']) ?></span><?php endif; ?></div>
-      <?php foreach ($r['lines'] as $l): ?>
-        <div class="li"><em><?= e(Service::actionLabel($l)) ?></em><br><strong><?= e($l['item_name']) ?><?= $l['qty'] > 1 ? ' × ' . (int) $l['qty'] : '' ?></strong></div>
+      <?php $imgs = Service::lineImages($r['lines']); foreach ($r['lines'] as $l): ?>
+        <div class="li pline"><?php $u = $imgs[$l['id']]['old'] ?? ''; if ($u !== ''): ?><img class="pthumb sm" src="<?= e($u) ?>" alt="" loading="lazy"><?php endif; ?><div style="min-width:0"><em><?= e(Service::actionLabel($l)) ?></em><br><strong><?= e($l['item_name']) ?><?= $l['qty'] > 1 ? ' × ' . (int) $l['qty'] : '' ?></strong></div></div>
       <?php endforeach; ?>
       <?php if ($claim && $r['claim_deadline']): ?><div style="font-size:13px">Vyřídit do <span class="<?= $late ? 'warn' : '' ?>"><?= e(date_cz($r['claim_deadline'])) ?></span></div><?php endif; ?>
       <?php if ($r['refund_total'] > 0): ?><div style="font-size:14px">Vrátit: <strong><?= e(money($r['refund_total'])) ?></strong><?= $r['postage_applies'] ? ' − poštovné' : '' ?></div><?php endif; ?>

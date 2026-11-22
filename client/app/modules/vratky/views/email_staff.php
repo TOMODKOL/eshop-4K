@@ -22,13 +22,18 @@ require __DIR__ . '/email_head.php'; ?>
 </td></tr>
 <tr><td style="padding:16px 28px 0">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.45;border-top:1px solid #ececea">
-  <?php foreach ($lines as $l): ?>
+  <?php $imgs = Service::lineImages($lines); ?>
+  <?php foreach ($lines as $l): $im = $imgs[$l['id']] ?? ['old' => '', 'new' => '']; ?>
     <tr><td style="padding:12px 0;border-bottom:1px solid #ececea">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td width="68" valign="top" style="width:68px">
+        <?php foreach (array_unique(array_filter([$im['old'], $l['action'] === 'vymenit' ? $im['new'] : ''])) as $u): ?><img src="<?= e($u) ?>" width="56" height="56" alt="" style="display:block;width:56px;height:56px;object-fit:contain;border:1px solid #ececea;border-radius:8px;background:#ffffff;margin-bottom:6px"><?php endforeach; ?>
+      </td><td valign="top">
       <span style="<?= $label ?>"><?= e(Service::actionLabel($l)) ?></span><br>
       <strong><?= e($l['item_name']) ?><?= $l['qty'] > 1 ? ' × ' . (int) $l['qty'] : '' ?></strong><span style="color:#777"><?= $l['item_code'] ? ' · ' . e($l['item_code']) : '' ?> · <?= e(money($l['unit_price'])) ?></span><br>
       <?php if ($l['action'] === 'vratit'): ?><span style="color:#444"><?= $l['reason'] !== '' ? 'Důvod: ' . e($l['reason']) : 'Vrácení bez udání důvodu' ?></span>
       <?php elseif ($l['action'] === 'vymenit'): ?><span style="color:#444"><?php if (($l['new_name'] ?? '') !== ''): ?>Za jiné zboží: <strong><?= e($l['new_name']) ?></strong><?= (int) ($l['new_qty'] ?? 0) > 1 ? ' × ' . (int) $l['new_qty'] . ' ks' : '' ?> · <?= e(money($l['new_price'])) ?>/ks<?php else: ?>Za velikost <strong><?= e($l['size_to']) ?></strong><?php endif; ?><?= ($l['new_code'] ?? '') !== '' ? ' · kód ' . e($l['new_code']) : '' ?></span>
       <?php else: ?><span style="color:#444"><?= nl2br(e(mb_strimwidth((string) $l['defect_text'], 0, 600, '…'))) ?></span><?php endif; ?>
+      </td></tr></table>
     </td></tr>
   <?php endforeach; ?>
   </table>

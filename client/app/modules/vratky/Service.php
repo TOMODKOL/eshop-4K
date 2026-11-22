@@ -594,6 +594,47 @@ final class Service
 
     public const XORDER_STATE = ['ceka' => 'Čeká na založení v Pohodě', 'navrh' => 'Návrh čeká na schválení', 'hotovo' => 'Založeno v Pohodě', 'chyba' => 'Nepodařilo se založit'];
 
+    /** České číslo účtu (předčíslí-číslo/banka) → IBAN, '' když nejde. */
+    public static function iban(string $acc): string
+    {
+        if (!preg_match('~^(?:(\d{1,6})-)?(\d{2,10})/(\d{4})$~', preg_replace('~\s+~', '', $acc), $m)) return '';
+        $bban = $m[3] . str_pad($m[1] ?: '0', 6, '0', STR_PAD_LEFT) . str_pad($m[2], 10, '0', STR_PAD_LEFT);
+        $num = $bban . '123500'; $mod = 0;   // C=12, Z=35, 00
+        foreach (str_split($num, 7) as $part) $mod = (int) (($mod . $part) % 97);
+        return 'CZ' . str_pad((string) (98 - $mod), 2, '0', STR_PAD_LEFT) . $bban;
+    }
+
+    /** QR Platba (SPAYD) k doplatku výměny, '' když se neplatí převodem nebo zatím není záloha. */
+    public static function spayd(array $ret): string
+    {
+        $amount = self::advanceAmount($ret);
+        $iban = self::iban((string) Config::get('shop.bank_account', ''));
+        if ($amount <= 0.005 || !$ret['zf_no'] || $ret['zf_paid'] || $iban === '') return '';
+        $msg = 'Doplatek vymena ' . self::displayNo($ret);
+        return 'SPD*1.0*ACC:' . $iban . '*AM:' . number_format($amount, 2, '.', '') . '*CC:CZK*X-VS:' . preg_replace('~\D~', '', (string) $ret['zf_no'])
+            . '*MSG:' . strtoupper(preg_replace('~[^A-Za-z0-9 -]~', '', iconv('UTF-8', 'ASCII//TRANSLIT', $msg) ?: $msg));
+    }
+
+    /** Náhledy zboží k řádkům vratky: [id řádku => ['old' => url, 'new' => url]] (malé obrázky z CDN e-shopu, cache 30 min). */
+    public static function lineImages(array $lines): array
+    {
+        $ids = array_filter(array_map(fn($l) => (int) ($l['item_id'] ?? 0), $lines));
+        $stock = [];
+        if ($ids) foreach (Db::all('SELECT id, stock_id FROM order_items WHERE id IN (' . implode(',', array_map('intval', $ids)) . ')') as $r) $stock[(int) $r['id']] = $r['stock_id'];
+        $out = [];
+        foreach ($lines as $l) {
+            $sid = $stock[(int) ($l['item_id'] ?? 0)] ?? null;
+            $old = $sid ? Eshop::image((int) $sid) : '';
+            $new = '';
+            if ($l['action'] === 'vymenit') {
+                if (($l['new_url'] ?? '') !== '') $new = Eshop::productImage((string) $l['new_url']);
+                else $new = $old;
+            }
+            $out[$l['id']] = ['old' => $old, 'new' => $new];
+        }
+        return $out;
+    }
+
     /** Doplatek převodem → zálohová faktura (částka), jinak 0. */
     public static function advanceAmount(array $ret): float
     {

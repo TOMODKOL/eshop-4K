@@ -181,6 +181,19 @@ Http::get('/vratky/stav/{token}', function (string $token) {
         'lines' => Service::lines((int) $ret['id']), 'events' => Service::events((int) $ret['id'], true)]);
 });
 
+// QR Platba k doplatku výměny (PNG – web i e-mail)
+Http::get('/vratky/qr/{token}', function (string $token) {
+    $ret = preg_match('/^[a-f0-9]{40}$/', $token) ? Service::byToken($token) : null;
+    $spd = $ret ? Service::spayd($ret) : '';
+    if ($spd === '' || !function_exists('imagecreatetruecolor')) { http_response_code(404); exit; }
+    $o = new \chillerlan\QRCode\QROptions(['outputType' => \chillerlan\QRCode\QRCode::OUTPUT_IMAGE_PNG, 'imageBase64' => false, 'scale' => 8,
+        'eccLevel' => \chillerlan\QRCode\QRCode::ECC_M, 'addQuietzone' => true, 'quietzoneSize' => 2]);
+    header('Content-Type: image/png');
+    header('Cache-Control: private, max-age=3600');
+    echo (new \chillerlan\QRCode\QRCode($o))->render($spd);
+    exit;
+});
+
 // ================= administrace =================
 
 Http::get('/admin/vratky', function () {

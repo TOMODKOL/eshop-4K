@@ -52,7 +52,9 @@
         picked: !!pick,
         newPrice: kind === 'jine' && pick && !isNaN(np) ? np : null,
         newQty: (function () { var s = form.querySelector('[name="other_qty[' + id + ']"]'); return s ? parseInt(s.value, 10) || 1 : 1; })(),
-        newName: kind === 'jine' && pick && box ? (box.textContent + (pick.value ? ' ' + pick.value : '')) : ''
+        newName: kind === 'jine' && pick && box ? (box.textContent + (pick.value ? ' ' + pick.value : '')) : '',
+        img: (function () { var t = card.querySelector('img.thumb'); return t ? t.getAttribute('src') : ''; })(),
+        newImg: (function () { var t = kind === 'jine' ? form.querySelector('[data-other="' + id + '"] .otherprod img') : null; return t ? t.getAttribute('src') : ''; })()
       };
     });
   }
@@ -148,19 +150,22 @@
     var aside = $('[data-aside]');
     if (aside) {
       // účtenka: co posíláte / co dostanete, pod tím peníze řádek po řádku a výsledek
-      var ln = function (k, name, v) { return '<div class="ai-l"><span class="ai-lk">' + k + '</span><span class="ai-ln">' + esc(name) + '</span>' + (v ? '<span class="ai-lv">' + v + '</span>' : '') + '</div>'; };
+      var ln = function (k, name, v, img, wait) {
+        var im = img === undefined ? '' : (img ? '<img class="ai-img" src="' + esc(img) + '" alt="">' : '<span class="ai-img"></span>');
+        return '<div class="ai-l' + (img === undefined ? '' : ' img') + '">' + im + '<span class="ai-lk">' + k + '</span><span class="ai-ln' + (wait ? ' ai-wait' : '') + '">' + esc(name) + '</span>' + (v ? '<span class="ai-lv">' + v + '</span>' : '') + '</div>';
+      };
       var blocks = c.ch.map(function (i) {
         var nm = i.name + (i.qty > 1 ? ' × ' + i.qty + ' ks' : ''), h = '';
-        if (i.act === 'vratit') h = ln('Vracíte', nm, money(i.price * i.qty));
+        if (i.act === 'vratit') h = ln('Vracíte', nm, money(i.price * i.qty), i.img);
         else if (i.act === 'vymenit' && i.kind === 'jine') {
-          h = ln('Posíláte', nm, money(i.price * i.qty)) +
-            (i.newName ? ln('Dostanete', i.newName + (i.newQty > 1 ? ' × ' + i.newQty + ' ks' : ''), i.newPrice !== null ? money(i.newPrice * i.newQty) : '')
-              : '<div class="ai-l"><span class="ai-lk">Dostanete</span><span class="ai-ln ai-wait">vyberte zboží</span></div>');
+          h = ln('Posíláte', nm, money(i.price * i.qty), i.img) +
+            (i.newName ? ln('Dostanete', i.newName + (i.newQty > 1 ? ' × ' + i.newQty + ' ks' : ''), i.newPrice !== null ? money(i.newPrice * i.newQty) : '', i.newImg)
+              : ln('Dostanete', 'vyberte zboží', '', '', true));
         } else if (i.act === 'vymenit') {
           var sv = sizeVal(i.id);
-          h = ln('Posíláte', nm, '') + (sv ? ln('Dostanete', 'velikost ' + sv, '') : '<div class="ai-l"><span class="ai-lk">Dostanete</span><span class="ai-ln ai-wait">vyberte velikost</span></div>');
+          h = ln('Posíláte', nm, '', i.img) + (sv ? ln('Dostanete', 'velikost ' + sv, '', i.img) : ln('Dostanete', 'vyberte velikost', '', i.img, true));
         } else {
-          h = ln('Posíláte', nm, '') + (detailText(i) ? '<div class="ai-l"><span class="ai-lk"></span><span class="ai-ln ai-wait">' + esc(detailText(i)) + '</span></div>' : '');
+          h = ln('Posíláte', nm, '', i.img) + (detailText(i) ? '<div class="ai-l"><span class="ai-lk"></span><span class="ai-ln ai-wait">' + esc(detailText(i)) + '</span></div>' : '');
         }
         return '<div class="ai"><span class="ai-k">' + esc(i.act === 'vymenit' && i.kind === 'jine' ? 'Výměna za jiné zboží' : (i.act === 'vymenit' ? 'Výměna velikosti' : LABEL[i.act])) + '</span>' + h + '</div>';
       });

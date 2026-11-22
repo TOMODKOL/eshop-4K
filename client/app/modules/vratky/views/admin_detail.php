@@ -14,11 +14,13 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
   </div>
   <div class="layout" style="max-width:none">
   <div class="main"><div class="col" style="max-width:none">
-    <?php foreach ($lines as $l): ?>
+    <?php $imgs = Service::lineImages($lines); foreach ($lines as $l): $im = $imgs[$l['id']] ?? ['old' => '', 'new' => '']; ?>
     <div class="card">
       <span class="tag"><?= e(Service::actionLabel($l)) ?></span>
-      <div><strong style="font-size:16px"><?= e($l['item_name']) ?></strong><br>
-        <span class="hint"><?= $l['item_code'] ? 'Kód ' . e($l['item_code']) . ' · ' : '' ?><?= (int) $l['qty'] ?> ks × <?= e(money($l['unit_price'])) ?></span></div>
+      <div class="pline"><?php if ($im['old'] !== ''): ?><img class="pthumb" src="<?= e($im['old']) ?>" alt="" loading="lazy"><?php endif; ?>
+      <?php if ($l['action'] === 'vymenit' && $im['new'] !== '' && $im['new'] !== $im['old']): ?><span class="parr">→</span><img class="pthumb" src="<?= e($im['new']) ?>" alt="" loading="lazy"><?php endif; ?>
+      <div style="min-width:0"><strong style="font-size:16px"><?= e($l['item_name']) ?></strong><br>
+        <span class="hint"><?= $l['item_code'] ? 'Kód ' . e($l['item_code']) . ' · ' : '' ?><?= (int) $l['qty'] ?> ks × <?= e(money($l['unit_price'])) ?></span></div></div>
       <?php if ($l['action'] === 'vratit' && $l['reason'] !== ''): ?><div>Důvod: <strong><?= e($l['reason']) ?></strong></div><?php endif; ?>
       <?php if ($l['action'] === 'vymenit'): ?><div><?php if (($l['new_name'] ?? '') !== ''): ?>Vyměnit za jiné zboží: <strong><?= e($l['new_name']) ?></strong><?= (int) ($l['new_qty'] ?? 0) > 1 ? ' × ' . (int) $l['new_qty'] . ' ks' : '' ?> · <?= e(money($l['new_price'])) ?>/ks<?php if ($l['new_url']): ?> · <a href="<?= e($l['new_url']) ?>" target="_blank" rel="noopener">e-shop ↗</a><?php endif; ?><?php else: ?>Vyměnit za velikost: <strong><?= e($l['size_to']) ?></strong><?php endif; ?></div><?php endif; ?>
       <?php if ($l['action'] === 'reklamovat'): ?>

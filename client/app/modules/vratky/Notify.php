@@ -67,7 +67,8 @@ final class Notify
             'ret' => $ret, 'lines' => $lines, 'showCode' => false,
             'text' => 'Nové zboží máme pro vás zarezervované (objednávka ' . $ret['xorder_no'] . '). Doplatek prosím pošlete převodem podle údajů níže. '
                 . 'Doplatek vedeme pod zálohovou fakturou ' . $ret['zf_no'] . '. Nové zboží odešleme, jakmile dorazí vaše vracené zboží a platba.',
-            'pay' => ['amount' => $amount, 'account' => (string) Config::get('shop.bank_account', ''), 'vs' => (string) $ret['zf_no']],
+            'pay' => ['amount' => $amount, 'account' => (string) Config::get('shop.bank_account', ''), 'vs' => (string) $ret['zf_no'],
+                'qr' => Service::spayd($ret) !== '' ? rtrim((string) Config::get('app_url'), '/') . '/vratky/qr/' . $ret['token'] : ''],
             'url' => self::statusUrl($ret),
         ]);
         Mailer::send($ret['email'], 'Výměna ' . Service::displayNo($ret) . ' – doplatek ' . money($amount), $html);

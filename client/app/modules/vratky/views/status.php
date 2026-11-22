@@ -35,12 +35,15 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
     <div class="card"><span class="kicker">Doplatek za výměnu</span>
     <?php if ($ret['zf_no'] && !$ret['zf_paid']): ?>
       <p style="margin:0">Nové zboží máme zarezervované. Doplatek prosím pošlete převodem:</p>
-      <div class="ai-sum" style="padding:0">
-        <div class="row"><span>Částka</span><strong><?= e(money($adv)) ?></strong></div>
-        <div class="row"><span>Číslo účtu</span><strong><?= e(cfg('shop.bank_account')) ?></strong></div>
-        <div class="row"><span>Variabilní symbol</span><strong><?= e($ret['zf_no']) ?></strong></div>
+      <div class="paybox">
+        <div class="ai-sum" style="padding:0">
+          <div class="row"><span>Částka</span><strong><?= e(money($adv)) ?></strong></div>
+          <div class="row"><span>Číslo účtu</span><strong><?= e(cfg('shop.bank_account')) ?></strong></div>
+          <div class="row"><span>Variabilní symbol</span><strong><?= e($ret['zf_no']) ?></strong></div>
+          <span class="hint" style="margin-top:10px"><?= Service::spayd($ret) !== '' ? 'Nejrychleji zaplatíte načtením QR kódu v bankovní aplikaci. ' : '' ?>Platební údaje máte i v e-mailu, číslo zálohové faktury je <?= e($ret['zf_no']) ?>.</span>
+        </div>
+        <?php if (Service::spayd($ret) !== ''): ?><figure class="qr"><img src="<?= url('/vratky/qr/' . $ret['token']) ?>" width="148" height="148" alt="QR platba"><figcaption>QR platba</figcaption></figure><?php endif; ?>
       </div>
-      <span class="hint">Platební údaje máte i v e-mailu. Číslo zálohové faktury je <?= e($ret['zf_no']) ?>.</span>
     <?php elseif ($ret['zf_paid']): ?>
       <p style="margin:0">Doplatek <?= e(money($adv)) ?> jsme přijali, děkujeme.</p>
     <?php else: ?>
@@ -50,17 +53,18 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
   <?php endif; ?>
   <?php
     // stejná „účtenka“ jako v panelu formuláře
-    $ln = fn(string $k, string $n, string $v = '', bool $wait = false) => '<div class="ai-l"><span class="ai-lk">' . e($k) . '</span><span class="ai-ln' . ($wait ? ' ai-wait' : '') . '">' . e($n) . '</span>' . ($v !== '' ? '<span class="ai-lv">' . e($v) . '</span>' : '') . '</div>';
+    $imgs = Service::lineImages($lines);
+    $ln = fn(string $k, string $n, string $v = '', bool $wait = false, ?string $img = null) => '<div class="ai-l' . ($img !== null ? ' img' : '') . '">' . ($img !== null ? ($img !== '' ? '<img class="ai-img" src="' . e($img) . '" alt="" loading="lazy">' : '<span class="ai-img"></span>') : '') . '<span class="ai-lk">' . e($k) . '</span><span class="ai-ln' . ($wait ? ' ai-wait' : '') . '">' . e($n) . '</span>' . ($v !== '' ? '<span class="ai-lv">' . e($v) . '</span>' : '') . '</div>';
     $bal = Service::balance($ret);
   ?>
   <div class="card"><span class="kicker">Vaše <?= e($w['n']) ?></span>
     <div class="ai-list">
-    <?php foreach ($lines as $l): $nm = $l['item_name'] . ($l['qty'] > 1 ? ' × ' . (int) $l['qty'] . ' ks' : ''); $pr = money((float) $l['unit_price'] * (int) $l['qty']); ?>
+    <?php foreach ($lines as $l): $nm = $l['item_name'] . ($l['qty'] > 1 ? ' × ' . (int) $l['qty'] . ' ks' : ''); $pr = money((float) $l['unit_price'] * (int) $l['qty']); $io = $imgs[$l['id']]['old'] ?? ''; $in = $imgs[$l['id']]['new'] ?? ''; ?>
       <div class="ai"><span class="ai-k"><?= e($l['action'] === 'vymenit' && ($l['new_name'] ?? '') === '' ? 'Výměna velikosti' : Service::actionLabel($l)) ?></span>
-        <?php if ($l['action'] === 'vratit'): ?><?= $ln('Vracíte', $nm, $pr) ?>
-        <?php elseif ($l['action'] === 'vymenit' && ($l['new_name'] ?? '') !== ''): $nq = max(1, (int) ($l['new_qty'] ?? 1)); ?><?= $ln('Posíláte', $nm, $pr) ?><?= $ln('Dostanete', $l['new_name'] . ($nq > 1 ? ' × ' . $nq . ' ks' : ''), $l['new_price'] !== null ? money((float) $l['new_price'] * $nq) : '') ?>
-        <?php elseif ($l['action'] === 'vymenit'): ?><?= $ln('Posíláte', $nm) ?><?= $ln('Dostanete', 'velikost ' . $l['size_to']) ?>
-        <?php else: ?><?= $ln('Posíláte', $nm) ?><?= trim((string) $l['defect_text']) !== '' ? $ln('Vada', mb_strimwidth((string) $l['defect_text'], 0, 160, '…'), '', true) : '' ?><?php endif; ?>
+        <?php if ($l['action'] === 'vratit'): ?><?= $ln('Vracíte', $nm, $pr, false, $io) ?>
+        <?php elseif ($l['action'] === 'vymenit' && ($l['new_name'] ?? '') !== ''): $nq = max(1, (int) ($l['new_qty'] ?? 1)); ?><?= $ln('Posíláte', $nm, $pr, false, $io) ?><?= $ln('Dostanete', $l['new_name'] . ($nq > 1 ? ' × ' . $nq . ' ks' : ''), $l['new_price'] !== null ? money((float) $l['new_price'] * $nq) : '', false, $in) ?>
+        <?php elseif ($l['action'] === 'vymenit'): ?><?= $ln('Posíláte', $nm, '', false, $io) ?><?= $ln('Dostanete', 'velikost ' . $l['size_to'], '', false, $in) ?>
+        <?php else: ?><?= $ln('Posíláte', $nm, '', false, $io) ?><?= trim((string) $l['defect_text']) !== '' ? $ln('Vada', mb_strimwidth((string) $l['defect_text'], 0, 160, '…'), '', true) : '' ?><?php endif; ?>
       </div>
     <?php endforeach; ?>
     </div>
@@ -74,7 +78,7 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
       <?php if ((float) ($ret['cod_fee'] ?? 0) > 0): ?><div class="row"><span>Poplatek za dobírku</span><strong><?= e(money($ret['cod_fee'])) ?></strong></div><?php endif; ?>
     </div>
     <div class="ai-total"><span><?= $bal < -0.005 ? 'Doplatíte' : ($bal > 0.005 ? 'Vrátíme vám' : 'Vychází nastejno') ?></span><span class="v"><?= e(money(abs($bal))) ?></span></div>
-    <span class="hint"><?= $bal < -0.005 ? ($ret['pay_method'] === 'dobirka' ? 'Doplatek zaplatíte na dobírku při převzetí nového zboží.' : 'Doplatek zaplatíte převodem – fakturu pošleme, až vaše zboží dorazí.') : ($bal > 0.005 ? 'Peníze pošleme na účet ' . e($ret['bank_account']) . ', jakmile zboží zkontrolujeme.' : '') ?></span>
+    <span class="hint"><?= $bal < -0.005 ? ($ret['pay_method'] === 'dobirka' ? 'Doplatek zaplatíte na dobírku při převzetí nového zboží.' : (($ret['zf_no'] && !$ret['zf_paid'] ? 'Doplatek zaplatíte převodem – platební údaje a QR kód najdete výše.' : ($ret['zf_paid'] ? 'Doplatek jsme přijali, děkujeme.' : 'Doplatek zaplatíte převodem – platební údaje vám pošleme e-mailem.')))) : ($bal > 0.005 ? 'Peníze pošleme na účet ' . e($ret['bank_account']) . ', jakmile zboží zkontrolujeme.' : '') ?></span>
     <?php endif; ?>
   </div>
 </div>

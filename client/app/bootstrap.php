@@ -14,5 +14,16 @@ spl_autoload_register(function (string $class): void {
     if (is_file($path)) require $path;
 });
 
+// knihovna pro QR kódy (chillerlan/php-qrcode 4.4, MIT) – bez composeru
+spl_autoload_register(function (string $class): void {
+    foreach (['chillerlan\\QRCode\\' => 'qrcode', 'chillerlan\\Settings\\' => 'settings'] as $ns => $dir) {
+        if (str_starts_with($class, $ns)) {
+            $path = APP_ROOT . '/app/lib/' . $dir . '/' . str_replace('\\', '/', substr($class, strlen($ns))) . '.php';
+            if (is_file($path)) require $path;
+            return;
+        }
+    }
+});
+
 date_default_timezone_set('Europe/Prague');
 mb_internal_encoding('UTF-8');

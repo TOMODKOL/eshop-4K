@@ -334,3 +334,19 @@ label.opt.on:hover{border-color:#e8b52b}
 .zbox li{display:flex;gap:12px;align-items:baseline;font-size:15px;line-height:1.4;counter-increment:z}
 .zbox li::before{content:counter(z);flex:0 0 26px;height:26px;border:1.5px solid #fff;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;box-sizing:border-box}
 .zbox .znote{font-size:13px;color:#FBDBDB}
+
+/* 4K – náhledy zboží (účtenka, administrace) a QR platba */
+.ai-l.img{grid-template-columns:52px minmax(0,1fr) auto;grid-template-areas:'i k k' 'i n v';align-items:center;row-gap:0}
+.ai-l.img .ai-lk{align-self:end}.ai-l.img .ai-ln,.ai-l.img .ai-lv{align-self:start}
+.ai-img{grid-area:i;width:52px;height:52px;object-fit:contain;border:1px solid var(--line2);border-radius:8px;background:#fff;display:block}
+span.ai-img{background:var(--soft)}
+.paybox{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.paybox .ai-sum{flex:1 1 220px;min-width:0}
+.qr{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto}
+.qr img{width:148px;height:148px;border-radius:10px;background:#fff;border:1px solid var(--line2);padding:6px;box-sizing:content-box}
+.qr figcaption{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+@media (max-width:520px){.paybox{flex-direction:column;align-items:stretch}.qr{align-self:center}}
+.pline{display:flex;gap:12px;align-items:center}
+.pthumb{width:64px;height:64px;object-fit:contain;border:1px solid var(--line2);border-radius:8px;background:#fff;flex:0 0 auto}
+.pthumb.sm{width:44px;height:44px}
+.parr{font-weight:700;color:var(--muted)}
