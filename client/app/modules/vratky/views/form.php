@@ -45,7 +45,7 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     <div class="item"><?php if (!empty($it['image'])): ?><img class="thumb" src="<?= e($it['image']) ?>" alt="" width="64" height="64"><?php else: ?><span class="thumb ph" aria-hidden="true"></span><?php endif; ?><div class="t"><span class="n"><?= e($it['name']) ?></span>
       <span class="m"><?= e(money($it['unit_price'])) ?><?= $it['qty_int'] > 1 ? ' / ks · objednáno ' . $it['qty_int'] . ' ks' : '' ?><?= $it['code'] ? ' · kód ' . e($it['code']) : '' ?></span></div></div>
     <?php if ($left < 1): ?>
-      <span class="hint">Tuto položku už vracíte nebo měníte.</span>
+      <span class="hint">Tuto položku už jste zadali – stav najdete výše.</span>
     <?php else: ?>
     <fieldset class="seg" style="border:0;padding:0;margin:0">
       <legend class="sr">Co chcete udělat s: <?= e($it['name']) ?></legend>
@@ -57,11 +57,9 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
     </fieldset>
     <button type="button" class="link js-only" data-clear="<?= $id ?>" style="align-self:flex-start;padding:0;font-size:13px<?= $cur ? '' : ';display:none' ?>">Zrušit výběr</button>
     <?php if ($left > 1): ?>
-      <div class="qtyrow" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <label class="l" for="qty-<?= $id ?>">Kolik kusů?</label>
-        <select class="f" id="qty-<?= $id ?>" name="qty[<?= $id ?>]" style="width:auto;min-width:110px">
-          <?php for ($q = 1; $q <= $left; $q++): ?><option value="<?= $q ?>" <?= (int) $o('qty', $id, 1) === $q ? 'selected' : '' ?>><?= $q ?> z <?= $left ?> ks</option><?php endfor; ?>
-        </select>
+      <div class="qtyrow">
+        <label class="l" for="qty-<?= $id ?>">Kolik kusů? <span class="hint">objednali jste <?= $left ?> ks</span></label>
+        <?= qty_stepper('qty[' . $id . ']', 'qty-' . $id, (int) $o('qty', $id, 1), $left) ?>
       </div>
     <?php else: ?><input type="hidden" name="qty[<?= $id ?>]" value="1"><?php endif; ?>
     <div class="detail inl" data-detail="<?= $id ?>">

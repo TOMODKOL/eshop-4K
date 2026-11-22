@@ -137,7 +137,8 @@
     // panel vpravo + souhrn
     var rows = c.ch.map(function (i) {
       var amount = i.act === 'vratit' ? money(i.price * i.qty) : (i.newPrice !== null ? (function (d) { return Math.abs(d) < 0.005 ? 'bez doplatku' : (d > 0 ? 'vrátíme ' + money(d) : 'doplatek ' + money(-d)); })(i.price * i.qty - i.newPrice * i.newQty) : '–');
-      return { label: i.act === 'vymenit' && i.kind === 'jine' ? 'Výměna za jiné zboží' : LABEL[i.act], name: i.name + (i.qty > 1 ? ' × ' + i.qty : ''), detail: detailText(i), amount: amount };
+      return { label: i.act === 'vymenit' && i.kind === 'jine' ? 'Výměna za jiné zboží' : LABEL[i.act], name: i.name + (i.qty > 1 ? ' × ' + i.qty : ''), detail: detailText(i), amount: amount,
+        img: i.img, newImg: i.act === 'vymenit' && i.kind === 'jine' ? i.newImg : '' };
     });
     var shipEl = $('input[name="ship"]:checked');
     var shipName = shipEl ? shipEl.closest('label').querySelector('strong').textContent : '';
@@ -183,7 +184,8 @@
     var sum = $('[data-summary]');
     if (sum) {
       sum.innerHTML = rows.map(function (r) {
-        return '<div class="sumrow"><span><span class="kicker" style="font-size:11px">' + esc(r.label) + '</span><br><strong>' + esc(r.name) + '</strong>' + (r.detail ? '<br><span style="color:var(--muted)">' + esc(r.detail) + '</span>' : '') + '</span><strong style="white-space:nowrap">' + r.amount + '</strong></div>';
+        var th = function (u) { return u ? '<img class="ai-img" src="' + esc(u) + '" alt="">' : '<span class="ai-img"></span>'; };
+        return '<div class="sumrow"><span class="sum-l"><span class="sum-th">' + th(r.img) + (r.newImg ? '<span class="parr" aria-hidden="true">→</span>' + th(r.newImg) : '') + '</span><span><span class="kicker" style="font-size:11px">' + esc(r.label) + '</span><br><strong>' + esc(r.name) + '</strong>' + (r.detail ? '<br><span style="color:var(--muted)">' + esc(r.detail) + '</span>' : '') + '</span></span><strong style="white-space:nowrap">' + r.amount + '</strong></div>';
       }).join('') + (shipName ? '<div class="sumrow"><span>Doprava: ' + esc(shipName) + '</span><strong class="' + (c.postageApplies || ship() === 'vlastni' ? '' : 'free') + '" style="white-space:nowrap">' + postTxt + '</strong></div>' : '') +
         (c.shipCharge ? '<div class="sumrow"><span>Doprava objednávky – zbytek objednávky je pod ' + esc(money(freeFrom)) + ', doprava už není zdarma</span><strong style="white-space:nowrap">− ' + money(c.shipCharge) + '</strong></div>' : '') +
         (c.cod ? '<div class="sumrow"><span>Dobírka za doplatek</span><strong style="white-space:nowrap">+ ' + money(c.cod) + '</strong></div>' : '');
@@ -385,4 +387,23 @@
       if (b) { b.disabled = true; b.textContent = 'Ukládám…'; }
     });
   });
+})();
+
+/* 4K – počet kusů tlačítky − / + (jako na e-shopu) */
+(function () {
+  var clamp = function (inp) {
+    var mn = parseInt(inp.min, 10) || 1, mx = parseInt(inp.max, 10) || 99, v = parseInt(inp.value, 10);
+    if (isNaN(v)) v = mn; v = Math.max(mn, Math.min(mx, v)); inp.value = v;
+    var st = inp.closest('[data-stepper]'), bs = st.querySelectorAll('.st-b');
+    bs[0].disabled = v <= mn; bs[1].disabled = v >= mx;
+    return v;
+  };
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-stepper] .st-b'); if (!b) return;
+    var inp = b.closest('[data-stepper]').querySelector('input');
+    inp.value = (parseInt(inp.value, 10) || 1) + parseInt(b.getAttribute('data-step'), 10);
+    clamp(inp);
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  document.addEventListener('change', function (e) { if (e.target.matches && e.target.matches('[data-stepper] input')) clamp(e.target); }, true);
 })();

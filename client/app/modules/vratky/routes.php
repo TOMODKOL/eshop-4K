@@ -114,6 +114,7 @@ Http::get('/vratky/novy', function () use ($loadOrder) {
         $old['swap_kind'][$swap] = 'jine';
         $old['other_url'][$swap] = Eshop::productUrl((string) $_GET['url']);
         $old['other_pick'][$swap] = mb_substr((string) ($_GET['size'] ?? ''), 0, 40);
+        $old['other_qty'][$swap] = max(1, min(20, (int) ($_GET['qty'] ?? 1)));
         Session::set('vr_old', $old);
     }
     View::page('vratky:form', ['title' => 'Co chcete udělat?', 'homeUrl' => '/vratky', 'order' => $o, 'items' => $items,

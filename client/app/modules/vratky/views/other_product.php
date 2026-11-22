@@ -7,13 +7,15 @@ if (!$p): ?>
 <?php return; endif;
 $anyOk = (bool) array_filter($p['options'], fn($o) => $o['ok']); ?>
 <div class="otherprod">
+  <?php $one = $p['single'] ? $p['options'][0] : null; ?>
   <div class="op-head">
     <?php if ($p['image']): ?><img src="<?= e($p['image']) ?>" alt="" width="64" height="64" loading="lazy"><?php endif; ?>
-    <div><strong><?= e($p['name']) ?></strong><br><a class="link" href="<?= e($p['url']) ?>" target="_blank" rel="noopener" style="font-size:13px">Zobrazit na e-shopu ↗</a></div>
+    <div class="op-t"><strong><?= e($p['name']) ?></strong>
+      <?php if ($one): ?><span class="op-m"><?= $one['price'] !== null ? '<b>' . e(money($one['price'])) . '</b>' : '' ?><span class="a <?= e($one['cls']) ?>"><?= e($one['avail']) ?></span></span><?php endif; ?>
+      <a class="link" href="<?= e($p['url']) ?>" target="_blank" rel="noopener">Zobrazit na e-shopu ↗</a></div>
   </div>
-  <?php if ($p['single']): $o = $p['options'][0]; ?>
-    <label class="sz single<?= $o['ok'] ? '' : ' na' ?>"><input class="sr" type="radio" name="other_pick[<?= $id ?>]" value="" data-price="<?= e((string) ($o['price'] ?? '')) ?>" <?= $o['ok'] ? 'checked' : 'disabled' ?>>
-      <span class="v"><?= $o['price'] !== null ? e(money($o['price'])) : '' ?></span><span class="a <?= e($o['cls']) ?>"><?= e($o['avail']) ?></span></label>
+  <?php if ($one): ?>
+    <input class="sr" type="radio" name="other_pick[<?= $id ?>]" value="" data-price="<?= e((string) ($one['price'] ?? '')) ?>" <?= $one['ok'] ? 'checked' : 'disabled' ?> hidden>
   <?php else: ?>
     <span class="l">Velikost</span>
     <div class="sizegrid">
@@ -24,13 +26,10 @@ $anyOk = (bool) array_filter($p['options'], fn($o) => $o['ok']); ?>
     </div>
   <?php endif; ?>
   <?php if ($anyOk): ?>
-  <div class="qtyrow" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div class="qtyrow">
     <label class="l" for="oq-<?= $id ?>">Kolik kusů nového zboží?</label>
-    <select class="f" id="oq-<?= $id ?>" name="other_qty[<?= $id ?>]" data-oqty="<?= $id ?>" style="width:auto;min-width:110px">
-      <?php for ($q = 1; $q <= 10; $q++): ?><option value="<?= $q ?>" <?= $q === $oqty ? 'selected' : '' ?>><?= $q ?> ks</option><?php endfor; ?>
-    </select>
+    <?= qty_stepper('other_qty[' . $id . ']', 'oq-' . $id, $oqty, 20, ' data-oqty="' . $id . '"') ?>
   </div>
-  <?php endif; ?>
-  <?php if (!$anyOk): ?><div class="flash err" style="margin:0">Toto zboží teď není skladem ani u dodavatele. Vyberte prosím jiné.</div><?php endif; ?>
+  <?php else: ?><div class="flash err" style="margin:0">Toto zboží teď není skladem ani u dodavatele. Vyberte prosím jiné.</div><?php endif; ?>
   <div class="grey" data-diff="<?= $id ?>" hidden></div>
 </div>

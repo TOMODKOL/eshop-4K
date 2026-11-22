@@ -38,14 +38,18 @@
     '#vx-box{width:100%;margin:12px 0;display:flex;flex-direction:column;gap:8px;font-family:"Good Sans",Arial,sans-serif}' +
     '#vx-box #vx-go{display:block!important;width:100%!important;height:56px!important;min-height:56px!important;padding:0 16px!important;border:0!important;border-radius:10px!important;background:#ffc524!important;color:#231F20!important;font:700 18px/56px "Good Sans",Arial,sans-serif!important;cursor:pointer}' +
     '#vx-box #vx-go[disabled]{background:#ecece8!important;color:#8a8a86!important;cursor:not-allowed}' +
-    '#vx-box #vx-info{height:auto!important;text-align:center;font-size:14px;line-height:1.4;color:#444}#vx-box #vx-go{transition:background-color .15s}#vx-box #vx-go:not([disabled]):hover{background:#e8b52b!important}:is(.PDAddToCart,#vx-a):is(.PDAddToCart,#vx-b):is(.PDAddToCart,#vx-c)::before{display:none!important}' +
-    '.PDAddToCart::before{grid-row:2 !important}.PDAddToCart > :not(#vx-box){grid-row:2 !important}.PDAddToCart > #vx-box{grid-row:1 !important;grid-column:1/-1 !important;margin:0 0 12px !important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;align-self:start!important}';
+    '#vx-box #vx-info{height:auto!important;text-align:center;font-size:14px;line-height:1.4;color:#444}#vx-box #vx-go{transition:background-color .15s}#vx-box #vx-go:not([disabled]):hover{background:#e8b52b!important}' +
+    // na detailu zůstane počet kusů e-shopu [− 1 ks +], místo „Koupit“ je naše tlačítko a pod tím informace
+    '.PDAddToCart > #vx-box{display:contents!important}' +
+    '.PDAddToCart #vx-box #vx-go{grid-column:4!important;grid-row:1!important;margin:0 0 0 10px!important;width:auto!important;display:flex!important;align-items:center;justify-content:center;text-align:center;border-radius:6px!important;font:700 17px/1.15 "Good Sans",Arial,sans-serif!important}' +
+    '.PDAddToCart #vx-box #vx-info{grid-column:1/-1!important;grid-row:2!important;margin-top:10px!important}' +
+    '#vx-go .vx-s{display:none}@media (max-width:480px){.PDAddToCart #vx-go .vx-l{display:none}.PDAddToCart #vx-go .vx-s{display:inline}}';
   document.head.appendChild(css);
 
   var bar = document.createElement('div');
   bar.id = 'vx-bar';
   bar.innerHTML = '<div class="in"><span class="t"><span class="k">Vyměňujete</span>' + esc(v.n) + (v.c ? ' · kredit ' + nf(v.c) : '') +
-    '</span><span><button type="button" id="vx-back" style="background:none;border:0;padding:0;cursor:pointer;color:#231F20;font:700 14px \'Good Sans\',Arial,sans-serif;text-decoration:underline">Zpět do vratky</button> &nbsp; <a href="#vymena-konec" onclick="setTimeout(function(){location.reload()},0)" style="font-weight:400">Ukončit výměnu</a></span></div>';
+    '</span><span><button type="button" id="vx-back" style="background:none;border:0;padding:0;cursor:pointer;color:#231F20;font:700 14px \'Good Sans\',Arial,sans-serif;text-decoration:underline">Zpět do formuláře</button> &nbsp; <a href="#vymena-konec" onclick="setTimeout(function(){location.reload()},0)" style="font-weight:400">Ukončit výměnu</a></span></div>';
   document.body.appendChild(bar); bar.querySelector('#vx-back').addEventListener('click', function () { location.href = back; }); // e-shop přepisuje absolutní href v odkazech → tlačítko
   document.body.style.paddingBottom = '76px';
 
@@ -58,6 +62,12 @@
       if (n > 0) return n;
     }
     return null;
+  }
+  // počet kusů z pole e-shopu [− 1 ks +]
+  function qty() {
+    var i = document.querySelector('.PDAddToCart .quantity input.real') || document.querySelector('.PDAddToCart .quantity input');
+    var n = i ? parseInt(i.value, 10) : 1;
+    return n > 0 ? Math.min(n, 20) : 1;
   }
   function state() {
     var tiles = document.querySelectorAll('#PDVariantSelector .buttons .value');
@@ -81,34 +91,38 @@
     if (!box) {
       box = document.createElement('div');
       box.id = 'vx-box';
-      box.innerHTML = '<button type="button" id="vx-go">Vyměnit za tento produkt →</button><div id="vx-info"></div>';
+      box.innerHTML = '<button type="button" id="vx-go"><span class="vx-l">Vyměnit za tento produkt</span><span class="vx-s">Vyměnit</span>&nbsp;→</button><div id="vx-info"></div>';
       if (atc) {
         parent.insertBefore(box, parent.firstChild);
         // mřížka „Do košíku“ má pevné výšky řádků – inline !important přebije styly e-shopu
-        parent.style.setProperty('grid-template-rows', 'auto auto', 'important');
+        parent.style.setProperty('grid-template-rows', '56px auto', 'important');
         parent.style.setProperty('height', 'auto', 'important');
       } else parent.appendChild(box);
       box.querySelector('#vx-go').addEventListener('click', function () {
         var s = state();
         if (!s.ok || (s.variants && !s.size)) return;
+        var q = qty();
         try { sessionStorage.removeItem(KEY); } catch (e) {}
         location.href = CLIENT + '/vratky/novy?krok=2&swap=' + encodeURIComponent(v.i) +
-          '&url=' + encodeURIComponent(location.origin + location.pathname + location.search) + '&size=' + encodeURIComponent(s.variants ? s.size : '');
+          '&url=' + encodeURIComponent(location.origin + location.pathname + location.search) + '&size=' + encodeURIComponent(s.variants ? s.size : '') + '&qty=' + q;
       });
     }
-    var s = state(), p = price(), go = box.querySelector('#vx-go'), info = box.querySelector('#vx-info');
+    var s = state(), p = price(), n = qty(), go = box.querySelector('#vx-go'), info = box.querySelector('#vx-info');
     var dis = true, txt;
     if (s.variants && !s.size) txt = 'Vyberte velikost.';
     else if (!s.ok) txt = 'Tato velikost není skladem ani u dodavatele – k výměně ji vybrat nejde.';
     else {
       dis = false;
-      var d = p !== null && v.c ? p - v.c : null;
+      var d = p !== null && v.c ? p * n - v.c : null;
       txt = (d === null ? '' : (Math.abs(d) < 1 ? 'Bez doplatku · ' : (d > 0 ? 'Doplatíte ' + nf(d) : 'Vrátíme vám ' + nf(-d)) + ' · ')) + 'doprava zdarma';
     }
-    if (go.disabled !== dis) go.disabled = dis; if (atc) for (var k = atc.firstElementChild; k; k = k.nextElementSibling) if (k !== box && k.style.display !== 'none') k.style.setProperty('display', 'none', 'important'); // při výměně bez „Koupit“
+    if (go.disabled !== dis) go.disabled = dis; if (atc) for (var k = atc.firstElementChild; k; k = k.nextElementSibling) if (k !== box && !/\b(decrease|increase|quantity)\b/.test(k.className) && k.style.display !== 'none') k.style.setProperty('display', 'none', 'important'); // při výměně bez „Koupit“, počet kusů zůstává
     if (info.textContent !== txt) info.textContent = txt;
   }
   render();
+  // změna počtu kusů (tlačítka − / + i ruční zápis) → přepočítat doplatek
+  document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.PDAddToCart .button')) setTimeout(render, 60); }, true);
+  document.addEventListener('input', function (e) { if (e.target.closest && e.target.closest('.PDAddToCart .quantity')) setTimeout(render, 60); }, true);
   // varianty se přepínají bez načtení stránky → hlídat změny
   var t = null;
   new MutationObserver(function () { clearTimeout(t); t = setTimeout(render, 150); })

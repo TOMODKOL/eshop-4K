@@ -33,3 +33,13 @@ function asset(string $p): string
 function csrf_field(): string { return '<input type="hidden" name="_csrf" value="' . e(Session::csrf()) . '">'; }
 
 function cfg(string $k, mixed $d = null): mixed { return Config::get($k, $d); }
+
+/** Počet kusů jako na e-shopu: [−  1 ks  +]. */
+function qty_stepper(string $name, string $id, int $val, int $max, string $attrs = ''): string
+{
+    $val = max(1, min($max, $val));
+    return '<div class="stepper" data-stepper>'
+        . '<button type="button" class="st-b" data-step="-1" aria-label="Méně"' . ($val <= 1 ? ' disabled' : '') . '>−</button>'
+        . '<label class="st-v"><input type="number" inputmode="numeric" id="' . e($id) . '" name="' . e($name) . '" value="' . $val . '" min="1" max="' . $max . '"' . $attrs . '><span>ks</span></label>'
+        . '<button type="button" class="st-b" data-step="1" aria-label="Více"' . ($val >= $max ? ' disabled' : '') . '>+</button></div>';
+}
