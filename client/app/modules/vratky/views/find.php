@@ -2,7 +2,7 @@
 <div class="starthero">
   <span class="kicker">Vrácení, výměna a reklamace</span>
   <h1 class="h1">4 KLUCI → <span class="out">VRACÍ</span></h1>
-  <p>Vrácení, výměna velikosti i reklamace na pár kliknutí. Balík odnesete na výdejní místo Zásilkovny nebo do Z-BOXu, tisknout nic nemusíte.</p>
+  <p>Vrácení, výměna za jinou velikost nebo jiné zboží i reklamace na pár kliknutí. Balík odnesete na výdejní místo Zásilkovny nebo do Z-BOXu, tisknout nic nemusíte.</p>
 </div>
 <div class="startgrid">
   <div class="col">
@@ -20,7 +20,7 @@
     <form class="card findcard" method="post" action="<?= url('/vratky/odkaz') ?>" style="padding:24px">
       <?= csrf_field() ?>
       <strong style="font-size:17px">Najděte objednávku podle e-mailu</strong>
-      <p class="sub">Pošleme vám odkaz, přes který uvidíte všechny své objednávky a vyberete tu, které se vratka týká.</p>
+      <p class="sub">Pošleme vám odkaz, přes který uvidíte všechny své objednávky a vyberete tu správnou.</p>
       <div class="field"><label class="l" for="em2">E-mail, se kterým jste objednávali</label><input class="f" id="em2" name="email" type="email" value="<?= e($email) ?>" autocomplete="email" required></div>
       <div style="flex:1"></div>
       <button class="btn">Poslat odkaz e-mailem →</button>
