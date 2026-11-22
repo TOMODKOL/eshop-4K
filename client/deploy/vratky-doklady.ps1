@@ -254,7 +254,8 @@ $(if ($stredisko) { "<inv:centre><typ:ids>$(X $stredisko)</typ:ids></inv:centre>
         } catch {
             $m = $_.Exception.Message
             Zapis-Log $uloha ("CHYBA {0} (objednávka): {1}" -f $no, $m)
-            try { ZpetObj $no 'chyba' '' $m } catch { }
+            # chyba Pohody (doklad nevznikl, faktura nenalezena…) → do Clientu; výpadek spojení / mServer mimo provoz → jen log, zkusí se za 5 minut
+            if ($m -match 'Pohoda .* nezaložila|nenalezena|cizí měně|není na faktuře') { try { ZpetObj $no 'chyba' '' $m } catch { } }
         }
     }
 } catch {
