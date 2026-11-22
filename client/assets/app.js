@@ -360,7 +360,10 @@
   if (t) {
     var hide = function () { t.classList.add('hide'); setTimeout(function () { t.remove(); }, 300); };
     var tm = setTimeout(hide, 6000);
-    t.addEventListener('click', function (e) { if (e.target.closest('[data-toast-close]')) { clearTimeout(tm); hide(); } });
+    // zavře křížek, klik kamkoli jinam i klávesa Esc
+    var close = function () { if (!t.isConnected || t.classList.contains('hide')) return; clearTimeout(tm); hide(); };
+    document.addEventListener('click', close, true);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
   }
   document.querySelectorAll('form[data-once]').forEach(function (f) {
     f.addEventListener('submit', function (e) {
