@@ -48,7 +48,7 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
     <?php elseif ($ret['zf_paid']): ?>
       <p style="margin:0">Doplatek <?= e(money($adv)) ?> jsme přijali, děkujeme.</p>
     <?php else: ?>
-      <p style="margin:0">Platební údaje k doplatku <?= e(money($adv)) ?> vám pošleme e-mailem během pracovního dne.</p>
+      <p style="margin:0">Platební údaje k doplatku <?= e(money($adv)) ?> vám pošleme e-mailem <?= e(Service::pohodaEta()) ?>.</p>
     <?php endif; ?>
     </div>
   <?php endif; ?>

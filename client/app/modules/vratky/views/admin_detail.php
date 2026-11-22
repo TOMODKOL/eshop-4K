@@ -58,7 +58,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
     <?php if ($ret['pohoda_state'] === 'cekame'): ?>
     <div class="card" style="border:2px solid var(--yellow,#ffc524)"><span class="kicker">Založte v Pohodě – Reklamace</span>
       <div style="font-size:14px;line-height:1.55">Pro každou reklamovanou položku jednu reklamaci, do pole <strong>Doklad</strong> číslo dokladu nákupu.
-        Pomocník ji podle něj do pár minut propojí a zákazník dostane potvrzení s číslem z Pohody.</div>
+        Pomocník ji podle něj <?= e(Service::pohodaEta()) ?> propojí a zákazník dostane potvrzení s číslem z Pohody.</div>
       <?php foreach ($lines as $l): if ($l['action'] !== 'reklamovat' || (string) ($l['pohoda_no'] ?? '') !== '') continue; ?>
         <div style="font-size:13px;line-height:1.5;border-top:1px solid var(--line2);padding-top:8px">
           <div>Doklad: <strong style="user-select:all"><?= e($order['invoice_no'] ?? '') ?></strong><?= $order ? ' z ' . e(date_cz($order['invoice_date'])) : '' ?></div>
@@ -73,7 +73,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
       <?php foreach ($lines as $l): if ((string) ($l['pohoda_no'] ?? '') === '') continue; ?>
         <div style="font-size:14px"><strong><?= e($l['pohoda_no']) ?></strong> · <?= e($l['pohoda_status'] ?: '–') ?></div>
       <?php endforeach; ?>
-      <span class="hint">Stav měňte v Pohodě (záložka Stav reklamace). Zákazník změnu uvidí do pár minut.</span>
+      <span class="hint">Stav měňte v Pohodě (záložka Stav reklamace). Zákazník změnu uvidí <?= e(Service::pohodaEta()) ?>.</span>
     </div>
     <?php endif; ?>
     <div class="card"><span class="kicker">Zákazník</span>
@@ -106,7 +106,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
         <div style="font-size:14px"><?= e(Service::DOC_TYPE[$ret['doc_type']] ?? 'Doklad') ?> <strong style="user-select:all"><?= e((string) $ret['doc_no']) ?></strong> je vystavený.</div>
         <span class="hint"><?= $ret['doc_type'] === 'odd' ? 'Peníze pošlete příkazem k úhradě z Pohody, zákazníkovi pošlete doklad svou šablonou a pak změňte stav na Vyřízeno.' : 'Novou velikost odešlete a změňte stav na Vyřízeno.' ?></span>
       <?php elseif ($docState === 'ceka'): ?>
-        <div style="font-size:14px"><?= e(Service::DOC_TYPE[$ret['doc_type']] ?? 'Doklad') ?> čeká na vystavení. Pomocník na KANCL ho vystaví do pár minut.</div>
+        <div style="font-size:14px"><?= e(Service::DOC_TYPE[$ret['doc_type']] ?? 'Doklad') ?> čeká na vystavení. Pomocník na KANCL ho vystaví <?= e(Service::pohodaEta()) ?>.</div>
       <?php elseif ($docState === 'navrh'): ?>
         <div style="font-size:14px">Návrh dokladu je připravený a čeká na schválení, než se zapíše do Pohody.</div>
       <?php else: ?>

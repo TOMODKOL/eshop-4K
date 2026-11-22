@@ -249,13 +249,13 @@ Http::post('/admin/vratky/{no}', function (string $no) {
     }
     if ($act === 'doklad') {
         $err = Service::requestDoc($ret, (array) ($_POST['new_code'] ?? []), (int) $u['id']);
-        Session::flash($err ?? 'Doklad se vystaví v Pohodě do pár minut.', $err ? 'err' : 'ok');
+        Session::flash($err ?? 'Doklad se vystaví v Pohodě ' . Service::pohodaEta() . '.', $err ? 'err' : 'ok');
         Http::redirect('/admin/vratky/' . $no);
     }
     if ($act === 'doklad_znovu' && ($ret['doc_state'] ?? '') === 'chyba') {
         Db::exec("UPDATE returns SET doc_state = '', doc_error = NULL WHERE id = ?", [$ret['id']]);
         $err = Service::requestDoc(Service::get((int) $ret['id']), (array) ($_POST['new_code'] ?? []), (int) $u['id']);
-        Session::flash($err ?? 'Zkusí se to znovu do pár minut.', $err ? 'err' : 'ok');
+        Session::flash($err ?? 'Zkusí se to znovu ' . Service::pohodaEta() . '.', $err ? 'err' : 'ok');
         Http::redirect('/admin/vratky/' . $no);
     }
     $status = Http::input('status');

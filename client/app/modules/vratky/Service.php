@@ -548,7 +548,7 @@ final class Service
             if ($i['kind'] === 'nove' && $i['code'] === '') return 'Doplňte kód zásoby nové velikosti u „' . $i['name'] . '“.';
         }
         if ($plan['type'] === 'odd' && !self::validAccount((string) $ret['bank_account'])) return 'Chybí číslo účtu zákazníka pro vrácení peněz.';
-        if (!empty($ret['xorder_no']) && !in_array($ret['xorder_state'], ['hotovo', 'navrh'], true)) return 'Nejdřív se musí v Pohodě založit objednávka ' . $ret['xorder_no'] . ' na nové zboží (pomocník ji zakládá do pár minut).';
+        if (!empty($ret['xorder_no']) && !in_array($ret['xorder_state'], ['hotovo', 'navrh'], true)) return 'Nejdřív se musí v Pohodě založit objednávka ' . $ret['xorder_no'] . ' na nové zboží (pomocník ji založí ' . self::pohodaEta() . ').';
         if (!empty($ret['zf_no']) && empty($ret['zf_paid'])) return 'Doplatek k zálohové faktuře ' . $ret['zf_no'] . ' zatím nepřišel – doklad vystavte až po zaplacení.';
         return null;
     }
@@ -913,6 +913,13 @@ final class Service
      * Jak doklad nazývat: jen reklamované položky = „reklamace“, jinak „vratka“ (obojí ženský rod).
      * n = 1. pád, g = 2. pád, a = 4. pád, l = 6. pád, N = 1. pád s velkým písmenem.
      */
+    /** Kdy pomocník zapíše do Pohody: mServer běží 5:00–0:45, pomocník mu posílá 5:01–23:59. */
+    public static function pohodaEta(): string
+    {
+        $h = (int) date('G');
+        return $h >= 5 ? 'do pár minut' : 'ráno po 5. hodině';
+    }
+
     /** Co zákazník řeší – bez slova „vratka“: Vrácení / Výměna / Reklamace (i kombinace). */
     public static function kind(array $lines): string
     {
