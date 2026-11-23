@@ -4,13 +4,15 @@
    - seznam objednávek a faktur jako karty (stav jako štítek, stornované sbalené na konci),
    - detail objednávky: stav, sledování zásilky, odkaz na fakturu, fotky zboží,
      tlačítko „Vrátit / vyměnit / reklamovat“ do vratkového portálu client.4kluciodkol.cz.
-   Když skript selže, zůstane původní vzhled BSSHOP (třída k4u se přidá až po úspěšném sestavení). */
+   Bez aktivního stylesheetu (proměnná --k4u) skript nic nedělá. Když skript selže, zůstane původní vzhled BSSHOP (třída k4u se přidá až po úspěšném sestavení). */
 (function () {
   var B = document.body;
   if (!B) return;
   var OL = B.classList.contains('OrderListState'), OD = B.classList.contains('OrderDetailState'),
       IL = B.classList.contains('InvoiceListState');
   if (!OL && !OD && !IL) return;
+  // stylesheet „4K – účet zákazníka“ vypnutý → nic neměnit
+  if (!getComputedStyle(document.documentElement).getPropertyValue('--k4u').trim()) return;
   var CLIENT = 'https://client.4kluciodkol.cz/vratky/objednavka';
   var SK = '4k_ucet_stavy';
   var LHUTA = 730; // dní od objednávky, kdy ještě nabízet vrácení / reklamaci
