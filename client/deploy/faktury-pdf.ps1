@@ -3,6 +3,7 @@
 #  2. Pohoda je přes mServer vytiskne do PDF – faktury sestavou „Faktura“ (ID 190), objednávky sestavou
 #     „Potvrzení přijetí objednávky“ (ID 383). mServer vrátí PDF rovnou v odpovědi (base64), na serveru iPodniku nic nezůstane.
 #  3. PDF pošle do portálu (POST …-pdf). Do Pohody nic nezapisuje.
+#  Jen doklady se střediskem e-shopu 4kluciodko (ostatní – prodejna, servis – portál označí „nenabízet“ a netisknou se).
 #  Zálohové faktury (sestava „Zálohová faktura“, ID 240) portál nezná – bere je pomocník z Pohody sám (všechny s e-mailem
 #  odběratele, poprvé od 1. 1. 2025) a posílá i e-mail a číslo objednávky. Hotové: stav\zalohy_pdf_hotove.json (číslo → otisk).
 #  Změněné doklady: každý běh se zeptá Pohody na doklady změněné od minula (ftr:lastChanges). Když se jejich obsah opravdu
@@ -24,6 +25,7 @@ $auth  = [Convert]::ToBase64String($kod.GetBytes(('{0}:{1}' -f $udaj.UserName, $
 $hlav  = @{ 'STW-Authorization' = "Basic $auth"; 'STW-Application' = 'Pomocnik 4K' }
 $url   = $MServerAdresa.TrimEnd('/') + '/xml'
 $cp1250 = [Text.Encoding]::GetEncoding('windows-1250')
+$StrediskoEshop = '4kluciodko'   # jen doklady s tímto střediskem jsou e-shopové a nabízejí se v PDF
 
 # druhy dokladů: API v portálu, agenda a sestava pro tisk, SQL sloupec čísla, seznam pro změny
 $Druhy = @(
@@ -86,12 +88,40 @@ foreach ($D in $Druhy) {
                 $n = if ($h) { $h.SelectSingleNode(".//*[local-name()='number']/*[local-name()='numberRequested']") } else { $null }
                 if (-not $n -or $n.InnerText.Trim() -notmatch '^\d{6,12}$') { continue }
                 $c = $n.InnerText.Trim()
+                $st = $h.SelectSingleNode("./*[local-name()='centre']/*[local-name()='ids']")
+                if (-not $st -or $st.InnerText.Trim() -ne $StrediskoEshop) { continue }
                 $obsah = (@($D.casti) | ForEach-Object { $u = $z.SelectSingleNode("./*[local-name()='$_']"); if ($u) { $u.OuterXml } }) -join ''
                 $otisk = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($obsah))) -replace '-', ''
                 if ($otisky["${k}:$c"] -and $otisky["${k}:$c"] -ne $otisk) { $znovu += $c }
                 $otisky["${k}:$c"] = $otisk
             }
         } catch { $zmenyOk = $false; Zapis-Log $uloha ("CHYBA změny ($k): " + $_.Exception.Message) }
+        # 2b) chybějící z portálu: jen doklady se střediskem e-shopu, ostatní portál označí jako „nenabízet“
+        $nove = @($cisla | Where-Object { $znovu -notcontains $_ })
+        if ($nove.Count) {
+            $seznamC = ($nove | ForEach-Object { "'$_'" }) -join ','
+            $dotaz = if ($k -eq 'objednavky') {
+                "<lst:listOrderRequest version=""2.0"" orderType=""receivedOrder"" orderVersion=""2.0""><lst:requestOrder><ftr:queryFilter><ftr:filter>OBJ.Cislo IN ($seznamC)</ftr:filter></ftr:queryFilter></lst:requestOrder></lst:listOrderRequest>"
+            } else {
+                "<lst:listInvoiceRequest version=""2.0"" invoiceType=""issuedInvoice"" invoiceVersion=""2.0""><lst:requestInvoice><ftr:queryFilter><ftr:filter>FA.Cislo IN ($seznamC)</ftr:filter></ftr:queryFilter></lst:requestInvoice></lst:listInvoiceRequest>"
+            }
+            $ds = MServer "stred-$k" ("<dat:dataPackItem id=""stred-$k"" version=""2.0"">$dotaz</dat:dataPackItem>")
+            $eshop = @{}
+            foreach ($z in @($ds.SelectNodes("//*[local-name()='$($D.casti[0])']"))) {
+                $n = $z.SelectSingleNode(".//*[local-name()='number']/*[local-name()='numberRequested']")
+                $st = $z.SelectSingleNode("./*[local-name()='centre']/*[local-name()='ids']")
+                if ($n) { $eshop[$n.InnerText.Trim()] = ($st -and $st.InnerText.Trim() -eq $StrediskoEshop) }
+            }
+            # jiné středisko nebo doklad v Pohodě už není (smazaný) → nenabízet, ať se nevrací v seznamu
+            $jine = @($nove | Where-Object { -not $eshop[$_] })
+            if ($jine.Count) {
+                $json = @{ pdfs = @($jine | ForEach-Object { @{ no = $_; skip = $true } }) } | ConvertTo-Json -Depth 4 -Compress
+                [void](Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + "/api/sync/$k-pdf") -Method Post -Body ([Text.Encoding]::UTF8.GetBytes($json)) `
+                    -ContentType 'application/json; charset=utf-8' -Headers $apiHlav -TimeoutSec 120)
+            }
+            $cisla = @($cisla | Where-Object { $znovu -contains $_ -or $eshop[$_] })
+            $souhrn += "$k`: jiné středisko (nenabízí se) $($jine.Count)"
+        }
         $cisla = @(@($znovu) + @($cisla) | Select-Object -Unique)
         if (-not $cisla.Count) { continue }
 
@@ -147,6 +177,8 @@ try {
         $c = if ($n) { $n.InnerText.Trim() } else { '' }
         $em = $h.SelectSingleNode("./*[local-name()='partnerIdentity']//*[local-name()='email']")
         $email = if ($em) { $em.InnerText.Trim() } else { '' }
+        $st = $h.SelectSingleNode("./*[local-name()='centre']/*[local-name()='ids']")
+        if (-not $st -or $st.InnerText.Trim() -ne $StrediskoEshop) { continue }
         if ($c -notmatch '^\d{6,12}$' -or $email -notmatch '@' -or ([int]$chyby["zalohy:$c"]) -ge 3) { continue }
         $obj = $h.SelectSingleNode("./*[local-name()='numberOrder']"); $vs = $h.SelectSingleNode("./*[local-name()='symVar']")
         $objNo = if ($obj -and $obj.InnerText.Trim()) { $obj.InnerText.Trim() } elseif ($vs) { $vs.InnerText.Trim() } else { '' }

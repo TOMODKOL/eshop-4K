@@ -15,6 +15,7 @@
 param([string]$Portal = 'https://client.4kluciodkol.cz', [switch]$Ostre)
 . (Join-Path $PSScriptRoot 'spolecne.ps1')
 $uloha = 'vratky_doklady'
+$StrediskoEshop = '4kluciodko'   # středisko e-shopu – každý doklad z vratkového portálu ho musí mít (podle něj se pozná e-shop)
 
 $hodina = (Get-Date).Hour
 if ($hodina -lt $MServerOd -or $hodina -ge $MServerDo) { return }
@@ -145,7 +146,7 @@ try {
             $fvPolozky = @{}
             foreach ($p in (Uzly $fv 'invoiceDetail/invoiceItem')) { $c = Text $p 'code'; if ($c -and -not $fvPolozky.ContainsKey($c)) { $fvPolozky[$c] = $p } }
             $partner = (Uzel $h 'partnerIdentity').OuterXml -replace '<inv:partnerIdentity', '<ord:partnerIdentity' -replace '</inv:partnerIdentity>', '</ord:partnerIdentity>'
-            $stredisko = Text $h 'centre/ids'; $cinnost = Text $h 'activity/ids'
+            $stredisko = Text $h 'centre/ids'; $cinnost = Text $h 'activity/ids'; $stredisko = $StrediskoEshop   # vždy e-shop (vratkový portál = jen e-shop)
             $dnes = (Get-Date).ToString('yyyy-MM-dd')
 
             # --- položky objednávky = nové zboží ---
@@ -296,7 +297,7 @@ try {
                 }
                 $polozky = ($sazby.Keys | ForEach-Object { "<int:intDocItem><int:text>Zdanitelné plnění - přijetí úplaty</int:text><int:quantity>1</int:quantity><int:payVAT>true</int:payVAT><int:rateVAT>$_</int:rateVAT><int:homeCurrency><typ:unitPrice>$(Cislo $sazby[$_])</typ:unitPrice></int:homeCurrency></int:intDocItem>" }) -join "`n"
                 $partner = (Uzel $zh 'partnerIdentity').OuterXml -replace '<inv:partnerIdentity', '<int:partnerIdentity' -replace '</inv:partnerIdentity>', '</int:partnerIdentity>'
-                $stredisko = Text $zh 'centre/ids'; $cinnost = Text $zh 'activity/ids'
+                $stredisko = Text $zh 'centre/ids'; $cinnost = Text $zh 'activity/ids'; $stredisko = $StrediskoEshop   # vždy e-shop (vratkový portál = jen e-shop)
                 $ddppXml = @"
 <dat:dataPackItem id="ddpp_$zfNo" version="2.0"><int:intDoc version="2.0">
 <int:intDocHeader>
@@ -427,7 +428,7 @@ try {
             # --- hlavička ---
             $dnes = (Get-Date).ToString('yyyy-MM-dd')
             $partner = (Uzel $h 'partnerIdentity').OuterXml
-            $stredisko = Text $h 'centre/ids'; $cinnost = Text $h 'activity/ids'
+            $stredisko = Text $h 'centre/ids'; $cinnost = Text $h 'activity/ids'; $stredisko = $StrediskoEshop   # vždy e-shop (vratkový portál = jen e-shop)
             $objCislo = Text $h 'numberOrder'; $objDatum = Text $h 'dateOrder'
             $ucetX = ''
             if ($odd) {

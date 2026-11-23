@@ -377,6 +377,11 @@ $pdfDoklad = function (string $kind) {
             'text' => 'Zkontrolujte prosím, že jste přihlášení na e-shopu pod e-mailem z objednávky, nebo nám zavolejte na ' . Config::get('shop.phone') . '.']);
         return;
     }
+    if (!Invoices::has($no, $kind) && Invoices::skipped($no, $kind)) {
+        View::page('layout/message', ['title' => 'Doklad není k dispozici online',
+            'text' => 'Tento doklad online nenabízíme. Rádi vám ho pošleme – zavolejte nám na ' . Config::get('shop.phone') . '.']);
+        return;
+    }
     if (!Invoices::has($no, $kind)) {
         View::page('layout/message', ['title' => $co . ' připravujeme',
             'text' => (['objednavky' => 'Potvrzení objednávky č. ', 'zalohy' => 'Zálohovou fakturu č. '][$kind] ?? 'Fakturu č. ') . $no . ' právě připravujeme ve formátu PDF. Zkuste to prosím za pár minut znovu.']);
@@ -467,7 +472,7 @@ foreach (['faktury', 'objednavky', 'zalohy'] as $kind) {
         foreach ((array) ($d['pdfs'] ?? []) as $x) {
             if (!is_array($x)) continue;
             $no = (string) ($x['no'] ?? $x['invoice_no'] ?? '');
-            $e = Invoices::save($no, (string) ($x['pdf'] ?? ''), $kind, $x);
+            $e = !empty($x['skip']) ? Invoices::skip($no, $kind) : Invoices::save($no, (string) ($x['pdf'] ?? ''), $kind, $x);
             if ($e) $err[] = $no . ': ' . $e; else $ok++;
         }
         Http::json(['ok' => true, 'saved' => $ok, 'errors' => $err]);

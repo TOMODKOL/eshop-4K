@@ -32,6 +32,21 @@ final class Invoices
         return $no !== '' && is_file(self::path($no, $kind));
     }
 
+    /** Doklad, který se v PDF nenabízí (není e-shopový – středisko jiné než 4kluciodko). Pomocník ho označí, ať se nevrací v seznamu. */
+    public static function skipped(string $no, string $kind = 'faktury'): bool
+    {
+        $no = preg_replace('/\D+/', '', $no) ?? '';
+        return $no !== '' && is_file(self::dir($kind) . '/' . $no . '.skip');
+    }
+
+    public static function skip(string $no, string $kind = 'faktury'): ?string
+    {
+        $no = preg_replace('/\D+/', '', $no) ?? '';
+        if (!preg_match('/^\d{6,12}$/', $no)) return 'neplatné číslo dokladu';
+        if (!is_dir(self::dir($kind))) @mkdir(self::dir($kind), 0775, true);
+        return file_put_contents(self::dir($kind) . '/' . $no . '.skip', date('c')) === false ? 'nelze uložit' : null;
+    }
+
     /** Doklady z portálu, ke kterým ještě není PDF (nejnovější první). */
     public static function missing(int $limit, string $kind = 'faktury'): array
     {
@@ -41,7 +56,7 @@ final class Invoices
         $out = [];
         foreach ($rows as $r) {
             $no = (string) $r['no'];
-            if (!preg_match('/^\d{6,12}$/', $no) || self::has($no, $kind) || in_array($no, $out, true)) continue;
+            if (!preg_match('/^\d{6,12}$/', $no) || self::has($no, $kind) || self::skipped($no, $kind) || in_array($no, $out, true)) continue;
             $out[] = $no;
             if (count($out) >= $limit) break;
         }
