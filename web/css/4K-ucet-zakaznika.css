@@ -140,3 +140,5 @@ html.k4u .OrderDetailState #PohodaOrderItemList>.footer .documentTotalPriceVat.v
 }
 /* detail faktury: tlačítko PDF vedle Vytisknout */
 .k4u-pdf-detail{margin:0 8px 0 0;vertical-align:middle}
+/* objednávka z e-shopu: tisk stránky nahrazuje PDF z Pohody */
+html.k4u .OrderDetailState #PohodaOrderMaster.k4u-obj-pdf .PohodaOrderButtons a.print{display:none!important}

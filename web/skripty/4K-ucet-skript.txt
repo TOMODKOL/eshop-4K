@@ -51,7 +51,7 @@
       return e;
     }).catch(function () { return ''; }));
   }
-  function pdfUrl(num, email) { return PDF + '?c=' + encodeURIComponent(num) + '&email=' + encodeURIComponent(email || ''); }
+  function pdfUrl(num, email, obj) { return (obj ? PDF.replace(/faktura$/, 'objednavka-pdf') : PDF) + '?c=' + encodeURIComponent(num) + '&email=' + encodeURIComponent(email || ''); }
   function vratkaUrl(num, email) { return CLIENT + '?obj=' + encodeURIComponent(num) + '&email=' + encodeURIComponent(email || ''); }
   function sledovani(item) {
     var a = item.querySelector('.packetNumbers a[href]');
@@ -187,6 +187,13 @@
       (meta ? '<div class="k4u-meta">' + meta + '</div>' : '') + '<div class="k4u-akce"></div>';
     var h1 = M.querySelector('h1'); h1.parentNode.insertBefore(p, h1.nextSibling);
     var akce = p.querySelector('.k4u-akce');
+    // potvrzení objednávky v PDF z Pohody místo tisku stránky (jen objednávky z e-shopu)
+    if (ESHOP.test(cislo)) {
+      var op = document.createElement('a'); op.className = 'k4u-btn'; op.target = '_blank'; op.rel = 'noopener';
+      op.href = pdfUrl(cislo, email, true); op.textContent = 'Objednávka (PDF)';
+      p.querySelector('.k4u-fa').appendChild(op);
+      M.classList.add('k4u-obj-pdf');
+    }
 
     function ukazStav(s) {
       var e = p.querySelector('.k4u-stav');
@@ -220,7 +227,7 @@
         if (a && a.getAttribute('href')) out.push(/^\d{2}08/.test(txt(a)) ? '<a class="k4u-btn" href="' + esc(a.getAttribute('href')) + '">Zálohová faktura ' + esc(txt(a)) + '</a>'
           : '<a class="k4u-btn" href="' + esc(pdfUrl(txt(a), email)) + '" target="_blank" rel="noopener">Faktura ' + esc(txt(a)) + ' (PDF)</a>');
       }
-      if (out.length) p.querySelector('.k4u-fa').innerHTML = out.join('');
+      if (out.length) p.querySelector('.k4u-fa').insertAdjacentHTML('afterbegin', out.join(''));
     }).catch(function () {});
 
     // nadpis „Objednávka č. …“, ceny bez „,00“, prázdná poznámka pryč

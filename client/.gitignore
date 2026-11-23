@@ -4,6 +4,8 @@ storage/uploads/*
 storage/log/*
 storage/ratelimit/*
 storage/cache/*
+storage/faktury/*
+storage/objednavky/*
 storage/*.sqlite
 !storage/**/.gitkeep
 storage/schema_v*
