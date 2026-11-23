@@ -21,6 +21,8 @@ Installer::run();
 $fail = 0;
 function t(bool $c, string $m): void { global $fail; echo ($c ? 'ok   ' : 'CHYBA') . " $m\n"; if (!$c) $fail++; }
 
+t(Service::shippingRule('2026-11-22')['refund_max'] == 69 && Service::shippingRule('2026-11-23')['refund_max'] == 79 && Service::shippingRule('2026-11-23')['prices']['gls čr - výdejní'] == 79 && Service::shippingRule('2026-11-23')['prices']['gls čr - na adresu'] == 119, 'ceník dopravy od 23. 11. 2026: GLS 79 / 119, vrácení dopravy nejvýš podle data objednávky');
+
 // velikosti
 t(Service::sizeOptions('dres POC M') === ['XXS', 'XS', 'S', 'L', 'XL', 'XXL', '3XL', '4XL'], 'velikosti oblečení');
 t(in_array('42,5', Service::sizeOptions('tretry LAKE CX239 REGULAR 43'), true), 'velikosti bot po půl čísle');

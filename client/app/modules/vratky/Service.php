@@ -486,7 +486,10 @@ final class Service
         }
         $already = (float) Db::value("SELECT COALESCE(SUM(ship_refund),0) FROM returns WHERE order_id = ? AND id <> ? AND status <> 'zamitnuto'", [$ret['order_id'], $ret['id']]);
         if ($already > 0) return 0.0;
-        $max = Config::get('vratky.refund_shipping_max');
+        // Strop = nejlevnější způsob doručení podle ceníku platného k datu objednávky (refund_max u pravidla), jinak vratky.refund_shipping_max.
+        $date = (string) Db::value('SELECT invoice_date FROM orders WHERE id = ?', [$ret['order_id']]);
+        $rule = $date !== '' ? self::shippingRule($date) : null;
+        $max = $rule['refund_max'] ?? Config::get('vratky.refund_shipping_max');
         return round($max === null ? $paid : min($paid, (float) $max), 2);
     }
 
