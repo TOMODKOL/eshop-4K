@@ -1,0 +1,208 @@
+<table style="width: 100%; font-family: Arial, Helvetica, sans-serif; color: #444444;" role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0">
+	<tbody>
+		<!-- ÚVOD -->
+		<tr>
+			<td style="padding: 32px 28px 8px 28px;">
+				<div style="font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #2e9d4f;">✓ Objednávka přijata</div>
+				<div style="margin: 8px 0 12px 0; font-size: 26px; line-height: 1.25; font-weight: bold; color: #111111;">Máme to! Díky za objednávku.</div>
+				<div style="font-size: 15px; line-height: 1.6; color: #444444;">
+					Dobrý den, Vaše objednávka č.
+					<strong style="color: #111111;">$CISLO_OBJEDNAVKY</strong>
+					právě dojela k nám. Zkontrolujeme, zabalíme a pošleme ji dál – o každém kroku Vám dáme vědět.
+				</div>
+			</td>
+		</tr>
+		<!-- PRŮBĚH OBJEDNÁVKY -->
+		<tr>
+			<td style="padding: 22px 28px 4px 28px;">
+				<table style="font-size: 12px; text-align: center;" role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0">
+					<tbody>
+						<tr>
+							<td style="padding: 0 0 6px 0;" width="33%">
+								<div style="height: 4px; line-height: 4px; font-size: 1px; background-color: #2e9d4f;">&nbsp;</div>
+							</td>
+							<td style="padding: 0 4px 6px 4px;" width="34%">
+								<div style="height: 4px; line-height: 4px; font-size: 1px; background-color: #e2e2e2;">&nbsp;</div>
+							</td>
+							<td style="padding: 0 0 6px 0;" width="33%">
+								<div style="height: 4px; line-height: 4px; font-size: 1px; background-color: #e2e2e2;">&nbsp;</div>
+							</td>
+						</tr>
+						<tr>
+							<td style="font-weight: bold; color: #111111;">Přijato</td>
+							<td style="color: #999999;">Připravujeme</td>
+							<td style="color: #999999;">Odesláno</td>
+						</tr>
+					</tbody>
+				</table>
+			</td>
+		</tr>
+		<!-- SOUHRN -->
+		<tr>
+			<td style="padding: 22px 28px 0 28px;">
+				<table style="background-color: #f7f7f7; border-radius: 10px;" role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0">
+					<tbody>
+						<tr>
+							<td style="padding: 16px 20px;">
+								<table style="font-size: 14px; line-height: 1.5; color: #444444;" role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0">
+									<tbody>
+										<tr>
+											<td style="padding: 3px 0; color: #777777;">Číslo objednávky</td>
+											<td style="padding: 3px 0; font-weight: bold; color: #111111;" align="right">$CISLO_OBJEDNAVKY</td>
+										</tr>
+										<tr>
+											<td style="padding: 3px 0; color: #777777;">Přijato</td>
+											<td style="padding: 3px 0;" align="right">$DATUM_A_CAS_VYTVORENI_OBJEDNAVKY</td>
+										</tr>
+										<tr>
+											<td style="padding: 3px 0; color: #777777;">Doprava</td>
+											<td style="padding: 3px 0;" align="right">$ZPUSOB_DOPRAVY</td>
+										</tr>
+										<tr>
+											<td style="padding: 3px 0; color: #777777;">Platba</td>
+											<td style="padding: 3px 0;" align="right">$ZPUSOB_PLATBY</td>
+										</tr>
+										<tr>
+											<td style="padding: 3px 0; color: #777777;">Cena celkem</td>
+											<td style="padding: 3px 0; font-weight: bold; color: #111111;" align="right">$CENA_CELKEM_DPH $this.CurrencyCode</td>
+										</tr>
+									</tbody>
+								</table>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</td>
+		</tr>
+		<!-- PLATEBNÍ ÚDAJE – JEN PŘI PLATBĚ PŘEVODEM (podmínka uvnitř buňky) -->
+		<tr>
+			<td style="padding: 16px 28px 0 28px;">
+				#if($ZPUSOB_PLATBY=="Převod")
+				<table style="border: 2px solid #111111; border-radius: 10px;" role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0">
+					<tbody>
+						<tr>
+							<td style="padding: 16px 20px; font-size: 14px; line-height: 1.7; color: #444444;">
+								<div style="font-size: 15px; font-weight: bold; color: #111111; padding-bottom: 6px;">Platební údaje</div>
+								Číslo účtu:
+								<strong style="color: #111111;">$CISLO_UCTU / $KOD_BANKY</strong>
+								<br>
+								IBAN:
+								<strong style="color: #111111;">$IBAN</strong>
+								<br>
+								Variabilní symbol:
+								<strong style="color: #111111;">$CISLO_OBJEDNAVKY</strong>
+								<br>
+								Částka:
+								<strong style="color: #111111;">$CENA_CELKEM_DPH $this.CurrencyCode</strong>
+								<div style="padding-top: 10px;">$.GetQrCode()</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				#end
+			</td>
+		</tr>
+		<!-- OBJEDNANÉ ZBOŽÍ -->
+		<tr>
+			<td style="padding: 28px 28px 0 28px;">
+				<div style="font-size: 16px; font-weight: bold; color: #111111; padding-bottom: 10px; border-bottom: 2px solid #111111;">Objednané zboží</div>
+				<div style="font-size: 14px; line-height: 1.5; color: #444444;">$SEZNAM_POLOZEK</div>
+				<table style="border-top: 1px solid #eeeeee;" role="presentation" border="0" width="100%" cellspacing="0" cellpadding="0">
+					<tbody>
+						<tr>
+							<td style="padding: 14px 0 0 0; font-size: 16px; font-weight: bold; color: #111111;">Celkem</td>
+							<td style="padding: 14px 0 0 0; font-size: 20px; font-weight: bold; color: #111111; white-space: nowrap;" align="right">$CENA_CELKEM_DPH $this.CurrencyCode</td>
+						</tr>
+						<tr>
+							<td style="font-size: 12px; color: #999999;" colspan="2" align="right">včetně DPH</td>
+						</tr>
+					</tbody>
+				</table>
+			</td>
+		</tr>
+		<!-- ADRESY (podmínky uvnitř buněk) -->
+		<tr>
+			<td style="padding: 28px 18px 0 18px; font-size: 0;">
+				<div style="display: inline-block; vertical-align: top; width: 100%; max-width: 270px;">
+					<div style="padding: 0 10px 16px 10px; font-size: 14px; line-height: 1.6; color: #444444;">
+						<div style="font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #999999; padding-bottom: 6px;">Fakturační údaje</div>
+						#if($.NeniPrazdne($FAKTURACNI_FIRMA))
+						<strong style="color: #111111;">$FAKTURACNI_FIRMA</strong>
+						<br>
+						#if($.NeniPrazdne($FAKTURACNI_JMENO))$FAKTURACNI_JMENO
+						<br>
+						#end#else
+						<strong style="color: #111111;">$FAKTURACNI_JMENO</strong>
+						<br>
+						#end $FAKTURACNI_ULICE
+						<br>
+						$FAKTURACNI_PSC $FAKTURACNI_OBEC
+						<br>
+						#if($.NeniPrazdne($FAKTURACNI_ICO))IČ: $FAKTURACNI_ICO
+						<br>
+						#end #if($.NeniPrazdne($FAKTURACNI_DIC))DIČ: $FAKTURACNI_DIC
+						<br>
+						#end $EMAIL_ZAKAZNIKA #if($.NeniPrazdne($FAKTURACNI_TELEFON))
+						<br>
+						$FAKTURACNI_TELEFON#end
+					</div>
+				</div>
+				<div style="display: inline-block; vertical-align: top; width: 100%; max-width: 270px;">
+					<div style="padding: 0 10px 16px 10px; font-size: 14px; line-height: 1.6; color: #444444;">
+						<div style="font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #999999; padding-bottom: 6px;">Doručení</div>
+						#if($.NeniPrazdne($DODACI_ULICE))#if($DODACI_ULICE==$FAKTURACNI_ULICE)
+						<strong style="color: #111111;">$ZPUSOB_DOPRAVY</strong>
+						<br>
+						Na fakturační adresu#else#if($.NeniPrazdne($DODACI_JMENO))
+						<strong style="color: #111111;">$DODACI_JMENO</strong>
+						<br>
+						#end #if($.NeniPrazdne($DODACI_FIRMA))$DODACI_FIRMA
+						<br>
+						#end $DODACI_ULICE
+						<br>
+						$DODACI_PSC $DODACI_OBEC#end #if($.NeniPrazdne($DODACI_TELEFON))
+						<br>
+						$DODACI_TELEFON#end #else
+						<strong style="color: #111111;">$ZPUSOB_DOPRAVY</strong>
+						<br>
+						Prodejna 4 KLUCI OD KOL
+						<br>
+						U Vlečky 726/5c, 617 00 Brno
+						<br>
+						<a style="color: #111111; font-size: 13px;" href="https://maps.google.com/?q=4+KLUCI+OD+KOL+U+Vlečky+726/5c+Brno">Zobrazit na mapě</a>
+						<div style="padding-top: 10px; font-size: 13px; line-height: 1.6;">
+							<strong style="color: #111111;">Otevírací doba</strong>
+							<br>
+							Po–Pá 9.00–17.00
+							<br>
+							So 9.00–13.00
+							<br>
+							Tel.: 604 998 800
+						</div>
+						#end
+					</div>
+				</div>
+			</td>
+		</tr>
+		<!-- POZNÁMKY (podmínky uvnitř buňky) -->
+		<tr>
+			<td style="padding: 4px 28px 0 28px; font-size: 14px; line-height: 1.6; color: #444444;">
+				#if($.NeniPrazdne($POZNAMKA))
+				<div style="padding-top: 8px;">
+					<strong style="color: #111111;">Vaše poznámka:</strong>
+					$POZNAMKA
+				</div>
+				#end#if($.NeniPrazdne($POZNAMKA_PRO_ZAKAZNIKA))
+				<div style="padding-top: 8px; color: #111111;">
+					<strong>$POZNAMKA_PRO_ZAKAZNIKA</strong>
+				</div>
+				#end
+			</td>
+		</tr>
+		<tr>
+			<td style="padding: 20px 28px 24px 28px;">
+				<div style="padding: 14px 16px; background-color: #fff8e6; border-radius: 8px; font-size: 13px; line-height: 1.55; color: #6b5a2a;">Kdyby se některé zboží mezitím vyprodalo, hned se Vám ozveme. Výměnu, vrácení i reklamaci pak vyřídíte online na <a style="color: #6b5a2a; font-weight: bold;" href="https://client.4kluciodkol.cz/vratky/objednavka?obj=$CISLO_OBJEDNAVKY&amp;email=$EMAIL_ZAKAZNIKA">client.4kluciodkol.cz</a> – výměna je s dopravou zdarma.</div>
+			</td>
+		</tr>
+	</tbody>
+</table>
