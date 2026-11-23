@@ -16,6 +16,7 @@
   var CLIENT = 'https://client.4kluciodkol.cz/vratky/objednavka';
   var SK = '4k_ucet_stavy';
   var LHUTA = 730; // dní od objednávky, kdy ještě nabízet vrácení / reklamaci
+  var ESHOP = /^8810\d{6}$/; // vratkový portál zná jen objednávky z e-shopu
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function txt(e) { return e ? e.textContent.replace(/\s+/g, ' ').trim() : ''; }
@@ -82,7 +83,7 @@
       mapa[o.cislo] = { stav: o.stav, cls: o.stavCls, z: o.zasilka };
       var storno = /cancel/i.test(o.stavCls);
       if (storno) { it.classList.add('k4u-storno'); storna++; }
-      var d = datum(o.datum), lzeVratit = !storno && d && (Date.now() - d.getTime()) / 864e5 <= LHUTA;
+      var d = datum(o.datum), lzeVratit = !storno && ESHOP.test(o.cislo) && d && (Date.now() - d.getTime()) / 864e5 <= LHUTA;
       var meta = [hezkeDatum(o.datum), o.platba, o.doprava].filter(Boolean).map(esc).join(' <i>·</i> ');
       var c = document.createElement('div');
       c.className = 'k4u-card';
@@ -166,8 +167,16 @@
     var em = M.querySelector('.PohodaOrderContactDetails .caption.email'), email = txt(next(em));
     var datumObj = txt(next(M.querySelector('.PohodaOrderMainDetails .caption.created')));
 
+    function pole(blok, cls) { return txt(next(M.querySelector('.' + blok + ' .caption.' + cls))); }
+    var platba = pole('PohodaOrderMainDetails', 'payment');
+    var dodani = [pole('PohodaOrderDeliveryDetails', 'deliveryFullName') || pole('PohodaOrderDeliveryDetails', 'deliveryCompany'),
+      pole('PohodaOrderDeliveryDetails', 'deliveryStreet'),
+      (pole('PohodaOrderDeliveryDetails', 'deliveryZip') + ' ' + pole('PohodaOrderDeliveryDetails', 'deliveryCity')).trim()].filter(Boolean).join(', ');
+    var meta = [datumObj ? 'Objednáno ' + hezkeDatum(datumObj) : '', platba, dodani ? 'Doručení: ' + dodani : ''].filter(Boolean).map(esc).join(' <i>·</i> ');
+    M.classList.add('k4u-kompakt');   // 4 bloky s adresami schová CSS, souhrn je v panelu
     var p = document.createElement('div'); p.className = 'k4u-panel';
-    p.innerHTML = '<div class="k4u-hl"><span class="k4u-stav k4u-s-nacitam">Zjišťuji stav…</span><span class="k4u-zas"></span><span class="k4u-fa"></span></div><div class="k4u-akce"></div>';
+    p.innerHTML = '<div class="k4u-hl"><span class="k4u-stav k4u-s-nacitam">Zjišťuji stav…</span><span class="k4u-zas"></span><span class="k4u-fa"></span></div>' +
+      (meta ? '<div class="k4u-meta">' + meta + '</div>' : '') + '<div class="k4u-akce"></div>';
     var h1 = M.querySelector('h1'); h1.parentNode.insertBefore(p, h1.nextSibling);
     var akce = p.querySelector('.k4u-akce');
 
@@ -177,7 +186,7 @@
       e.className = 'k4u-stav ' + stavTrida(s.cls); e.textContent = velke(s.stav);
       var storno = /cancel/i.test(s.cls), d = datum(datumObj);
       if (s.z && s.z.href) p.querySelector('.k4u-zas').innerHTML = '<a class="k4u-btn k4u-btn-zl" href="' + esc(s.z.href) + '" target="_blank" rel="noopener">Sledovat zásilku' + (s.z.cislo ? ' ' + esc(s.z.cislo) : '') + '</a>';
-      if (!storno && d && (Date.now() - d.getTime()) / 864e5 <= LHUTA) {
+      if (!storno && ESHOP.test(cislo) && d && (Date.now() - d.getTime()) / 864e5 <= LHUTA) {
         var a = document.createElement('a'); a.className = 'k4u-btn k4u-btn-zl k4u-vratit-velke'; a.href = vratkaUrl(cislo, email);
         a.innerHTML = 'Vrátit / vyměnit / reklamovat'; akce.insertBefore(a, akce.firstChild);
         var info = document.createElement('p'); info.className = 'k4u-info';
@@ -221,8 +230,12 @@
       var box = document.createElement('span'); box.className = 'k4u-foto'; a.insertBefore(box, a.firstChild);
       fetch(a.getAttribute('href')).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
         var m = t.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i);
-        if (m) box.innerHTML = '<img src="' + esc(m[1].replace(/&amp;/g, '&')) + '" alt="" loading="lazy">';
-        else box.classList.add('k4u-foto-nic');
+        if (!m) { box.classList.add('k4u-foto-nic'); return; }
+        // BSSHOP mění nové obrázky na lazy-load (data-src) → obrázek načteme sami a src nastavíme až po načtení
+        var url = m[1].replace(/&amp;/g, '&'), im = document.createElement('img'), pre = new Image();
+        im.alt = ''; box.appendChild(im);
+        pre.onload = function () { im.removeAttribute('data-lazy'); im.removeAttribute('data-src'); im.src = url; };
+        pre.src = url;
       }).catch(function () { box.classList.add('k4u-foto-nic'); });
     })(odkazy[j]);
     document.documentElement.classList.add('k4u');
