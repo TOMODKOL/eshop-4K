@@ -10,3 +10,4 @@ storage/*.sqlite
 !storage/**/.gitkeep
 storage/schema_v*
 storage/zalohy/*
+storage/prodejky/*

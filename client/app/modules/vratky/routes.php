@@ -369,8 +369,10 @@ $pdfDoklad = function (string $kind) {
     } else {
         $o = $limit ? Invoices::find(Http::input('c'), Http::input('email')) : null;
         $no = $o ? (string) ($kind === 'objednavky' ? $o['order_no'] : $o['invoice_no']) : '';
+        // daňový doklad k objednávce: faktura, nebo prodejka (objednávka vyzvednutá a zaplacená na prodejně)
+        if ($kind === 'faktury' && $no !== '') $kind = Invoices::kindOf($no);
     }
-    $co = ['objednavky' => 'Objednávku', 'zalohy' => 'Zálohovou fakturu'][$kind] ?? 'Fakturu';
+    $co = ['objednavky' => 'Objednávku', 'zalohy' => 'Zálohovou fakturu', 'prodejky' => 'Prodejku'][$kind] ?? 'Fakturu';
     if ($no === '') {
         http_response_code(404);
         View::page('layout/message', ['title' => $co . ' jsme nenašli',
@@ -384,12 +386,12 @@ $pdfDoklad = function (string $kind) {
     }
     if (!Invoices::has($no, $kind)) {
         View::page('layout/message', ['title' => $co . ' připravujeme',
-            'text' => (['objednavky' => 'Potvrzení objednávky č. ', 'zalohy' => 'Zálohovou fakturu č. '][$kind] ?? 'Fakturu č. ') . $no . ' právě připravujeme ve formátu PDF. Zkuste to prosím za pár minut znovu.']);
+            'text' => (['objednavky' => 'Potvrzení objednávky č. ', 'zalohy' => 'Zálohovou fakturu č. ', 'prodejky' => 'Prodejku č. '][$kind] ?? 'Fakturu č. ') . $no . ' právě připravujeme ve formátu PDF. Zkuste to prosím za pár minut znovu.']);
         return;
     }
     $file = Invoices::path($no, $kind);
     header('Content-Type: application/pdf');
-    header('Content-Disposition: ' . (Http::input('stahnout') === '1' ? 'attachment' : 'inline') . '; filename="' . (['objednavky' => 'Objednavka-', 'zalohy' => 'Zalohova-faktura-'][$kind] ?? 'Faktura-') . $no . '.pdf"');
+    header('Content-Disposition: ' . (Http::input('stahnout') === '1' ? 'attachment' : 'inline') . '; filename="' . (['objednavky' => 'Objednavka-', 'zalohy' => 'Zalohova-faktura-', 'prodejky' => 'Prodejka-'][$kind] ?? 'Faktura-') . $no . '.pdf"');
     header('Content-Length: ' . filesize($file));
     header('Cache-Control: private, no-store');
     header('X-Robots-Tag: noindex');
@@ -461,7 +463,7 @@ Http::post('/api/sync/doklady', function () use ($syncAuth) {
 
 // doklady v PDF: GET = čísla, ke kterým chybí PDF (?limit=…), POST {"pdfs":[{"no":"260102162","pdf":"<base64>"}]}
 // zálohy jen POST {"pdfs":[{"no":"260800112","pdf":"…","email":"…","order_no":"8810…"}]} – co tisknout, hlídá pomocník sám
-foreach (['faktury', 'objednavky', 'zalohy'] as $kind) {
+foreach (['faktury', 'objednavky', 'zalohy', 'prodejky'] as $kind) {
     Http::get('/api/sync/' . $kind . '-pdf', function () use ($syncAuth, $kind) {
         $syncAuth();
         Http::json(['ok' => true, 'invoices' => Invoices::missing(max(1, min(500, (int) (Http::input('limit') ?: 40))), $kind)]);

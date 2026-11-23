@@ -3,6 +3,7 @@
 #  2. Pohoda je přes mServer vytiskne do PDF – faktury sestavou „Faktura“ (ID 190), objednávky sestavou
 #     „Potvrzení přijetí objednávky“ (ID 383). mServer vrátí PDF rovnou v odpovědi (base64), na serveru iPodniku nic nezůstane.
 #  3. PDF pošle do portálu (POST …-pdf). Do Pohody nic nezapisuje.
+#  Prodejky (sestava „Prodejka (daňový doklad)“, ID 170) – e-shopové objednávky vyzvednuté a zaplacené na prodejně.
 #  Jen doklady se střediskem e-shopu 4kluciodko (ostatní – prodejna, servis – portál označí „nenabízet“ a netisknou se).
 #  Zálohové faktury (sestava „Zálohová faktura“, ID 240) portál nezná – bere je pomocník z Pohody sám (všechny s e-mailem
 #  odběratele, poprvé od 1. 1. 2025) a posílá i e-mail a číslo objednávky. Hotové: stav\zalohy_pdf_hotove.json (číslo → otisk).
@@ -34,7 +35,10 @@ $Druhy = @(
        zaznam = 'invoice'; casti = @('invoiceHeader', 'invoiceDetail', 'invoiceSummary') },
     @{ kind = 'objednavky'; agenda = 'prijate_objednavky'; sestava = 383; sloupec = 'OBJ.Cislo';
        seznam = '<lst:listOrderRequest version="2.0" orderType="receivedOrder" orderVersion="2.0"><lst:requestOrder><ftr:filter><ftr:lastChanges>{0}</ftr:lastChanges></ftr:filter></lst:requestOrder></lst:listOrderRequest>';
-       zaznam = 'order'; casti = @('orderHeader', 'orderDetail', 'orderSummary') }
+       zaznam = 'order'; casti = @('orderHeader', 'orderDetail', 'orderSummary') },
+    @{ kind = 'prodejky';   agenda = 'prodejky';           sestava = 170; sloupec = 'PH.Cislo';
+       seznam = '<lst:listProdejkaRequest version="2.0" prodejkaVersion="2.0"><lst:requestProdejka><ftr:filter><ftr:lastChanges>{0}</ftr:lastChanges></ftr:filter></lst:requestProdejka></lst:listProdejkaRequest>';
+       zaznam = 'prodejka'; casti = @('prodejkaHeader', 'prodejkaDetail', 'prodejkaSummary') }
 )
 
 function MServer([string]$id, [string]$obsah) {
@@ -77,7 +81,7 @@ foreach ($D in $Druhy) {
     try {
         # 1) chybějící v portálu
         $odp = Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + "/api/sync/$k-pdf?limit=" + ($Pocet + 50)) -Headers $apiHlav -TimeoutSec 60
-        $cisla = @(@($odp.invoices) | Where-Object { $_ -match '^\d{6,12}$' -and ([int]$chyby["${k}:$_"]) -lt 3 } | Select-Object -First $Pocet)
+        $cisla = @(@($odp.invoices) | Where-Object { $_ -match '^[0-9A-Z]{6,14}$' -and ([int]$chyby["${k}:$_"]) -lt 3 } | Select-Object -First $Pocet)
 
         # 2) změněné v Pohodě
         $znovu = @()
@@ -86,7 +90,7 @@ foreach ($D in $Druhy) {
             foreach ($z in @($dz.SelectNodes("//*[local-name()='$($D.zaznam)']"))) {
                 $h = $z.SelectSingleNode("./*[local-name()='$($D.casti[0])']")
                 $n = if ($h) { $h.SelectSingleNode(".//*[local-name()='number']/*[local-name()='numberRequested']") } else { $null }
-                if (-not $n -or $n.InnerText.Trim() -notmatch '^\d{6,12}$') { continue }
+                if (-not $n -or $n.InnerText.Trim() -notmatch '^[0-9A-Z]{6,14}$') { continue }
                 $c = $n.InnerText.Trim()
                 $st = $h.SelectSingleNode("./*[local-name()='centre']/*[local-name()='ids']")
                 if (-not $st -or $st.InnerText.Trim() -ne $StrediskoEshop) { continue }
@@ -100,7 +104,9 @@ foreach ($D in $Druhy) {
         $nove = @($cisla | Where-Object { $znovu -notcontains $_ })
         if ($nove.Count) {
             $seznamC = ($nove | ForEach-Object { "'$_'" }) -join ','
-            $dotaz = if ($k -eq 'objednavky') {
+            $dotaz = if ($k -eq 'prodejky') {
+                "<lst:listProdejkaRequest version=""2.0"" prodejkaVersion=""2.0""><lst:requestProdejka><ftr:queryFilter><ftr:filter>PH.Cislo IN ($seznamC)</ftr:filter></ftr:queryFilter></lst:requestProdejka></lst:listProdejkaRequest>"
+            } elseif ($k -eq 'objednavky') {
                 "<lst:listOrderRequest version=""2.0"" orderType=""receivedOrder"" orderVersion=""2.0""><lst:requestOrder><ftr:queryFilter><ftr:filter>OBJ.Cislo IN ($seznamC)</ftr:filter></ftr:queryFilter></lst:requestOrder></lst:listOrderRequest>"
             } else {
                 "<lst:listInvoiceRequest version=""2.0"" invoiceType=""issuedInvoice"" invoiceVersion=""2.0""><lst:requestInvoice><ftr:queryFilter><ftr:filter>FA.Cislo IN ($seznamC)</ftr:filter></ftr:queryFilter></lst:requestInvoice></lst:listInvoiceRequest>"

@@ -232,6 +232,11 @@
           (/^\d{2}08/.test(txt(a)) ? 'Zálohová faktura ' : 'Faktura ') + esc(txt(a)) + ' (PDF)</a>');
       }
       if (out.length) p.querySelector('.k4u-fa').insertAdjacentHTML('afterbegin', out.join(''));
+      // vyřízená objednávka z e-shopu bez faktury = zaplacená na prodejně → prodejka (portál ji najde podle čísla objednávky)
+      else if (ESHOP.test(cislo)) setTimeout(function () {
+        if (!p.querySelector('.k4u-s-ok')) return;
+        p.querySelector('.k4u-fa').insertAdjacentHTML('afterbegin', '<a class="k4u-btn" href="' + esc(pdfUrl(cislo, email)) + '" target="_blank" rel="noopener">Doklad o koupi (PDF)</a>');
+      }, 1500);
     }).catch(function () {});
 
     // nadpis „Objednávka č. …“, ceny bez „,00“, prázdná poznámka pryč
