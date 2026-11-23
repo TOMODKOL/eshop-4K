@@ -153,3 +153,21 @@ CREATE TABLE IF NOT EXISTS sync_log (
   orders INT NOT NULL DEFAULT 0,
   note VARCHAR(255) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
+
+-- Doplatek výměny kartou (GP webpay). order_number = číslo zálohové faktury + pokus (2 číslice).
+CREATE TABLE IF NOT EXISTS card_payments (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  return_id INT UNSIGNED NOT NULL,
+  order_number VARCHAR(15) NOT NULL,
+  zf_no VARCHAR(20) NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  status VARCHAR(12) NOT NULL DEFAULT 'zalozeno',
+  prcode INT NULL,
+  srcode INT NULL,
+  result_text VARCHAR(255) NOT NULL DEFAULT '',
+  test TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL,
+  finished_at DATETIME NULL,
+  UNIQUE KEY card_order (order_number),
+  KEY card_return (return_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;

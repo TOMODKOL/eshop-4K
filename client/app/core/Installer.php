@@ -9,8 +9,13 @@ final class Installer
     public static function schema(string $driver): string
     {
         $sql = (string) file_get_contents(APP_ROOT . '/sql/mysql.sql');
-        if ($driver !== 'sqlite') return $sql;
+        return $driver === 'sqlite' ? self::toSqlite($sql) : $sql;
+    }
+
+    private static function toSqlite(string $sql): string
+    {
         $sql = preg_replace('/^--.*$/m', '', $sql);
+        $sql = preg_replace('/UNIQUE KEY \w+ \(/', 'UNIQUE (', $sql);
         $sql = preg_replace('/INT UNSIGNED AUTO_INCREMENT PRIMARY KEY/', 'INTEGER PRIMARY KEY AUTOINCREMENT', $sql);
         $sql = preg_replace('/\) ENGINE=InnoDB[^;]*;/', ');', $sql);
         $sql = preg_replace('/,\s*KEY \w+ \([^)]*\)/', '', $sql);
@@ -25,7 +30,15 @@ final class Installer
     }
 
     /** Doplnění sloupců do už nainstalované databáze (na Forpsi). Značka v storage/ zajistí, že se to spustí jen jednou. */
-    public const SCHEMA = 11;
+    public const SCHEMA = 12;
+
+    /** Tabulka plateb kartou (GP webpay) z sql/mysql.sql – pro doplnění do už nainstalované databáze. */
+    public static function cardPaymentsSql(): string
+    {
+        $sql = (string) file_get_contents(APP_ROOT . '/sql/mysql.sql');
+        if (!preg_match('/CREATE TABLE IF NOT EXISTS card_payments \(.*?\) ENGINE=InnoDB[^;]*;/s', $sql, $m)) throw new \RuntimeException('Chybí card_payments v mysql.sql');
+        return (string) Db::pdo()->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite' ? self::toSqlite($m[0]) : $m[0];
+    }
     public static function migrate(): void
     {
         $mark = APP_ROOT . '/storage/schema_v' . self::SCHEMA;
@@ -79,6 +92,8 @@ final class Installer
             'ALTER TABLE returns ADD COLUMN packeta_tries INT NOT NULL DEFAULT 0',
             'ALTER TABLE returns ADD COLUMN checked_at DATETIME NULL',
             'ALTER TABLE returns ADD COLUMN check_mail_at DATETIME NULL',
+            // v12: doplatek kartou přes GP webpay
+            self::cardPaymentsSql(),
         ];
         foreach ($cols as $sql) {
             try { Db::exec($sql); } catch (\Throwable $e) {

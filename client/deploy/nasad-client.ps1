@@ -7,6 +7,7 @@
 #   powershell -ExecutionPolicy Bypass -File .\nastav-udaj.ps1 db_client     (jméno = f204062, heslo = heslo k databázi)
 #   (volitelně) .\nastav-udaj.ps1 smtp_client  (jméno = schránka, ze které se posílá, např. info@4kluciodkol.cz, a její heslo) – zapne odesílání e-mailů
 #   (volitelně) .\nastav-udaj.ps1 packeta_client  (jen API heslo; odesílatel je v config.example.php) – zapne podací kódy
+#   (volitelně) .\nastav-udaj.ps1 gpwebpay  (prostředí test/ostry, soubory klíčů a heslo ke klíči) – zapne doplatek kartou
 param(
     [string]$Server   = 'ftpx.forpsi.com',
     [string]$Cil      = 'subdoms/client',
@@ -27,6 +28,13 @@ $smtp = $null
 if (Test-Path -LiteralPath (Join-Path $TajneDir 'smtp_client.xml')) { $smtp = Nacti-Udaj 'smtp_client' }
 $packeta = $null
 if (Test-Path -LiteralPath (Join-Path $TajneDir 'packeta_client.xml')) { $packeta = Nacti-Udaj 'packeta_client' }
+$gp = $null
+if (Test-Path -LiteralPath (Join-Path $TajneDir 'gpwebpay.xml')) {
+    $gp = Nacti-Udaj 'gpwebpay'   # jméno = test | ostry, heslo = heslo k soukromému klíči
+    foreach ($f in 'gp_soukromy.pem', 'gp_verejny.pem') {
+        if (-not (Test-Path -LiteralPath (Join-Path $TajneDir $f))) { throw "Chybí $f v $TajneDir – spusťte znovu nastav-udaj.ps1 gpwebpay." }
+    }
+}
 
 # Tajné klíče aplikace: vytvoří se jednou a uloží šifrovaně (app_key = jméno, sync_token = heslo)
 $klicSoubor = Join-Path $TajneDir 'client_klice.xml'
@@ -65,6 +73,13 @@ if ($smtp) {
 if ($packeta) {
     $cfg = $cfg -replace "('packeta'\s*=>\s*\[\s*\r?\n\s*'enabled'\s*=>\s*)false", '$1true'
     $cfg = [regex]::Replace($cfg, "'api_password'\s*=>\s*''", { param($m) "'api_password' => " + (PhpStr $packeta.GetNetworkCredential().Password) })
+}
+if ($gp) {
+    $cfg = $cfg -replace "('gpwebpay'\s*=>\s*\[\s*\r?\n\s*'enabled'\s*=>\s*)false", '$1true'
+    if ($gp.UserName -eq 'ostry') { $cfg = $cfg -replace "('test'\s*=>\s*)true(,\s*// true = testovací brána)", '$1false$2' }
+    $cfg = [regex]::Replace($cfg, "'key_password'\s*=>\s*''", { param($m) "'key_password'  => " + (PhpStr $gp.GetNetworkCredential().Password) })
+    Copy-Item -LiteralPath (Join-Path $TajneDir 'gp_soukromy.pem') -Destination (Join-Path $tmp 'config\gp_private.pem') -Force
+    Copy-Item -LiteralPath (Join-Path $TajneDir 'gp_verejny.pem') -Destination (Join-Path $tmp 'config\gp_public.pem') -Force
 }
 if ($cfg -match 'DOPLNIT') { throw 'V config.php zůstalo DOPLNIT – nasazení zastaveno.' }
 [IO.File]::WriteAllText((Join-Path $tmp 'config\config.php'), $cfg, (New-Object Text.UTF8Encoding($false)))
@@ -110,6 +125,7 @@ Get-ChildItem -LiteralPath $tmp -Recurse | Sort-Object FullName | ForEach-Object
 Remove-Item -LiteralPath $tmp -Recurse -Force
 Pis "Hotovo: nahráno $pocet souborů do $Cil." 'Green'
 Pis ("E-maily: " + $(if ($smtp) { ('zapnuté, odesílatel ' + $smtp.UserName) } else { 'vypnuté – jen do logu' }))
+Pis ("Platba kartou (GP webpay): " + $(if ($gp) { $(if ($gp.UserName -eq 'ostry') { 'zapnutá – OSTRÁ brána' } else { 'zapnutá – TESTOVACÍ brána' }) } else { 'vypnutá' }))
 Pis ("Zásilkovna: " + $(if ($packeta) { ('zapnutá, odesílatel ' + '4 KLUCI OD KOL') } else { 'vypnutá – podací kódy se nevytvářejí' }))
 
 if ($prvni -or $Klic) {

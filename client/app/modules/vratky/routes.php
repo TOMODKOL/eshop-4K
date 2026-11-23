@@ -9,6 +9,7 @@ use App\Core\RateLimit;
 use App\Core\Session;
 use App\Core\View;
 use App\Modules\Vratky\Eshop;
+use App\Modules\Vratky\GpWebpay;
 use App\Modules\Vratky\Notify;
 use App\Modules\Vratky\Packeta;
 use App\Modules\Vratky\Photos;
@@ -194,6 +195,32 @@ Http::get('/vratky/qr/{token}', function (string $token) {
     echo (new \chillerlan\QRCode\QRCode($o))->render($spd);
     exit;
 });
+
+// Doplatek výměny kartou – přesměrování na GP webpay (odkaz ze stránky stavu i z e-mailu)
+Http::get('/vratky/platba/{token}', function (string $token) {
+    $ret = preg_match('/^[a-f0-9]{40}$/', $token) ? Service::byToken($token) : null;
+    if (!$ret) { http_response_code(404); View::page('layout/notfound', ['title' => 'Stránka nenalezena']); return; }
+    if (!empty($ret['zf_paid'])) { Session::flash('Doplatek je už zaplacený, děkujeme.'); Http::redirect('/vratky/stav/' . $token); }
+    if (!GpWebpay::canPay($ret) || !RateLimit::hit('vr_card', 20, 3600)) {
+        Session::flash('Kartou teď zaplatit nejde. Zaplaťte prosím převodem podle údajů níže.', 'err');
+        Http::redirect('/vratky/stav/' . $token);
+    }
+    try { $url = GpWebpay::createPaymentUrl($ret); }
+    catch (\Throwable $e) { error_log('GP webpay: ' . $e->getMessage()); Session::flash('Platební bránu se nepodařilo otevřít. Zaplaťte prosím převodem, nebo to zkuste později.', 'err'); Http::redirect('/vratky/stav/' . $token); }
+    header('Cache-Control: no-store');
+    header('Location: ' . $url, true, 303);
+    exit;
+});
+
+// Návrat z GP webpay (GP posílá výsledek jako GET, případně POST)
+$cardReturn = function () {
+    $r = GpWebpay::handleResponse($_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET);
+    Session::flash($r['message'], $r['ok'] ? 'ok' : 'err');
+    if ($r['token']) Http::redirect('/vratky/stav/' . $r['token']);
+    View::page('layout/message', ['title' => 'Platba kartou', 'text' => $r['message']]);
+};
+Http::get('/vratky/platba-vysledek', $cardReturn);
+Http::post('/vratky/platba-vysledek', $cardReturn);
 
 // kontrola zboží z e-mailu prodejně (podepsaný odkaz, bez přihlášení; GET jen ukáže potvrzení – kvůli náhledům odkazů v poště)
 $checkPage = function (string $no, ?string $done = null, ?string $err = null) {

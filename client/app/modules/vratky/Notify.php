@@ -75,7 +75,8 @@ final class Notify
     private static function payData(array $ret): array
     {
         return ['amount' => Service::advanceAmount($ret), 'account' => (string) Config::get('shop.bank_account', ''), 'vs' => Service::payVs($ret),
-            'qr' => Service::spayd($ret) !== '' ? rtrim((string) Config::get('app_url'), '/') . '/vratky/qr/' . $ret['token'] : ''];
+            'qr' => Service::spayd($ret) !== '' ? rtrim((string) Config::get('app_url'), '/') . '/vratky/qr/' . $ret['token'] : '',
+            'card' => GpWebpay::canPay($ret) ? rtrim((string) Config::get('app_url'), '/') . '/vratky/platba/' . $ret['token'] : ''];
     }
 
     /** Zálohová faktura na doplatek výměny je v Pohodě → zákazníkovi platební údaje (podruhé jako upomínka po splatnosti). */
@@ -89,8 +90,8 @@ final class Notify
             'heading' => $reminder ? 'Připomínáme doplatek' : 'Doplatek za výměnu',
             'ret' => $ret, 'lines' => $lines, 'showCode' => false,
             'text' => $reminder
-                ? 'Doplatek za výměnu jsme zatím nedostali. Pošlete ho prosím převodem podle údajů níže, nové zboží pro vás pořád držíme. Pokud jste už platili, děkujeme – platby se nám propojí do pár dnů.'
-                : 'Nové zboží máme pro vás zarezervované. Doplatek prosím pošlete převodem do ' . Service::PAY_DUE_DAYS . ' dnů podle údajů níže. '
+                ? 'Doplatek za výměnu jsme zatím nedostali. Zaplaťte ho prosím ' . (GpWebpay::canPay($ret) ? 'kartou nebo ' : '') . 'převodem podle údajů níže, nové zboží pro vás pořád držíme. Pokud jste už platili, děkujeme – platby se nám propojí do pár dnů.'
+                : 'Nové zboží máme pro vás zarezervované. Doplatek prosím zaplaťte ' . (GpWebpay::canPay($ret) ? 'kartou nebo ' : '') . 'převodem do ' . Service::PAY_DUE_DAYS . ' dnů podle údajů níže. '
                     . 'Nové zboží odešleme, jakmile k nám dorazí vaše zboží a platba.',
             'pay' => self::payData($ret),
             'url' => self::statusUrl($ret),

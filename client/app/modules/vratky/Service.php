@@ -486,7 +486,10 @@ final class Service
         }
         $already = (float) Db::value("SELECT COALESCE(SUM(ship_refund),0) FROM returns WHERE order_id = ? AND id <> ? AND status <> 'zamitnuto'", [$ret['order_id'], $ret['id']]);
         if ($already > 0) return 0.0;
-        $max = Config::get('vratky.refund_shipping_max');
+        // Strop = nejlevnější způsob doručení podle ceníku platného k datu objednávky (refund_max u pravidla), jinak vratky.refund_shipping_max.
+        $date = (string) Db::value('SELECT invoice_date FROM orders WHERE id = ?', [$ret['order_id']]);
+        $rule = $date !== '' ? self::shippingRule($date) : null;
+        $max = $rule['refund_max'] ?? Config::get('vratky.refund_shipping_max');
         return round($max === null ? $paid : min($paid, (float) $max), 2);
     }
 
@@ -807,6 +810,25 @@ final class Service
         return $out;
     }
 
+    /** Doplatek zálohové faktury je zaplacený (převodem – vidí ho pomocník v Pohodě, nebo kartou přes GP webpay). */
+    public static function markAdvancePaid(array $r, string $how, float $amount, string $cardOrder = ''): void
+    {
+        $n = Db::exec('UPDATE returns SET zf_paid = 1, updated_at = ? WHERE id = ? AND zf_paid = 0', [Db::now(), $r['id']]);
+        if ($n === 0) return; // už zaplaceno (souběh dvou oznámení)
+        Db::insert('return_events', ['return_id' => $r['id'], 'status' => null,
+            'note' => 'Doplatek ' . money($amount) . ($how === 'kartou' ? ' jsme přijali kartou' : ' jsme přijali') . '. Děkujeme.',
+            'public' => 1, 'user_id' => null, 'created_at' => Db::now()]);
+        if ($how === 'kartou') Db::insert('return_events', ['return_id' => $r['id'], 'status' => null,
+            'note' => 'Platba kartou GP webpay, objednávka ' . $cardOrder . ' (zálohová faktura ' . $r['zf_no'] . '). V Pohodě se záloha spáruje z avíza GP další pracovní den.',
+            'public' => 0, 'user_id' => null, 'created_at' => Db::now()]);
+        Notify::paid(self::get((int) $r['id']));
+        $r = self::get((int) $r['id']);
+        if ($r['checked_at'] && (string) ($r['doc_state'] ?? '') === '') { // zboží už bylo v pořádku → doklad hned
+            $err = self::requestDoc($r, [], null);
+            if ($err) self::setStatus($r, '', 'Doklad se nevystavil automaticky: ' . $err, false, null);
+        }
+    }
+
     /** Výsledek z KANCL: {no, state: hotovo|navrh|chyba|zaplaceno, zf_no, error}. */
     public static function xorderResult(array $x): bool
     {
@@ -815,15 +837,7 @@ final class Service
         $state = (string) ($x['state'] ?? '');
         if ($state === 'zaplaceno') {
             if (!$r['zf_no'] || $r['zf_paid']) return false;
-            Db::exec('UPDATE returns SET zf_paid = 1, updated_at = ? WHERE id = ?', [Db::now(), $r['id']]);
-            Db::insert('return_events', ['return_id' => $r['id'], 'status' => null, 'note' => 'Doplatek ' . money(self::advanceAmount($r)) . ' jsme přijali. Děkujeme.',
-                'public' => 1, 'user_id' => null, 'created_at' => Db::now()]);
-            Notify::paid(self::get((int) $r['id']));
-            $r = self::get((int) $r['id']);
-            if ($r['checked_at'] && (string) ($r['doc_state'] ?? '') === '') { // zboží už bylo v pořádku → doklad hned
-                $err = self::requestDoc($r, [], null);
-                if ($err) self::setStatus($r, '', 'Doklad se nevystavil automaticky: ' . $err, false, null);
-            }
+            self::markAdvancePaid($r, 'prevodem', self::advanceAmount($r));
             return true;
         }
         if (!in_array($r['xorder_state'], ['ceka', 'navrh'], true) || !in_array($state, ['hotovo', 'navrh', 'chyba'], true)) return false;

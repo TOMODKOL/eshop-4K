@@ -266,6 +266,44 @@ $r = Sync::import(['orders' => [['invoice_no' => '260109990', 'order_no' => '881
     'items' => [['name' => 'dres', 'qty' => 1, 'unit_price' => 100]]]]]);
 t(\App\Core\Db::value("SELECT parcel_no FROM orders WHERE invoice_no = '260109990'") === 'Z4868453580', 'sync uloží číslo balíku');
 
+// doplatek kartou – GP webpay (vlastní dvojice klíčů za obchodníka i za GP)
+use App\Modules\Vratky\GpWebpay;
+$kdir = sys_get_temp_dir() . '/gp-test-' . getmypid(); @mkdir($kdir);
+$mk2 = function (string $file, ?string $pass) { $k = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]); openssl_pkey_export($k, $pem, $pass); file_put_contents($file, $pem); return $k; };
+$merchKey = $mk2("$kdir/m.pem", 'heslo123'); $gpKey = $mk2("$kdir/gp.pem", null);
+file_put_contents("$kdir/gp_pub.pem", openssl_pkey_get_details($gpKey)['key']);
+$cfgG = $cfg; $cfgG['gpwebpay'] = ['enabled' => true, 'test' => true, 'merchant' => '684240002', 'private_key' => "$kdir/m.pem", 'key_password' => 'heslo123', 'gp_public_key' => "$kdir/gp_pub.pem"];
+Config::load($cfgG);
+t(GpWebpay::enabled() && GpWebpay::gatewayUrl() === GpWebpay::URL_TEST, 'GP webpay zapnuté, testovací brána');
+\App\Core\Db::exec("UPDATE returns SET swap_diff = -1500, pay_method = 'prevod', zf_no = '260800150', zf_paid = 0, status = 'dorazilo', checked_at = NULL WHERE id = ?", [$x['id']]);
+$xr = Service::get((int) $x['id']);
+t(GpWebpay::canPay($xr) && !GpWebpay::canPay(['zf_paid' => 1] + $xr) && !GpWebpay::canPay(['zf_no' => null] + $xr), 'kartou jen nezaplacená záloha');
+$gu = GpWebpay::createPaymentUrl($xr); parse_str((string) parse_url($gu, PHP_URL_QUERY), $gq);
+$signed = implode('|', [$gq['MERCHANTNUMBER'], $gq['OPERATION'], $gq['ORDERNUMBER'], $gq['AMOUNT'], $gq['CURRENCY'], $gq['DEPOSITFLAG'], $gq['MERORDERNUM'], $gq['URL'], $gq['MD']]);
+$mpub = openssl_pkey_get_details($merchKey)['key'];
+t(str_starts_with($gu, GpWebpay::URL_TEST . '?') && $gq['ORDERNUMBER'] === '26080015001' && $gq['MERORDERNUM'] === '260800150' && $gq['AMOUNT'] === '150000' && $gq['CURRENCY'] === '203'
+    && $gq['URL'] === 'https://client.4kluciodkol.cz/vratky/platba-vysledek' && openssl_verify($signed, base64_decode($gq['DIGEST']), $mpub, OPENSSL_ALGO_SHA1) === 1, 'požadavek: objednávka 26080015001, 1 500 Kč, podpis sedí');
+$gpResp = function (array $f, bool $bad = false) use ($gpKey) {
+    $t = GpWebpay::responseText($f); openssl_sign($t, $d, $gpKey, OPENSSL_ALGO_SHA1); openssl_sign($t . '|684240002', $d1, $gpKey, OPENSSL_ALGO_SHA1);
+    return $f + ['DIGEST' => base64_encode($bad ? 'x' . $d : $d), 'DIGEST1' => base64_encode($d1)];
+};
+$h0 = GpWebpay::handleResponse($gpResp(['OPERATION' => 'CREATE_ORDER', 'ORDERNUMBER' => '26080015001', 'MERORDERNUM' => '260800150', 'MD' => $xr['token'], 'PRCODE' => '0', 'SRCODE' => '0', 'RESULTTEXT' => 'OK'], true));
+t(!$h0['ok'] && !Service::get((int) $x['id'])['zf_paid'], 'odpověď se špatným podpisem se odmítne');
+$gq2 = []; parse_str((string) parse_url(GpWebpay::createPaymentUrl($xr), PHP_URL_QUERY), $gq2);
+$h1 = GpWebpay::handleResponse($gpResp(['OPERATION' => 'CREATE_ORDER', 'ORDERNUMBER' => $gq2['ORDERNUMBER'], 'MERORDERNUM' => '260800150', 'MD' => $xr['token'], 'PRCODE' => '50', 'SRCODE' => '0', 'RESULTTEXT' => 'The cardholder canceled the payment']));
+t($gq2['ORDERNUMBER'] === '26080015002' && !$h1['ok'] && str_contains($h1['message'], 'zrušili') && !Service::get((int) $x['id'])['zf_paid'], 'zrušená platba: další pokus 02, nic se nezaplatí');
+$gq3 = []; parse_str((string) parse_url(GpWebpay::createPaymentUrl($xr), PHP_URL_QUERY), $gq3);
+$ok3 = $gpResp(['OPERATION' => 'CREATE_ORDER', 'ORDERNUMBER' => $gq3['ORDERNUMBER'], 'MERORDERNUM' => '260800150', 'MD' => $xr['token'], 'PRCODE' => '0', 'SRCODE' => '0', 'RESULTTEXT' => 'OK']);
+$h3 = GpWebpay::handleResponse($ok3);
+$xp3 = Service::get((int) $x['id']);
+$ev3 = \App\Core\Db::value("SELECT COUNT(*) FROM return_events WHERE return_id = ? AND note LIKE '%kartou%'", [$x['id']]);
+t($h3['ok'] && $h3['token'] === $xr['token'] && (int) $xp3['zf_paid'] === 1 && (int) $ev3 === 2 && GpWebpay::paidPayment((int) $x['id'])['order_number'] === '26080015003', 'úspěšná platba kartou: záloha zaplacena, zápis do historie');
+$h4 = GpWebpay::handleResponse($ok3);
+t($h4['ok'] && (int) \App\Core\Db::value("SELECT COUNT(*) FROM return_events WHERE return_id = ? AND note LIKE '%kartou%'", [$x['id']]) === 2 && !GpWebpay::canPay($xp3), 'opakovaná odpověď nic nezdvojí, další platba už nejde');
+t(Service::xorderPending() === [] , 'zaplacenou zálohu pomocník dál nehlídá (DDPP vznikne z Pohody po spárování avíza)');
+array_map('unlink', glob("$kdir/*")); @rmdir($kdir);
+Config::load($cfg);
+
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
 exit($fail ? 1 : 0);
