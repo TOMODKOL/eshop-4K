@@ -9,3 +9,4 @@ storage/objednavky/*
 storage/*.sqlite
 !storage/**/.gitkeep
 storage/schema_v*
+storage/zalohy/*

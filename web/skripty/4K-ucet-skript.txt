@@ -51,7 +51,11 @@
       return e;
     }).catch(function () { return ''; }));
   }
-  function pdfUrl(num, email, obj) { return (obj ? PDF.replace(/faktura$/, 'objednavka-pdf') : PDF) + '?c=' + encodeURIComponent(num) + '&email=' + encodeURIComponent(email || ''); }
+  // druh: '' = faktura, 'obj' = potvrzení objednávky, 'zal' = zálohová faktura (2608…)
+  function pdfUrl(num, email, druh) {
+    var cesta = druh === 'obj' || druh === true ? 'objednavka-pdf' : (druh === 'zal' || /^\d{2}08/.test(num) ? 'zaloha-pdf' : 'faktura');
+    return PDF.replace(/faktura$/, cesta) + '?c=' + encodeURIComponent(num) + '&email=' + encodeURIComponent(email || '');
+  }
   function vratkaUrl(num, email) { return CLIENT + '?obj=' + encodeURIComponent(num) + '&email=' + encodeURIComponent(email || ''); }
   function sledovani(item) {
     var a = item.querySelector('.packetNumbers a[href]');
@@ -152,7 +156,7 @@
         '<div class="k4u-meta">' + meta + (objC ? ' <i>·</i> objednávka ' + (objH ? '<a href="' + esc(objH) + '">' + esc(objC) + '</a>' : esc(objC)) : '') + '</div>' +
         '<div class="k4u-cena">' + esc(kc(txt(val(r, 'priceVat')))) + '</div>' +
         '<div class="k4u-akce">' + (z ? '<a class="k4u-btn k4u-btn-zl" href="' + esc(z.href) + '" target="_blank" rel="noopener">Sledovat zásilku</a>' : '') +
-        (/^\d{2}08/.test(cislo) ? '' : '<a class="k4u-btn k4u-btn-zl k4u-pdf" data-c="' + esc(cislo) + '" href="' + esc(pdfUrl(cislo, '')) + '" target="_blank" rel="noopener">Stáhnout PDF</a>') +
+        '<a class="k4u-btn k4u-btn-zl k4u-pdf" data-c="' + esc(cislo) + '" href="' + esc(pdfUrl(cislo, '')) + '" target="_blank" rel="noopener">Stáhnout PDF</a>' +
         '<a class="k4u-btn" href="' + esc(href) + '">Zobrazit fakturu</a></div>';
       it.appendChild(c);
     }
@@ -224,8 +228,8 @@
         var r = items[i].querySelector('dc-root') || items[i];
         if (txt(val(r, 'linkOrderNumber')) !== cislo) continue;
         var a = val(r, 'linkDocumentNumber');
-        if (a && a.getAttribute('href')) out.push(/^\d{2}08/.test(txt(a)) ? '<a class="k4u-btn" href="' + esc(a.getAttribute('href')) + '">Zálohová faktura ' + esc(txt(a)) + '</a>'
-          : '<a class="k4u-btn" href="' + esc(pdfUrl(txt(a), email)) + '" target="_blank" rel="noopener">Faktura ' + esc(txt(a)) + ' (PDF)</a>');
+        if (a && a.getAttribute('href')) out.push('<a class="k4u-btn" href="' + esc(pdfUrl(txt(a), email)) + '" target="_blank" rel="noopener">' +
+          (/^\d{2}08/.test(txt(a)) ? 'Zálohová faktura ' : 'Faktura ') + esc(txt(a)) + ' (PDF)</a>');
       }
       if (out.length) p.querySelector('.k4u-fa').insertAdjacentHTML('afterbegin', out.join(''));
     }).catch(function () {});
@@ -261,11 +265,11 @@
   function detailFaktury() {
     if (document.querySelector('.k4u-pdf-detail')) return;
     var cislo = (location.pathname.match(/faktura\/(\d+)/) || [])[1];
-    if (!cislo || /^\d{2}08/.test(cislo)) return;
+    if (!cislo) return;
     var tisk = document.querySelector('a.print, a[href*="print=1"]');
     if (!tisk) return;
     var a = document.createElement('a'); a.className = 'k4u-btn k4u-btn-zl k4u-pdf-detail'; a.target = '_blank'; a.rel = 'noopener';
-    a.textContent = 'Stáhnout fakturu (PDF)'; a.href = pdfUrl(cislo, '');
+    a.textContent = /^\d{2}08/.test(cislo) ? 'Stáhnout zálohovou fakturu (PDF)' : 'Stáhnout fakturu (PDF)'; a.href = pdfUrl(cislo, '');
     tisk.parentNode.insertBefore(a, tisk);
     emailUctu().then(function (e) { if (e) a.href = pdfUrl(cislo, e); });
   }
