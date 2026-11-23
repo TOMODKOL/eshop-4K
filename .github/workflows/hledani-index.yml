@@ -1,0 +1,33 @@
+# Každou noc znovu stáhne produkty z e-shopu a obnoví index pro vlastní vyhledávání (web/hledani/index.json).
+name: Index vyhledávání
+on:
+  schedule:
+    - cron: '17 2 * * *'   # 3:17 / 4:17 českého času
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Stáhnout produkty a sestavit index
+        working-directory: web/hledani
+        run: |
+          python crawl.py
+          python build_index.py produkty.json index.json
+          rm -f produkty.json
+          rm -rf cache
+          python -c "import json; d=json.load(open('index.json')); assert len(d['p']) > 3000, 'málo produktů – index nepřepisuji'"
+      - name: Uložit, když se změnil
+        run: |
+          git config user.name "Otik (4 KLUCI OD KOL)"
+          git config user.email "info@4kluciodkol.cz"
+          git add web/hledani/index.json
+          git diff --cached --quiet || (git commit -m "Index vyhledávání $(date +%F)" && git push)
+      - name: Obnovit cache jsDelivr
+        run: |
+          curl -s "https://purge.jsdelivr.net/gh/TOMODKOL/eshop-4K@main/web/hledani/index.json" || true

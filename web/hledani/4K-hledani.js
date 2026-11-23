@@ -52,9 +52,10 @@
         if (p[8]) add(String(p[8]), i, 4);
       });
       VKEYS = Object.keys(VOC);
+      if (!d.p || d.p.length < 1000) throw new Error('málo produktů');
       d.c.forEach(function (c, ci) { if (/^Eshop > (Jízdní kola|Elektrokola)/.test(c[0])) KOLA[ci] = 1; });
       return d;
-    }));
+    })['catch'](function (e) { K4H.off = true; throw e; }));   // data nejdou načíst → vrátí se původní hledání BSSHOP
   }
 
   function lev(a, b, max) {   // Damerau–Levenshtein s ořezem
@@ -264,9 +265,10 @@
   }
   if (inp) {
     // BSSHOP má na poli vlastní obsluhu – naši spustíme dřív a jeho vypneme
-    inp.addEventListener('input', function (e) { e.stopImmediatePropagation(); onInput(); }, true);
-    inp.addEventListener('keyup', function (e) { e.stopImmediatePropagation(); }, true);
+    inp.addEventListener('input', function (e) { if (K4H.off) return; e.stopImmediatePropagation(); onInput(); }, true);
+    inp.addEventListener('keyup', function (e) { if (K4H.off) return; e.stopImmediatePropagation(); }, true);
     inp.addEventListener('keydown', function (e) {
+      if (K4H.off) return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); e.stopImmediatePropagation(); if (drop.hidden) onInput(); else move(e.key === 'ArrowDown' ? 1 : -1); return; }
       if (e.key === 'Escape') { close(); return; }
       if (e.key === 'Enter') {
@@ -277,7 +279,7 @@
     }, true);
     inp.addEventListener('focus', function () { load(); if (inp.value.trim().length >= 2) onInput(); });
     var btn = inp.parentNode.querySelector('a.search');
-    if (btn) btn.addEventListener('click', function (e) { if (inp.value.trim()) { e.preventDefault(); e.stopImmediatePropagation(); goSearch(inp.value.trim()); } }, true);
+    if (btn) btn.addEventListener('click', function (e) { if (!K4H.off && inp.value.trim()) { e.preventDefault(); e.stopImmediatePropagation(); goSearch(inp.value.trim()); } }, true);
     document.addEventListener('mousedown', function (e) { if (!drop.hidden && !drop.contains(e.target) && e.target !== inp) close(); });
     window.addEventListener('resize', function () { if (!drop.hidden) place(); });
   }
@@ -331,7 +333,7 @@
           [].forEach.call(page.querySelectorAll('[data-brand]'), function (b) { b.onclick = function () { var v = b.getAttribute('data-brand'); state.brand = state.brand === v ? '' : v; state.cat = ''; state.shown = 48; draw(); }; });
         }
         draw();
-      });
+      })['catch'](function () { SM.classList.remove('k4h-vlastni'); page.remove(); h1.textContent = 'Hledat'; });
     }
   }
 })();
