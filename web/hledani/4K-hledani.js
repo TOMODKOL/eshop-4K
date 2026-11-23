@@ -47,7 +47,7 @@
         br.split(' ').forEach(function (t) { add(stem(t), i, 3); });
         if (br) add(br.replace(/ /g, ''), i, 3);
         var segs = cat[0].split(' > ').slice(1);
-        segs.forEach(function (s, k) { norm(s).split(' ').forEach(function (t) { add(stem(t), i, k === segs.length - 1 ? 2 : 1.5); }); });
+        segs.forEach(function (s, k) { norm(s).split(' ').forEach(function (t) { add(stem(t), i, k === segs.length - 1 ? 3 : 1.5); }); });
         if (p[7]) add(norm(p[7]).replace(/ /g, ''), i, 4);
         if (p[8]) add(String(p[8]), i, 4);
       });
@@ -89,7 +89,7 @@
         if (t.length > s.length && t.lastIndexOf(s, 0) === 0) take(t, s.length >= 3 ? 0.9 : 0.6);
       }
     }
-    if (s.length >= 4 && Object.keys(out).length < 3) {
+    if (s.length >= 5 && Object.keys(out).length < 3) {
       var max = s.length >= 7 ? 2 : 1;
       for (var m = 0; m < VKEYS.length; m++) {
         var u = VKEYS[m];
@@ -134,7 +134,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function cena(n) { return n ? String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' Kč' : ''; }
   function img(p, size) { return p[2] ? CDN + p[2].replace('|', '/' + size + '/') : ''; }
-  var DOST = ['Na objednávku', 'Skladem', 'Skladem u dodavatele'];
+  var DOST = ['Na objednávku', 'Skladem', 'Skladem u dodavatele'];   // web v datech nerozliší „u dodavatele“ od „není“
   function catName(ci) { var c = D.c[ci]; return c ? c[0].split(' > ').slice(1).join(' › ') : ''; }
 
   function categories(items, q) {
