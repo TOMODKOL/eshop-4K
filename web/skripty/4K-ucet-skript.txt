@@ -18,7 +18,11 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function txt(e) { return e ? e.textContent.replace(/\s+/g, ' ').trim() : ''; }
   function next(el) { var n = el ? el.nextElementSibling : null; while (n && n.tagName === 'BS-EMPTY') n = n.nextElementSibling; return n; }
-  function val(root, cls) { return next(root.querySelector('.' + cls)); }
+  function val(root, cls) {
+    var n = next(root.querySelector('.' + cls));
+    // prázdná hodnota: BSSHOP místo ní dá jen <bs-empty> a další je už popisek jiného sloupce
+    return n && n.tagName === 'DIV' && n.querySelector('.caption') ? null : n;
+  }
   function kc(s) { return String(s || '').replace(/,00(?=\s*Kč)/, ''); }
   function datum(s) { var m = String(s).match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/); return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null; }
   function hezkeDatum(s) { var d = datum(s); return d ? d.getDate() + '. ' + (d.getMonth() + 1) + '. ' + d.getFullYear() : s; }
@@ -118,6 +122,8 @@
     var L = document.getElementById('PohodaInvoiceList'); if (!L) return;
     var items = L.querySelectorAll('.table > .item'); if (!items.length) return;
     var hotovo = true, dnes = new Date(); dnes.setHours(0, 0, 0, 0);
+    var sum = L.querySelector('.summary');
+    if (sum) { var ss = sum.querySelectorAll('dc-root > span'); for (var q = 0; q < ss.length; q++) if (!/\d/.test(txt(ss[q]))) ss[q].classList.add('k4u-prazdne'); }
     for (var i = 0; i < items.length; i++) {
       var it = items[i]; if (it.querySelector('.k4u-card')) continue;
       var r = it.querySelector('dc-root') || it;
@@ -136,7 +142,7 @@
       var z = sledovani(r);
       var c = document.createElement('div'); c.className = 'k4u-card';
       c.innerHTML =
-        '<div class="k4u-hl"><a class="k4u-num" href="' + esc(href) + '"><small>' + (/^\d{4}08/.test(cislo) ? 'Zálohová faktura' : 'Faktura') + '</small>' + esc(cislo) + '</a>' +
+        '<div class="k4u-hl"><a class="k4u-num" href="' + esc(href) + '"><small>' + (/^\d{2}08/.test(cislo) ? 'Zálohová faktura' : 'Faktura') + '</small>' + esc(cislo) + '</a>' +
         '<span class="k4u-stav ' + cls + '">' + esc(stav) + '</span></div>' +
         '<div class="k4u-meta">' + meta + (objC ? ' <i>·</i> objednávka ' + (objH ? '<a href="' + esc(objH) + '">' + esc(objC) + '</a>' : esc(objC)) : '') + '</div>' +
         '<div class="k4u-cena">' + esc(kc(txt(val(r, 'priceVat')))) + '</div>' +

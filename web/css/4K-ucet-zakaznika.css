@@ -51,14 +51,15 @@ html.k4u #PohodaOrderList.k4u-sbalit:not(.k4u-storna-open) .table>.item.k4u-stor
 .OrderListState #PohodaOrderList>.filter>dc-root>span,.InvoiceListState #PohodaInvoiceList>.filter>dc-root>span{display:flex!important;flex-direction:column;flex:1 1 150px;min-width:0;margin:0!important;width:auto!important}
 .OrderListState #PohodaOrderList>.filter .title,.InvoiceListState #PohodaInvoiceList>.filter .title{margin:0 0 4px!important;font-size:13px!important;color:#6a6a66!important}
 .OrderListState #PohodaOrderList>.filter input.value,.InvoiceListState #PohodaInvoiceList>.filter input.value{box-sizing:border-box;height:42px!important;width:100%!important;border:1px solid #dcdcd8!important;border-radius:4px!important;background:#fff!important;font-size:15px!important}
-.OrderListState #PohodaOrderList>.filter a.button,.InvoiceListState #PohodaInvoiceList>.filter a.button{flex:0 0 auto;height:42px!important;min-width:0!important;margin:0!important;padding:0 18px!important;display:inline-flex!important;align-items:center;border-radius:4px!important;font-size:15px!important;box-shadow:none!important}
+.OrderListState #PohodaOrderList>.filter a.button,.InvoiceListState #PohodaInvoiceList>.filter a.button{flex:0 0 auto;height:42px!important;min-width:0!important;margin:0!important;padding:0 18px!important;display:inline-flex!important;align-items:center;border-radius:4px!important;font-size:15px!important;box-shadow:none!important;white-space:nowrap!important}
 .OrderListState #PohodaOrderList>.filter a.clearFilter,.InvoiceListState #PohodaInvoiceList>.filter a.clearFilter{background:#fff!important;border:1px solid #dcdcd8!important;color:#231F20!important}
 .OrderListState #PohodaOrderList>.filter a.apply,.InvoiceListState #PohodaInvoiceList>.filter a.apply{background:#231F20!important;border:1px solid #231F20!important;color:#fff!important}
 .OrderListState #PohodaOrderList>.filter a.apply span,.InvoiceListState #PohodaInvoiceList>.filter a.apply span{color:#fff!important}
 .OrderListState #PohodaOrderList>.filter dc-con{display:flex!important;flex:1 0 100%;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 0!important}
 .OrderListState #PohodaOrderList>.filter .onlyNotCompleted{display:flex!important;flex-direction:row-reverse!important;align-items:center;gap:8px;font-size:15px}
 .OrderListState #PohodaOrderList>.filter .onlyNotCompleted .title{margin:0!important;font-size:15px!important;color:#231F20!important}
-/* souhrn faktur (Celkem uhradit) */
+/* souhrn faktur (Celkem uhradit) – prázdné řádky skrýt */
+html.k4u .InvoiceListState .summary .k4u-prazdne{display:none!important}
 .InvoiceListState #PohodaInvoiceList>.summary{margin:0 0 16px!important;padding:0!important;border:0!important;background:none!important;font-size:15px}
 
 /* ===================== DETAIL OBJEDNÁVKY ===================== */
