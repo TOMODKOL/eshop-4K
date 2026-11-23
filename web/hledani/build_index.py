@@ -1,6 +1,6 @@
 """Index pro vyhledávání 4K: z produkty.json (crawl výpisů kategorií) udělá kompaktní index.json.
 python build_index.py produkty.json index.json
-p = [url, název, obrázek "hash|soubor", cena, dostupnost 0/1/2, značka, kategorie, kód, EAN]
+p = [url, název, obrázek "hash|soubor", cena, dostupnost 0/1/2, značka, kategorie, kód, EAN, skupina barev]
 c = [cesta "Eshop > …", url kategorie], b = [značky]"""
 import json, re, sys, unicodedata, datetime
 
@@ -56,6 +56,34 @@ for p in d['products']:
         price = 0
     prods.append([url, p.get('name', ''), img, price, av, bidx[br], cidx[path], p.get('sku') or '', p.get('gtin13') or ''])
 
+# barevné varianty téhož modelu (samostatné karty na webu) → jedna skupina; ve výsledcích se ukáže jen jedna karta
+def toks(n): return re.sub(r'\s+', ' ', n.strip()).split(' ')
+def nodig(ts): return not any(re.search(r'\d', t) for t in ts)
+SKUPINY_NE = ('Komponenty', 'Výživa', 'Dárkové')
+parent = list(range(len(prods)))
+def find(i):
+    while parent[i] != i:
+        parent[i] = parent[parent[i]]; i = parent[i]
+    return i
+buckets = {}
+for i, p in enumerate(prods):
+    if any(k in cats[p[6]][0] for k in SKUPINY_NE) or not brands[p[5]]: continue
+    buckets.setdefault((p[6], p[5]), []).append(i)
+for (ci, bi), ids in buckets.items():
+    bl = brands[bi].lower()
+    T = {i: toks(prods[i][1]) for i in ids}
+    for a in range(len(ids)):
+        for b in range(a + 1, len(ids)):
+            x, y = T[ids[a]], T[ids[b]]
+            bpos = next((k for k, t in enumerate(x) if t.lower() == bl or bl.startswith(t.lower())), None)
+            if bpos is None: continue
+            l = 0
+            while l < min(len(x), len(y)) and x[l].lower() == y[l].lower(): l += 1
+            ra, rb = x[l:], y[l:]
+            if l >= bpos + 2 and 0 < len(ra) <= 3 and 0 < len(rb) <= 3 and nodig(ra) and nodig(rb):
+                parent[find(ids[a])] = find(ids[b])
+for i, p in enumerate(prods): p.append(find(i))
+print('skupin s více barvami', sum(1 for i in range(len(prods)) if sum(1 for q in prods if q[9] == i) > 1))
 json.dump({'v': datetime.date.today().isoformat(), 'c': cats, 'b': brands, 'p': prods}, open(out, 'w', encoding='utf-8'),
           ensure_ascii=False, separators=(',', ':'))
 print('produktů', len(prods), 'kategorií', len(cats), 'bez url kategorie', sum(1 for c in cats if not c[1]), 'značek', len(brands))
