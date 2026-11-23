@@ -39,7 +39,7 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
       <?php $card = GpWebpay::canPay($ret); if ($card): $failed = GpWebpay::hadFailure((int) $ret['id']); ?>
       <p style="margin:0">Nové zboží máme zarezervované. Doplatek <?= e(money($adv)) ?> zaplatíte kartou:</p>
       <a class="btn" href="<?= url('/vratky/platba/' . $ret['token']) ?>" style="align-self:flex-start;text-decoration:none;display:inline-flex;align-items:center;justify-content:center"><?= $failed ? 'Zkusit kartou znovu' : 'Zaplatit kartou' ?> <?= e(money($adv)) ?> →</a>
-      <details class="payalt"<?= $failed ? ' open' : '' ?>><summary style="cursor:pointer;font-size:14px;color:var(--muted)">Raději převodem? Stačí načíst QR kód v bankovní aplikaci – bez vyplňování karty.</summary>
+      <p class="payalt" style="margin:14px 0 0;font-size:14px;color:var(--muted)">Raději převodem? Stačí načíst QR kód v bankovní aplikaci – bez vyplňování karty.</p>
       <?php else: ?>
       <p style="margin:0">Nové zboží máme zarezervované. Doplatek prosím pošlete převodem:</p>
       <?php endif; ?>
@@ -52,7 +52,6 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
         </div>
         <?php if (Service::spayd($ret) !== ''): ?><figure class="qr"><img src="<?= url('/vratky/qr/' . $ret['token']) ?>" width="148" height="148" alt="QR platba"><figcaption>QR platba</figcaption></figure><?php endif; ?>
       </div>
-      <?php if ($card): ?></details><?php endif; ?>
     <?php elseif ($ret['zf_paid']): ?>
       <p style="margin:0">Doplatek <?= e(money($adv)) ?> jsme přijali, děkujeme.</p>
     <?php else: ?>
