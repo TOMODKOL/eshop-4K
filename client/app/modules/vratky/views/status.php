@@ -36,22 +36,23 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
   <?php $adv = Service::advanceAmount($ret); if ($adv > 0.005 && !in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true)): ?>
     <div class="card"><span class="kicker">Doplatek za výměnu</span>
     <?php if ($ret['zf_no'] && !$ret['zf_paid']): ?>
-      <?php if (GpWebpay::canPay($ret)): ?>
-      <p style="margin:0">Nové zboží máme zarezervované. Doplatek <?= e(money($adv)) ?> nejrychleji zaplatíte kartou:</p>
-      <a class="btn" href="<?= url('/vratky/platba/' . $ret['token']) ?>" style="align-self:flex-start;text-decoration:none;display:inline-flex;align-items:center;justify-content:center">Zaplatit kartou <?= e(money($adv)) ?> →</a>
-      <p style="margin:0;font-size:14px;color:var(--muted)">Nebo převodem:</p>
+      <?php $card = GpWebpay::canPay($ret); if ($card): $failed = GpWebpay::hadFailure((int) $ret['id']); ?>
+      <p style="margin:0">Nové zboží máme zarezervované. Doplatek <?= e(money($adv)) ?> zaplatíte kartou:</p>
+      <a class="btn" href="<?= url('/vratky/platba/' . $ret['token']) ?>" style="align-self:flex-start;text-decoration:none;display:inline-flex;align-items:center;justify-content:center"><?= $failed ? 'Zkusit kartou znovu' : 'Zaplatit kartou' ?> <?= e(money($adv)) ?> →</a>
+      <details class="payalt"<?= $failed ? ' open' : '' ?>><summary style="cursor:pointer;font-size:14px;color:var(--muted)">Raději převodem? Stačí načíst QR kód v bankovní aplikaci – bez vyplňování karty.</summary>
       <?php else: ?>
       <p style="margin:0">Nové zboží máme zarezervované. Doplatek prosím pošlete převodem:</p>
       <?php endif; ?>
-      <div class="paybox">
+      <div class="paybox"<?= $card ? ' style="margin-top:12px"' : '' ?>>
         <div class="ai-sum" style="padding:0">
           <div class="row"><span>Částka</span><strong><?= e(money($adv)) ?></strong></div>
           <div class="row"><span>Číslo účtu</span><strong><?= e(cfg('shop.bank_account')) ?></strong></div>
           <div class="row"><span>Variabilní symbol</span><strong><?= e(Service::payVs($ret)) ?></strong></div>
-          <span class="hint" style="margin-top:10px"><?= Service::spayd($ret) !== '' ? (GpWebpay::canPay($ret) ? 'Převod nejrychleji zadáte načtením QR kódu v bankovní aplikaci. ' : 'Nejrychleji zaplatíte načtením QR kódu v bankovní aplikaci. ') : '' ?>Platební údaje máte i v e-mailu.</span>
+          <span class="hint" style="margin-top:10px"><?= Service::spayd($ret) !== '' ? 'Nejrychleji zaplatíte načtením QR kódu v bankovní aplikaci. ' : '' ?>Platební údaje máte i v e-mailu.</span>
         </div>
         <?php if (Service::spayd($ret) !== ''): ?><figure class="qr"><img src="<?= url('/vratky/qr/' . $ret['token']) ?>" width="148" height="148" alt="QR platba"><figcaption>QR platba</figcaption></figure><?php endif; ?>
       </div>
+      <?php if ($card): ?></details><?php endif; ?>
     <?php elseif ($ret['zf_paid']): ?>
       <p style="margin:0">Doplatek <?= e(money($adv)) ?> jsme přijali, děkujeme.</p>
     <?php else: ?>
@@ -87,7 +88,7 @@ $last = Service::payout($ret) > 0 ? 'Peníze odeslány' : ($hasSwap ? 'Nové zbo
       <?php if ((float) ($ret['cod_fee'] ?? 0) > 0): ?><div class="row"><span>Poplatek za dobírku</span><strong><?= e(money($ret['cod_fee'])) ?></strong></div><?php endif; ?>
     </div>
     <div class="ai-total"><span><?= $bal < -0.005 ? 'Doplatíte' : ($bal > 0.005 ? 'Vrátíme vám' : 'Vychází nastejno') ?></span><span class="v"><?= e(money(abs($bal))) ?></span></div>
-    <span class="hint"><?= $bal < -0.005 ? ($ret['pay_method'] === 'dobirka' ? 'Doplatek zaplatíte na dobírku při převzetí nového zboží.' : (($ret['zf_no'] && !$ret['zf_paid'] ? (GpWebpay::canPay($ret) ? 'Doplatek zaplatíte kartou nebo převodem – tlačítko a platební údaje najdete výše.' : 'Doplatek zaplatíte převodem – platební údaje a QR kód najdete výše.') : ($ret['zf_paid'] ? 'Doplatek jsme přijali, děkujeme.' : 'Doplatek zaplatíte ' . (GpWebpay::enabled() ? 'kartou nebo ' : '') . 'převodem – platební údaje vám pošleme e-mailem.')))) : ($bal > 0.005 ? 'Peníze pošleme na účet ' . e($ret['bank_account']) . ', jakmile zboží zkontrolujeme.' : '') ?></span>
+    <span class="hint"><?= $bal < -0.005 ? ($ret['pay_method'] === 'dobirka' ? 'Doplatek zaplatíte na dobírku při převzetí nového zboží.' : (($ret['zf_no'] && !$ret['zf_paid'] ? (GpWebpay::canPay($ret) ? 'Doplatek zaplatíte kartou – tlačítko najdete výše.' : 'Doplatek zaplatíte převodem – platební údaje a QR kód najdete výše.') : ($ret['zf_paid'] ? 'Doplatek jsme přijali, děkujeme.' : 'Doplatek zaplatíte ' . (($ret['pay_method'] ?? '') === 'karta' ? 'kartou – odkaz na platbu' : 'převodem – platební údaje a QR kód') . ' vám pošleme e-mailem.')))) : ($bal > 0.005 ? 'Peníze pošleme na účet ' . e($ret['bank_account']) . ', jakmile zboží zkontrolujeme.' : '') ?></span>
     <?php endif; ?>
   </div>
 </div>

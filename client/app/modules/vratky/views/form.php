@@ -167,7 +167,8 @@ $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
       <input class="f" id="account" name="account" inputmode="text" autocomplete="off" placeholder="např. 123456789/0800" value="<?= e($o('account')) ?>">
       <span class="hint">Peníze pošleme nejpozději do 14 dnů od doručení zboží k nám, obvykle mnohem dřív.</span></div>
     <div class="field" data-paybox><span class="l">Jak doplatíte rozdíl v ceně?</span>
-      <?php $pm = $o('pay_method'); $gpOn = \App\Modules\Vratky\GpWebpay::enabled(); foreach (['prevod' => [$gpOn ? 'Kartou nebo převodem' : 'Převodem', ($gpOn ? 'Odkaz na platbu kartou a platební údaje pošleme e-mailem. ' : 'Platební údaje pošleme e-mailem. ') . 'Nové zboží odešleme po zaplacení.'],
+      <?php $pm = $o('pay_method'); $gpOn = \App\Modules\Vratky\GpWebpay::enabled(); foreach (['prevod' => ['Převodem nebo QR kódem', 'Platební údaje a QR kód pošleme e-mailem – stačí ho načíst v bankovní aplikaci. Nové zboží odešleme po zaplacení.']]
+                    + ($gpOn ? ['karta' => ['Kartou online', 'Odkaz na platbu kartou pošleme e-mailem. Nové zboží odešleme po zaplacení.']] : []) + [
                     'dobirka' => ['Na dobírku', 'Zaplatíte při převzetí nového zboží. Dobírka stojí ' . money((float) cfg('vratky.cod_fee', 69)) . '.']] as $k => [$t, $d]): ?>
       <label class="opt <?= $pm === $k ? 'on' : '' ?>"><input class="sr" type="radio" name="pay_method" value="<?= $k ?>" <?= $pm === $k ? 'checked' : '' ?>><span class="dot"></span>
         <span class="b"><span class="r"><strong><?= e($t) ?></strong></span><span class="d"><?= e($d) ?></span></span></label>

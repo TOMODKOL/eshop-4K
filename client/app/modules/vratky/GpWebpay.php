@@ -48,7 +48,7 @@ final class GpWebpay
     /** Lze u vratky platit kartou? (záloha vystavená, nezaplacená, kladná částka) */
     public static function canPay(array $ret): bool
     {
-        return self::enabled() && !empty($ret['zf_no']) && empty($ret['zf_paid']) && preg_match('~^\d{9}$~', (string) $ret['zf_no'])
+        return self::enabled() && ($ret['pay_method'] ?? '') === 'karta' && !empty($ret['zf_no']) && empty($ret['zf_paid']) && preg_match('~^\d{9}$~', (string) $ret['zf_no'])
             && Service::advanceAmount($ret) > 0.005 && !in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true);
     }
 
@@ -129,13 +129,19 @@ final class GpWebpay
         if ($pr !== 0 || $sr !== 0) {
             Db::exec("UPDATE card_payments SET status = 'zamitnuto', prcode = ?, srcode = ?, result_text = ?, finished_at = ? WHERE id = ?",
                 [$pr, $sr, $text, Db::now(), $pay['id']]);
-            $msg = $pr === 50 ? 'Platbu jste zrušili. Můžete to zkusit znovu nebo zaplatit převodem.'
-                : 'Platba kartou neprošla' . ($text !== '' ? ' (' . $text . ')' : '') . '. Zkuste to prosím znovu nebo zaplaťte převodem.';
+            $msg = $pr === 50 ? 'Platbu jste zrušili. Můžete to zkusit znovu, nebo zaplatit převodem – stačí načíst QR kód v bankovní aplikaci.'
+                : 'Platba kartou neprošla' . ($text !== '' ? ' (' . $text . ')' : '') . '. Zkuste to prosím znovu, nebo zaplaťte převodem – stačí načíst QR kód v bankovní aplikaci.';
             return ['ok' => false, 'token' => $token, 'message' => $msg];
         }
         Db::exec("UPDATE card_payments SET status = 'zaplaceno', prcode = 0, srcode = 0, result_text = ?, finished_at = ? WHERE id = ?", [$text, Db::now(), $pay['id']]);
         Service::markAdvancePaid($ret, 'kartou', (float) $pay['amount'], $orderNo);
         return ['ok' => true, 'token' => $token, 'message' => 'Děkujeme, doplatek ' . money((float) $pay['amount']) . ' je zaplacený kartou.'];
+    }
+
+    /** Zkoušel zákazník kartou a neprošlo to? (pak mu převod s QR kódem ukážeme rozbalený) */
+    public static function hadFailure(int $returnId): bool
+    {
+        return (bool) Db::value("SELECT COUNT(*) FROM card_payments WHERE return_id = ? AND status IN ('zamitnuto', 'neplatna')", [$returnId]);
     }
 
     /** Poslední úspěšná platba kartou k vratce (pro administraci). */

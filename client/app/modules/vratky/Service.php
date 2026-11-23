@@ -239,7 +239,7 @@ final class Service
         $calc = self::calc($lines, $ship, $order, $pay);
         $account = self::normalizeAccount((string) ($post['account'] ?? ''));
         if ($calc['balance'] > 0 && !self::validAccount($account)) $errors[] = 'Vyplňte číslo účtu pro vrácení peněz (např. 123456789/0800).';
-        if ($calc['balance'] < 0 && !in_array($pay, ['prevod', 'dobirka'], true)) $errors[] = 'Vyberte, jak doplatíte rozdíl v ceně.';
+        if ($calc['balance'] < 0 && !in_array($pay, self::payMethods(), true)) $errors[] = 'Vyberte, jak doplatíte rozdíl v ceně.';
 
         if (empty($post['agree'])) $errors[] = 'Potvrďte prosím souhlas s podmínkami vrácení a reklamace.';
 
@@ -275,7 +275,7 @@ final class Service
             'ship_charge' => $order ? self::freeShippingCharge($order, $refund) : 0.0,
         ];
         $c['balance'] = round($c['refund'] + $c['swap_diff'] - (float) ($c['postage'] ?? 0) - $c['ship_charge'], 2);
-        $c['pay_method'] = $c['balance'] < 0 && in_array($pay, ['prevod', 'dobirka'], true) ? $pay : '';
+        $c['pay_method'] = $c['balance'] < 0 && in_array($pay, self::payMethods(), true) ? $pay : '';
         $c['cod_fee'] = $c['pay_method'] === 'dobirka' ? (float) Config::get('vratky.cod_fee', 69) : 0.0;
         return $c;
     }
@@ -447,7 +447,13 @@ final class Service
     /** Kolik zákazník doplatí. */
     public static function toPay(array $ret): float { return max(0.0, -self::balance($ret)); }
 
-    public const PAY = ['prevod' => 'Převodem', 'dobirka' => 'Na dobírku'];
+    public const PAY = ['prevod' => 'Převodem / QR', 'karta' => 'Kartou online', 'dobirka' => 'Na dobírku'];
+
+    /** Nabízené způsoby doplatku (kartou jen se zapnutou GP webpay). Převod je pro nás nejlevnější (bez poplatků). */
+    public static function payMethods(): array
+    {
+        return GpWebpay::enabled() ? ['prevod', 'karta', 'dobirka'] : ['prevod', 'dobirka'];
+    }
 
     public static function actionLabel(array $l): string
     {
@@ -647,7 +653,7 @@ final class Service
     /** Doplatek převodem → zálohová faktura (částka), jinak 0. */
     public static function advanceAmount(array $ret): float
     {
-        return ($ret['pay_method'] ?? '') === 'prevod' ? self::toPay($ret) : 0.0;
+        return in_array($ret['pay_method'] ?? '', ['prevod', 'karta'], true) ? self::toPay($ret) : 0.0;
     }
 
     // ---------- automatizace (volá pomocník každých 5 minut přes /api/sync/vymeny) ----------
