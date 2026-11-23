@@ -155,3 +155,5 @@ html.k4u .OrderListState #PohodaOrderList>.PagingView,html.k4u .InvoiceListState
 html.k4u .InvoiceListState #PohodaInvoiceList>.summary .PagingView{display:none!important}
 /* 23. 11. 23:05: filtr objednávek schovaný vždy (zaškrtávátko „Jen nevyřízené“ nebylo vidět zaškrtnuté a zákazník ho nepotřebuje) */
 html.k4u .OrderListState #PohodaOrderList.k4u-vice-stran>.filter{display:none!important}
+/* 23. 11. 23:10: seznamy a detail přes celou šířku obsahu (do 1000 px) – BSSHOP je jinak smrskl na šířku obsahu */
+html.k4u .OrderListState #PohodaOrderList,html.k4u .InvoiceListState #PohodaInvoiceList,html.k4u .OrderDetailState #PohodaOrderMaster{width:100%;box-sizing:border-box;justify-self:center}
