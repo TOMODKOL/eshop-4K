@@ -3,6 +3,7 @@
 #      faktura s objednávkou z e-shopu (8810…)  -> zdroj eshop    (zákazník si vratku zadá sám na webu)
 #      ostatní vydané faktury                   -> zdroj faktura  (reklamaci zakládá prodejna v administraci)
 #      prodejky 26PH…                           -> zdroj prodejna (reklamaci zakládá prodejna v administraci)
+#      prodejka k objednávce z e-shopu 8810… (osobní odběr) -> zdroj eshop (zákazník ji najde na webu)
 #  - posílá je na https://client.4kluciodkol.cz/api/sync/objednavky (klíč = sync_token z nasad-client.ps1)
 #  - první běh nahraje doklady od 1. 1. 2025 po měsících, další běhy jen posledních $Dni dní
 # Ručně:  cd D:\Pomocnik ; powershell -ExecutionPolicy Bypass -File .\client-sync.ps1 [-Od 2025-01-01]
@@ -122,10 +123,17 @@ function Z-Prodejky($p) {
     if ($polozky.Count -eq 0) { return $null }
     $adr = Uzel $h 'partnerIdentity/address'
     $jmeno = Text $adr 'name'; if (-not $jmeno) { $jmeno = Text $adr 'company' }
+    # e-shopová objednávka vyzvednutá a zaplacená na prodejně: prodejka má vazbu na přijatou objednávku 8810…
+    # → zákazník ji najde na webu stejně jako objednávku s fakturou (číslo objednávky + e-mail)
+    $obj = ''
+    foreach ($n in @($p.SelectNodes(".//*[local-name()='link'][*[local-name()='sourceAgenda']='receivedOrder']//*[local-name()='number']"))) {
+        if ($n.InnerText.Trim() -match '^8810\d+$') { $obj = $n.InnerText.Trim(); break }
+    }
+    $eshop = $obj -and (Text $adr 'email')
     return [ordered]@{
         invoice_no    = (Text $h 'number/numberRequested')
-        order_no      = ''
-        source        = 'prodejna'
+        order_no      = $obj
+        source        = $(if ($eshop) { 'eshop' } else { 'prodejna' })
         invoice_date  = (Text $h 'date')
         email         = (Text $adr 'email')
         customer_name = $jmeno
