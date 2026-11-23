@@ -96,7 +96,7 @@ html.k4u .OrderDetailState #PohodaOrderItemList .table{border-top:1px solid #e6e
 html.k4u .OrderDetailState #PohodaOrderItemList .table>.item{margin:0!important;padding:0!important;border:0!important;border-bottom:1px solid #e6e6e3!important;background:none!important}
 html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"nazev ks cena" "kod ks cena";gap:2px 24px;align-items:center;padding:14px 0!important;background:none!important}
 html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>*{display:none!important}
-html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>a{grid-area:nazev;display:flex!important;align-items:center;gap:16px;color:#231F20!important;font-size:16px;line-height:1.35;text-decoration:none!important}
+html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>a,html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>.linkNameValue{grid-area:nazev;display:flex!important;align-items:center;gap:16px;color:#231F20!important;font-size:16px;line-height:1.35;text-decoration:none!important}
 html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>a:hover span:last-child{text-decoration:underline}
 html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>.codeValue{grid-area:kod;display:block!important;padding-left:88px;font-size:13px;color:#8a8a86}
 html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>dc-con{grid-area:ks;display:flex!important;gap:4px;color:#6a6a66;white-space:nowrap}

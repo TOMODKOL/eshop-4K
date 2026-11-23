@@ -203,6 +203,16 @@
       if (out.length) p.querySelector('.k4u-fa').innerHTML = out.join('');
     }).catch(function () {});
 
+    // nadpis „Objednávka č. …“, ceny bez „,00“, prázdná poznámka pryč
+    var h = M.querySelector('h1'); if (h) h.textContent = 'Objednávka ' + cislo;
+    var ceny = M.querySelectorAll('#PohodaOrderItemList .totalPriceValue, #PohodaOrderItemList .footer .value');
+    for (var c = 0; c < ceny.length; c++) ceny[c].textContent = kc(ceny[c].textContent);
+    var pozn = M.querySelector('.PohodaOrderOtherDetails');
+    if (pozn) { var pt = pozn.cloneNode(true), ti = pt.querySelector('.title'); if (ti) ti.remove(); if (!txt(pt)) pozn.classList.add('k4u-prazdne'); }
+    // položka bez odkazu (zboží už není na webu): stejné místo na fotku
+    var bez = M.querySelectorAll('#PohodaOrderItemList .item dc-root > .linkNameValue');
+    for (var b = 0; b < bez.length; b++) { var f = document.createElement('span'); f.className = 'k4u-foto k4u-foto-nic'; bez[b].insertBefore(f, bez[b].firstChild); }
+
     // fotky zboží (og:image z detailu produktu)
     var odkazy = M.querySelectorAll('#PohodaOrderItemList .item dc-root > a[href]');
     for (var j = 0; j < odkazy.length && j < 30; j++) (function (a) {
