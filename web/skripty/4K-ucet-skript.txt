@@ -1,0 +1,225 @@
+<script>
+/* 4K – zákaznický účet (Přehled objednávek, detail objednávky, Přehled faktur), v1 23. 11. 2026.
+   Patří ke stylesheetu „4K – účet zákazníka“ a na konec Zápatí. Na ostatních stránkách nedělá nic.
+   - seznam objednávek a faktur jako karty (stav jako štítek, stornované sbalené na konci),
+   - detail objednávky: stav, sledování zásilky, odkaz na fakturu, fotky zboží,
+     tlačítko „Vrátit / vyměnit / reklamovat“ do vratkového portálu client.4kluciodkol.cz.
+   Když skript selže, zůstane původní vzhled BSSHOP (třída k4u se přidá až po úspěšném sestavení). */
+(function () {
+  var B = document.body;
+  if (!B) return;
+  var OL = B.classList.contains('OrderListState'), OD = B.classList.contains('OrderDetailState'),
+      IL = B.classList.contains('InvoiceListState');
+  if (!OL && !OD && !IL) return;
+  var CLIENT = 'https://client.4kluciodkol.cz/vratky/objednavka';
+  var SK = '4k_ucet_stavy';
+  var LHUTA = 730; // dní od objednávky, kdy ještě nabízet vrácení / reklamaci
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function txt(e) { return e ? e.textContent.replace(/\s+/g, ' ').trim() : ''; }
+  function next(el) { var n = el ? el.nextElementSibling : null; while (n && n.tagName === 'BS-EMPTY') n = n.nextElementSibling; return n; }
+  function val(root, cls) { return next(root.querySelector('.' + cls)); }
+  function kc(s) { return String(s || '').replace(/,00(?=\s*Kč)/, ''); }
+  function datum(s) { var m = String(s).match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/); return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null; }
+  function hezkeDatum(s) { var d = datum(s); return d ? d.getDate() + '. ' + (d.getMonth() + 1) + '. ' + d.getFullYear() : s; }
+  function stavTrida(c) {
+    c = String(c || '');
+    if (/cancel/i.test(c)) return 'k4u-s-storno';
+    if (/(^|\s)(delivered|completed|done|finished|executed)/i.test(c) && !/particular/i.test(c)) return 'k4u-s-ok';
+    return 'k4u-s-bezi';
+  }
+  function velke(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function ulozStavy(m) { try { var o = JSON.parse(sessionStorage.getItem(SK) || '{}'); for (var k in m) o[k] = m[k]; sessionStorage.setItem(SK, JSON.stringify(o)); } catch (e) {} }
+  function nactiStav(n) { try { return (JSON.parse(sessionStorage.getItem(SK) || '{}'))[n] || null; } catch (e) { return null; } }
+  var emailP = null;
+  function emailUctu() {
+    if (emailP) return emailP;
+    var s = null; try { s = sessionStorage.getItem('4k_ucet_email'); } catch (e) {}
+    if (s) return (emailP = Promise.resolve(s));
+    return (emailP = fetch('/registrace/zmena-udaju/', { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (t) {
+      var d = new DOMParser().parseFromString(t, 'text/html'), i = d.querySelector('input[type="email"]');
+      var e = i ? i.value : '';
+      try { if (e) sessionStorage.setItem('4k_ucet_email', e); } catch (x) {}
+      return e;
+    }).catch(function () { return ''; }));
+  }
+  function vratkaUrl(num, email) { return CLIENT + '?obj=' + encodeURIComponent(num) + '&email=' + encodeURIComponent(email || ''); }
+  function sledovani(item) {
+    var a = item.querySelector('.packetNumbers a[href]');
+    return a && a.getAttribute('href') ? { href: a.href, cislo: txt(a) } : null;
+  }
+
+  /* ---------- údaje z řádku seznamu objednávek ---------- */
+  function radekObjednavky(it) {
+    var r = it.querySelector('dc-root') || it;
+    var a = val(r, 'linkDocumentNumber'), st = val(r, 'orderStatus'), dp = r.querySelector('.deliveryPayment');
+    var dpv = dp ? next(dp) : null;
+    return {
+      cislo: txt(a), href: a && a.getAttribute('href'), datum: txt(val(r, 'issued')), cena: kc(txt(val(r, 'priceVat'))),
+      stav: txt(st), stavCls: (st && st.className) || it.className,
+      platba: txt(dpv && dpv.querySelector('.payment')), doprava: txt(dpv && dpv.querySelector('.delivery')),
+      zasilka: sledovani(r)
+    };
+  }
+
+  /* ---------- seznam objednávek ---------- */
+  function seznamObjednavek() {
+    var L = document.getElementById('PohodaOrderList'); if (!L) return;
+    var t = L.querySelector('.table'); if (!t) return;
+    var items = t.querySelectorAll(':scope > .item'); if (!items.length) return;
+    var mapa = {}, storna = 0, hotovo = true;
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (it.querySelector('.k4u-card')) continue;
+      var o = radekObjednavky(it);
+      if (!o.cislo || !o.href) { hotovo = false; continue; }
+      mapa[o.cislo] = { stav: o.stav, cls: o.stavCls, z: o.zasilka };
+      var storno = /cancel/i.test(o.stavCls);
+      if (storno) { it.classList.add('k4u-storno'); storna++; }
+      var d = datum(o.datum), lzeVratit = !storno && d && (Date.now() - d.getTime()) / 864e5 <= LHUTA;
+      var meta = [hezkeDatum(o.datum), o.platba, o.doprava].filter(Boolean).map(esc).join(' <i>·</i> ');
+      var c = document.createElement('div');
+      c.className = 'k4u-card';
+      c.innerHTML =
+        '<div class="k4u-hl"><a class="k4u-num" href="' + esc(o.href) + '"><small>Objednávka</small>' + esc(o.cislo) + '</a>' +
+        '<span class="k4u-stav ' + stavTrida(o.stavCls) + '">' + esc(velke(o.stav)) + '</span></div>' +
+        '<div class="k4u-meta">' + meta + '</div>' +
+        '<div class="k4u-cena">' + esc(o.cena) + '</div>' +
+        '<div class="k4u-akce">' +
+        (o.zasilka ? '<a class="k4u-btn k4u-btn-zl" href="' + esc(o.zasilka.href) + '" target="_blank" rel="noopener">Sledovat zásilku</a>' : '') +
+        '<a class="k4u-btn" href="' + esc(o.href) + '">Detail objednávky</a>' +
+        (lzeVratit ? '<a class="k4u-btn k4u-btn-txt k4u-vratit" data-obj="' + esc(o.cislo) + '" href="' + esc(vratkaUrl(o.cislo, '')) + '">Vrátit / reklamovat</a>' : '') +
+        '</div>';
+      it.appendChild(c);
+    }
+    ulozStavy(mapa);
+    emailUctu().then(function (e) {
+      if (!e) return;
+      var v = L.querySelectorAll('a.k4u-vratit');
+      for (var j = 0; j < v.length; j++) v[j].href = vratkaUrl(v[j].getAttribute('data-obj'), e);
+    });
+    // stornované sbalit (jen když jsou mezi nimi i platné)
+    var vse = t.querySelectorAll(':scope > .item').length, sw = L.querySelector('.k4u-storna');
+    if (storna && storna < vse) {
+      if (!sw) {
+        sw = document.createElement('button'); sw.type = 'button'; sw.className = 'k4u-storna';
+        sw.addEventListener('click', function () { L.classList.toggle('k4u-storna-open'); popis(); });
+        t.parentNode.insertBefore(sw, t.nextSibling);
+      }
+      var popis = function () { sw.textContent = (L.classList.contains('k4u-storna-open') ? 'Skrýt stornované' : 'Zobrazit stornované') + ' (' + L.querySelectorAll('.item.k4u-storno').length + ')'; };
+      popis();
+      L.classList.add('k4u-sbalit');
+    } else { L.classList.remove('k4u-sbalit'); if (sw) sw.remove(); }
+    if (hotovo) document.documentElement.classList.add('k4u');
+  }
+
+  /* ---------- seznam faktur ---------- */
+  function seznamFaktur() {
+    var L = document.getElementById('PohodaInvoiceList'); if (!L) return;
+    var items = L.querySelectorAll('.table > .item'); if (!items.length) return;
+    var hotovo = true, dnes = new Date(); dnes.setHours(0, 0, 0, 0);
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i]; if (it.querySelector('.k4u-card')) continue;
+      var r = it.querySelector('dc-root') || it;
+      var a = val(r, 'linkDocumentNumber'), obj = val(r, 'linkOrderNumber');
+      var cislo = txt(a), href = a && a.getAttribute('href');
+      if (!cislo || !href) { hotovo = false; continue; }
+      var zbyva = txt(val(r, 'settlement')), splat = txt(val(r, 'dueDate'));
+      var dluh = parseFloat(zbyva.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+      var ds = datum(splat), poSpl = dluh > 0 && ds && ds < dnes;
+      var stav = dluh > 0 ? (poSpl ? 'Po splatnosti' : 'K úhradě ' + kc(zbyva)) : 'Uhrazeno';
+      var cls = dluh > 0 ? (poSpl ? 'k4u-s-pozde' : 'k4u-s-bezi') : 'k4u-s-ok';
+      var objC = txt(obj), objH = obj && obj.getAttribute && obj.getAttribute('href');
+      var dp = r.querySelector('.deliveryPayment'), dpv = dp ? next(dp) : null;
+      var meta = ['Vystaveno ' + hezkeDatum(txt(val(r, 'issued'))), dluh > 0 && splat ? 'splatnost ' + hezkeDatum(splat) : '', txt(dpv && dpv.querySelector('.payment'))]
+        .filter(Boolean).map(esc).join(' <i>·</i> ');
+      var z = sledovani(r);
+      var c = document.createElement('div'); c.className = 'k4u-card';
+      c.innerHTML =
+        '<div class="k4u-hl"><a class="k4u-num" href="' + esc(href) + '"><small>' + (/^\d{4}08/.test(cislo) ? 'Zálohová faktura' : 'Faktura') + '</small>' + esc(cislo) + '</a>' +
+        '<span class="k4u-stav ' + cls + '">' + esc(stav) + '</span></div>' +
+        '<div class="k4u-meta">' + meta + (objC ? ' <i>·</i> objednávka ' + (objH ? '<a href="' + esc(objH) + '">' + esc(objC) + '</a>' : esc(objC)) : '') + '</div>' +
+        '<div class="k4u-cena">' + esc(kc(txt(val(r, 'priceVat')))) + '</div>' +
+        '<div class="k4u-akce">' + (z ? '<a class="k4u-btn k4u-btn-zl" href="' + esc(z.href) + '" target="_blank" rel="noopener">Sledovat zásilku</a>' : '') +
+        '<a class="k4u-btn" href="' + esc(href) + '">Zobrazit fakturu</a></div>';
+      it.appendChild(c);
+    }
+    if (hotovo) document.documentElement.classList.add('k4u');
+  }
+
+  /* ---------- detail objednávky ---------- */
+  function detailObjednavky() {
+    var M = document.getElementById('PohodaOrderMaster'); if (!M || M.querySelector('.k4u-panel')) return;
+    var cislo = (location.pathname.match(/objednavka\/([^\/]+)/) || [])[1]; if (!cislo) return;
+    cislo = decodeURIComponent(cislo);
+    // prázdné řádky (Jméno: bez hodnoty…) schovat
+    var cap = M.querySelectorAll('.formFields > .caption');
+    for (var i = 0; i < cap.length; i++) { var v = next(cap[i]); if (v && !txt(v)) { cap[i].classList.add('k4u-prazdne'); v.classList.add('k4u-prazdne'); } }
+    var em = M.querySelector('.PohodaOrderContactDetails .caption.email'), email = txt(next(em));
+    var datumObj = txt(next(M.querySelector('.PohodaOrderMainDetails .caption.created')));
+
+    var p = document.createElement('div'); p.className = 'k4u-panel';
+    p.innerHTML = '<div class="k4u-hl"><span class="k4u-stav k4u-s-nacitam">Zjišťuji stav…</span><span class="k4u-zas"></span><span class="k4u-fa"></span></div><div class="k4u-akce"></div>';
+    var h1 = M.querySelector('h1'); h1.parentNode.insertBefore(p, h1.nextSibling);
+    var akce = p.querySelector('.k4u-akce');
+
+    function ukazStav(s) {
+      var e = p.querySelector('.k4u-stav');
+      if (!s) { e.remove(); return; }
+      e.className = 'k4u-stav ' + stavTrida(s.cls); e.textContent = velke(s.stav);
+      var storno = /cancel/i.test(s.cls), d = datum(datumObj);
+      if (s.z && s.z.href) p.querySelector('.k4u-zas').innerHTML = '<a class="k4u-btn k4u-btn-zl" href="' + esc(s.z.href) + '" target="_blank" rel="noopener">Sledovat zásilku' + (s.z.cislo ? ' ' + esc(s.z.cislo) : '') + '</a>';
+      if (!storno && d && (Date.now() - d.getTime()) / 864e5 <= LHUTA) {
+        var a = document.createElement('a'); a.className = 'k4u-btn k4u-btn-zl k4u-vratit-velke'; a.href = vratkaUrl(cislo, email);
+        a.innerHTML = 'Vrátit / vyměnit / reklamovat'; akce.insertBefore(a, akce.firstChild);
+        var info = document.createElement('p'); info.className = 'k4u-info';
+        info.textContent = 'Vrácení do 14 dnů, výměnu velikosti nebo reklamaci vyřídíte online ve vratkovém portálu – objednávka se v něm otevře sama.';
+        akce.appendChild(info);
+      }
+    }
+    var s = nactiStav(cislo);
+    if (s) ukazStav(s);
+    else fetch('/objednavky/', { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (t) {
+      var d = new DOMParser().parseFromString(t, 'text/html'), items = d.querySelectorAll('#PohodaOrderList .table > .item'), m = {};
+      for (var i = 0; i < items.length; i++) { var o = radekObjednavky(items[i]); m[o.cislo] = { stav: o.stav, cls: o.stavCls, z: o.zasilka }; }
+      ulozStavy(m); ukazStav(m[cislo] || null);
+    }).catch(function () { ukazStav(null); });
+
+    // faktura k objednávce (podle čísla objednávky v Přehledu faktur)
+    fetch('/faktury/', { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (t) {
+      var d = new DOMParser().parseFromString(t, 'text/html'), items = d.querySelectorAll('#PohodaInvoiceList .table > .item'), out = [];
+      for (var i = 0; i < items.length; i++) {
+        var r = items[i].querySelector('dc-root') || items[i];
+        if (txt(val(r, 'linkOrderNumber')) !== cislo) continue;
+        var a = val(r, 'linkDocumentNumber');
+        if (a && a.getAttribute('href')) out.push('<a class="k4u-btn" href="' + esc(a.getAttribute('href')) + '">Faktura ' + esc(txt(a)) + '</a>');
+      }
+      if (out.length) p.querySelector('.k4u-fa').innerHTML = out.join('');
+    }).catch(function () {});
+
+    // fotky zboží (og:image z detailu produktu)
+    var odkazy = M.querySelectorAll('#PohodaOrderItemList .item dc-root > a[href]');
+    for (var j = 0; j < odkazy.length && j < 30; j++) (function (a) {
+      var box = document.createElement('span'); box.className = 'k4u-foto'; a.insertBefore(box, a.firstChild);
+      fetch(a.getAttribute('href')).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+        var m = t.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i);
+        if (m) box.innerHTML = '<img src="' + esc(m[1].replace(/&amp;/g, '&')) + '" alt="" loading="lazy">';
+        else box.classList.add('k4u-foto-nic');
+      }).catch(function () { box.classList.add('k4u-foto-nic'); });
+    })(odkazy[j]);
+    document.documentElement.classList.add('k4u');
+  }
+
+  function run() {
+    try { if (OL) seznamObjednavek(); else if (IL) seznamFaktur(); else if (OD) detailObjednavky(); }
+    catch (e) { document.documentElement.classList.remove('k4u'); }
+  }
+  run();
+  // BSSHOP při filtrování a stránkování seznam překresluje → sestavit znovu
+  var host = document.getElementById(OL ? 'PohodaOrderList' : IL ? 'PohodaInvoiceList' : 'PohodaOrderMaster');
+  if (host && window.MutationObserver) {
+    var tm = null;
+    new MutationObserver(function () { clearTimeout(tm); tm = setTimeout(run, 60); }).observe(host.parentNode || host, { childList: true, subtree: true });
+  }
+})();
+</script>

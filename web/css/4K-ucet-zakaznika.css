@@ -1,0 +1,130 @@
+/* 4K – účet zákazníka (v1, 23. 11. 2026)
+   Přehled objednávek, detail objednávky, Přehled faktur. Patří k skriptu „4K-ucet-skript“ na konci Zápatí.
+   Karty se ukážou jen tehdy, když skript proběhne (třída html.k4u); jinak zůstane původní tabulka BSSHOP.
+   Vypnutí: Internetový obchod → Stylesheety → odškrtnout Aktivní. */
+
+/* ===================== SPOLEČNÉ ===================== */
+.OrderListState #PohodaOrderList,.InvoiceListState #PohodaInvoiceList,.OrderDetailState #PohodaOrderMaster{max-width:1000px;margin:0 auto 48px;color:#231F20;font-family:'GoodSans-Regular',Arial,sans-serif}
+.OrderListState #PohodaOrderList>h1,.InvoiceListState #PohodaInvoiceList>h1,.OrderDetailState #PohodaOrderMaster>h1{margin:8px 0 20px!important;padding:0!important;border:0!important;font-family:'FKScreamer-Upright',Impact,sans-serif!important;font-weight:normal!important;font-size:48px!important;line-height:1!important;color:#231F20!important;text-transform:uppercase;letter-spacing:0}
+
+.k4u-btn{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:42px;padding:0 18px;border:1px solid #231F20;border-radius:4px;background:#fff;color:#231F20!important;font:400 15px/1.2 'GoodSans-Regular',Arial,sans-serif;text-decoration:none!important;white-space:nowrap;cursor:pointer}
+.k4u-btn:hover{background:#231F20;color:#fff!important}
+.k4u-btn-zl{background:#FFC524;border-color:#FFC524}
+.k4u-btn-zl:hover{background:#231F20;border-color:#231F20;color:#FFC524!important}
+.k4u-btn-txt{border-color:transparent;padding:0 6px;text-decoration:underline!important}
+.k4u-btn-txt:hover{background:none;color:#231F20!important;text-decoration:none!important}
+
+.k4u-stav{display:inline-block;padding:5px 11px;border-radius:14px;font:400 13px/1.2 'GoodSans-Bold','GoodSans-Regular',Arial,sans-serif;letter-spacing:.3px;white-space:nowrap}
+.k4u-s-bezi{background:#FFC524;color:#231F20}
+.k4u-s-ok{background:#cfe8d6;color:#1f7a3a}
+.k4u-s-storno{background:#e6e6e3;color:#6a6a66}
+.k4u-s-pozde{background:#a85200;color:#fff}
+.k4u-s-nacitam{background:#f4f4f2;color:#8a8a86}
+
+/* ===================== SEZNAMY (objednávky, faktury) ===================== */
+html.k4u .OrderListState #PohodaOrderList>.header,html.k4u .InvoiceListState #PohodaInvoiceList>.header{display:none!important}
+html.k4u #PohodaOrderList .table>.item>dc-root,html.k4u #PohodaInvoiceList .table>.item>dc-root{display:none!important}
+html.k4u #PohodaOrderList .table,html.k4u #PohodaInvoiceList .table{display:flex!important;flex-direction:column;gap:12px;border:0!important;background:none!important}
+html.k4u #PohodaOrderList .table>.item,html.k4u #PohodaInvoiceList .table>.item{display:block!important;margin:0!important;padding:0!important;border:0!important;background:none!important;min-height:0!important}
+.k4u-card{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"hl cena" "meta cena" "akce akce";gap:6px 24px;align-items:center;padding:20px 22px;border:1px solid #e6e6e3;border-radius:4px;background:#fff}
+.k4u-card:hover{border-color:#c9c9c4}
+.k4u-hl{grid-area:hl;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.k4u-num{color:#231F20!important;text-decoration:none!important;font-family:'FKScreamer-Upright',Impact,sans-serif;font-size:30px;line-height:1;letter-spacing:.5px}
+.k4u-num small{display:block;margin:0 0 4px;font:400 12px/1 'GoodSans-Regular',Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#6a6a66}
+.k4u-num:hover{text-decoration:underline!important}
+.k4u-meta{grid-area:meta;font-size:15px;line-height:1.5;color:#6a6a66}
+.k4u-meta i{font-style:normal;color:#c9c9c4;padding:0 2px}
+.k4u-meta a{color:#231F20!important}
+.k4u-cena{grid-area:cena;justify-self:end;font-family:'FKScreamer-Upright',Impact,sans-serif;font-size:34px;line-height:1;white-space:nowrap}
+.k4u-akce{grid-area:akce;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+/* stornované: šedé a sbalené */
+.item.k4u-storno .k4u-card{background:#f4f4f2;border-color:#f4f4f2}
+.item.k4u-storno .k4u-num,.item.k4u-storno .k4u-cena{color:#8a8a86!important}
+.item.k4u-storno .k4u-cena{text-decoration:line-through;text-decoration-thickness:2px}
+html.k4u #PohodaOrderList.k4u-sbalit:not(.k4u-storna-open) .table>.item.k4u-storno{display:none!important}
+.k4u-storna{display:block;margin:14px 0 0;padding:8px 0;border:0;background:none;color:#6a6a66;font:400 15px 'GoodSans-Regular',Arial,sans-serif;text-decoration:underline;cursor:pointer}
+.k4u-storna:hover{color:#231F20}
+
+/* filtr: kompaktní řádek */
+.OrderListState #PohodaOrderList>.filter,.InvoiceListState #PohodaInvoiceList>.filter{margin:0 0 16px!important;padding:16px!important;border:0!important;border-radius:4px;background:#f4f4f2!important}
+.OrderListState #PohodaOrderList>.filter>dc-root,.InvoiceListState #PohodaInvoiceList>.filter>dc-root{display:flex!important;flex-wrap:wrap;align-items:flex-end;gap:10px 12px}
+.OrderListState #PohodaOrderList>.filter>dc-root>span,.InvoiceListState #PohodaInvoiceList>.filter>dc-root>span{display:flex!important;flex-direction:column;flex:1 1 150px;min-width:0;margin:0!important;width:auto!important}
+.OrderListState #PohodaOrderList>.filter .title,.InvoiceListState #PohodaInvoiceList>.filter .title{margin:0 0 4px!important;font-size:13px!important;color:#6a6a66!important}
+.OrderListState #PohodaOrderList>.filter input.value,.InvoiceListState #PohodaInvoiceList>.filter input.value{box-sizing:border-box;height:42px!important;width:100%!important;border:1px solid #dcdcd8!important;border-radius:4px!important;background:#fff!important;font-size:15px!important}
+.OrderListState #PohodaOrderList>.filter a.button,.InvoiceListState #PohodaInvoiceList>.filter a.button{flex:0 0 auto;height:42px!important;min-width:0!important;margin:0!important;padding:0 18px!important;display:inline-flex!important;align-items:center;border-radius:4px!important;font-size:15px!important;box-shadow:none!important}
+.OrderListState #PohodaOrderList>.filter a.clearFilter,.InvoiceListState #PohodaInvoiceList>.filter a.clearFilter{background:#fff!important;border:1px solid #dcdcd8!important;color:#231F20!important}
+.OrderListState #PohodaOrderList>.filter a.apply,.InvoiceListState #PohodaInvoiceList>.filter a.apply{background:#231F20!important;border:1px solid #231F20!important;color:#fff!important}
+.OrderListState #PohodaOrderList>.filter a.apply span,.InvoiceListState #PohodaInvoiceList>.filter a.apply span{color:#fff!important}
+.OrderListState #PohodaOrderList>.filter dc-con{display:flex!important;flex:1 0 100%;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 0!important}
+.OrderListState #PohodaOrderList>.filter .onlyNotCompleted{display:flex!important;flex-direction:row-reverse!important;align-items:center;gap:8px;font-size:15px}
+.OrderListState #PohodaOrderList>.filter .onlyNotCompleted .title{margin:0!important;font-size:15px!important;color:#231F20!important}
+/* souhrn faktur (Celkem uhradit) */
+.InvoiceListState #PohodaInvoiceList>.summary{margin:0 0 16px!important;padding:0!important;border:0!important;background:none!important;font-size:15px}
+
+/* ===================== DETAIL OBJEDNÁVKY ===================== */
+.k4u-panel{margin:0 0 28px;padding:20px 22px;border-radius:4px;background:#f4f4f2}
+.k4u-panel .k4u-hl{gap:10px}
+.k4u-panel .k4u-zas:empty,.k4u-panel .k4u-fa:empty{display:none}
+.k4u-panel .k4u-fa{display:flex;flex-wrap:wrap;gap:8px}
+.k4u-panel .k4u-akce{margin-top:14px}
+.k4u-panel .k4u-akce:empty{display:none}
+.k4u-vratit-velke{min-height:48px;padding:0 24px;font-family:'GoodSans-Bold','GoodSans-Regular',Arial,sans-serif;font-size:16px}
+.k4u-info{flex:1 1 260px;margin:0;font-size:14px;line-height:1.5;color:#6a6a66}
+html.k4u .OrderDetailState .k4u-prazdne{display:none!important}
+
+/* bloky údajů jako 4 karty */
+.OrderDetailState #PohodaOrderMaster>dc-con:first-of-type{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:0 0 20px}
+.OrderDetailState #PohodaOrderMaster .PohodaDocumentFormView{margin:0!important;padding:18px 20px!important;border:1px solid #e6e6e3!important;border-radius:4px;background:#fff!important;width:auto!important;float:none!important;box-sizing:border-box}
+.OrderDetailState #PohodaOrderMaster .PohodaDocumentFormView .formFields{display:grid!important;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:15px;line-height:1.45}
+.OrderDetailState #PohodaOrderMaster .PohodaDocumentFormView .title{grid-column:1 / -1;order:-1;margin:0 0 8px!important;padding:0!important;border:0!important;background:none!important}
+.OrderDetailState #PohodaOrderMaster .PohodaDocumentFormView .title span{font:400 13px 'GoodSans-Regular',Arial,sans-serif!important;letter-spacing:1.5px;text-transform:uppercase;color:#6a6a66!important}
+.OrderDetailState #PohodaOrderMaster .formFields>.caption{color:#6a6a66;white-space:nowrap}
+.OrderDetailState #PohodaOrderMaster .formFields>span:not(.caption){min-width:0;overflow-wrap:anywhere}
+.OrderDetailState #PohodaOrderMaster .PohodaOrderOtherDetails{grid-column:1 / -1}
+.OrderDetailState #PohodaOrderMaster .PohodaOrderOtherDetails>span{white-space:pre-line;font-size:15px}
+.OrderDetailState #PohodaOrderMaster .PohodaOrderButtons{display:flex!important;flex-wrap:wrap;gap:8px;padding:0!important;border:0!important;background:none!important;margin:0 0 24px!important}
+.OrderDetailState #PohodaOrderMaster .PohodaOrderButtons a.button{height:42px!important;margin:0!important;padding:0 18px!important;display:inline-flex!important;align-items:center;border:1px solid #231F20!important;border-radius:4px!important;background:#fff!important;color:#231F20!important;font-size:15px!important;box-shadow:none!important}
+.OrderDetailState #PohodaOrderMaster .PohodaOrderButtons a.button span{color:inherit!important}
+.OrderDetailState #PohodaOrderMaster .PohodaOrderButtons a.button:hover{background:#231F20!important;color:#fff!important}
+
+/* položky: fotka · název · množství · cena */
+html.k4u .OrderDetailState #PohodaOrderItemList>.header{display:none!important}
+html.k4u .OrderDetailState #PohodaOrderItemList .table{border-top:1px solid #e6e6e3}
+html.k4u .OrderDetailState #PohodaOrderItemList .table>.item{margin:0!important;padding:0!important;border:0!important;border-bottom:1px solid #e6e6e3!important;background:none!important}
+html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"nazev ks cena" "kod ks cena";gap:2px 24px;align-items:center;padding:14px 0!important;background:none!important}
+html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>*{display:none!important}
+html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>a{grid-area:nazev;display:flex!important;align-items:center;gap:16px;color:#231F20!important;font-size:16px;line-height:1.35;text-decoration:none!important}
+html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>a:hover span:last-child{text-decoration:underline}
+html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>.codeValue{grid-area:kod;display:block!important;padding-left:88px;font-size:13px;color:#8a8a86}
+html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>dc-con{grid-area:ks;display:flex!important;gap:4px;color:#6a6a66;white-space:nowrap}
+html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>dc-con>*{display:inline!important}
+html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>.totalPriceValue{grid-area:cena;display:block!important;font-family:'FKScreamer-Upright',Impact,sans-serif;font-size:26px;white-space:nowrap;text-align:right}
+.k4u-foto{flex:0 0 72px;width:72px;height:72px;border-radius:4px;background:#f4f4f2;overflow:hidden;display:flex!important;align-items:center;justify-content:center}
+.k4u-foto img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.k4u-foto-nic{visibility:hidden}
+html.k4u .OrderDetailState #PohodaOrderItemList>.footer{border:0!important;background:none!important;padding:16px 0 0!important}
+html.k4u .OrderDetailState #PohodaOrderItemList>.footer>dc-root{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:4px 24px;background:none!important;padding:0!important}
+html.k4u .OrderDetailState #PohodaOrderItemList>.footer .caption{justify-self:end;color:#6a6a66;font-size:15px;background:none!important}
+html.k4u .OrderDetailState #PohodaOrderItemList>.footer .value{justify-self:end;font-size:15px;background:none!important}
+html.k4u .OrderDetailState #PohodaOrderItemList>.footer .documentTotalPriceVat.caption{align-self:center;color:#231F20;font-size:16px}
+html.k4u .OrderDetailState #PohodaOrderItemList>.footer .documentTotalPriceVat.value{font-family:'FKScreamer-Upright',Impact,sans-serif;font-size:34px;line-height:1}
+
+/* ===================== TELEFON ===================== */
+@media (max-width:767px){
+  .OrderListState #PohodaOrderList>h1,.InvoiceListState #PohodaInvoiceList>h1,.OrderDetailState #PohodaOrderMaster>h1{font-size:36px!important}
+  .k4u-card{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"hl hl" "meta cena" "akce akce";padding:16px}
+  .k4u-cena{align-self:end;font-size:28px}
+  .k4u-num{font-size:26px}
+  .k4u-akce .k4u-btn:not(.k4u-btn-txt){flex:1 1 auto}
+  .OrderListState #PohodaOrderList>.filter>dc-root>span.issued,.InvoiceListState #PohodaInvoiceList>.filter>dc-root>span.issued{flex-basis:calc(50% - 6px)}
+  .OrderListState #PohodaOrderList>.filter>dc-root>span.number,.OrderListState #PohodaOrderList>.filter>dc-root>span.productCode,
+  .InvoiceListState #PohodaInvoiceList>.filter>dc-root>span.number,.InvoiceListState #PohodaInvoiceList>.filter>dc-root>span.productCode{flex-basis:calc(50% - 6px)}
+  .OrderListState #PohodaOrderList>.filter a.button,.InvoiceListState #PohodaInvoiceList>.filter a.button{flex:1 1 calc(50% - 6px);justify-content:center}
+  .k4u-panel{padding:16px}
+  .k4u-vratit-velke{flex:1 1 100%}
+  html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"nazev nazev" "kod cena" "ks cena";gap:4px 16px}
+  html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>dc-con{padding-left:88px;font-size:14px}
+  .k4u-foto{flex-basis:64px;width:64px;height:64px}
+  html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>.codeValue{padding-left:80px}
+  html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>dc-con{padding-left:80px}
+}
