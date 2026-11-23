@@ -105,7 +105,7 @@
       for (var j = 0; j < v.length; j++) v[j].href = vratkaUrl(v[j].getAttribute('data-obj'), e);
     });
     // stornované sbalit (jen když jsou mezi nimi i platné)
-    var vse = t.querySelectorAll(':scope > .item').length, sw = L.querySelector('.k4u-storna');
+    var vse = t.querySelectorAll(':scope > .item').length, sw = L.querySelector('.k4u-storna'); storna = t.querySelectorAll(':scope > .item.k4u-storno').length;
     if (storna && storna < vse) {
       if (!sw) {
         sw = document.createElement('button'); sw.type = 'button'; sw.className = 'k4u-storna';
