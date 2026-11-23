@@ -65,7 +65,7 @@ html.k4u .InvoiceListState .summary .k4u-prazdne{display:none!important}
 .InvoiceListState #PohodaInvoiceList>.summary{margin:0 0 16px!important;padding:0!important;border:0!important;background:none!important;font-size:15px}
 
 /* ===================== DETAIL OBJEDNÁVKY ===================== */
-.k4u-panel{margin:0 0 28px;padding:20px 22px;border-radius:4px;background:#f4f4f2}
+.k4u-panel{display:block!important;width:auto!important;margin:0 0 28px;padding:20px 22px;border-radius:4px;background:#f4f4f2}
 .k4u-panel .k4u-hl{gap:10px}
 .k4u-panel .k4u-zas:empty,.k4u-panel .k4u-fa:empty{display:none}
 .k4u-panel .k4u-fa{display:flex;flex-wrap:wrap;gap:8px}
@@ -76,7 +76,7 @@ html.k4u .InvoiceListState .summary .k4u-prazdne{display:none!important}
 html.k4u .OrderDetailState .k4u-prazdne{display:none!important}
 
 /* bloky údajů jako 4 karty */
-.OrderDetailState #PohodaOrderMaster>dc-con:first-of-type{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:0 0 20px}
+.OrderDetailState #PohodaOrderMaster>dc-con:first-of-type{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 20px}
 .OrderDetailState #PohodaOrderMaster .PohodaDocumentFormView{margin:0!important;padding:18px 20px!important;border:1px solid #e6e6e3!important;border-radius:4px;background:#fff!important;width:auto!important;float:none!important;box-sizing:border-box}
 .OrderDetailState #PohodaOrderMaster .PohodaDocumentFormView .formFields{display:grid!important;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:15px;line-height:1.45}
 .OrderDetailState #PohodaOrderMaster .PohodaDocumentFormView .title{grid-column:1 / -1;order:-1;margin:0 0 8px!important;padding:0!important;border:0!important;background:none!important}
@@ -114,6 +114,7 @@ html.k4u .OrderDetailState #PohodaOrderItemList>.footer .documentTotalPriceVat.v
 
 /* ===================== TELEFON ===================== */
 @media (max-width:767px){
+  .OrderDetailState #PohodaOrderMaster>dc-con:first-of-type{grid-template-columns:minmax(0,1fr)}
   .OrderListState #PohodaOrderList>h1,.InvoiceListState #PohodaInvoiceList>h1,.OrderDetailState #PohodaOrderMaster>h1{font-size:36px!important}
   .k4u-card{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"hl hl" "meta cena" "akce akce";padding:16px}
   .k4u-cena{align-self:end;font-size:28px}
