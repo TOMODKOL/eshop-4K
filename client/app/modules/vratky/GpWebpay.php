@@ -11,8 +11,10 @@ use App\Core\Db;
  *
  * - Obchodní místo je stejné jako e-shop (684240002). Jedno obchodní místo = jeden klíč, proto v ostrém
  *   provozu podepisujeme STEJNÝM soukromým klíčem jako BSSHOP. Testovací prostředí má vlastní testovací klíč.
- * - ORDERNUMBER = číslo zálohové faktury (9 číslic, 2608…) × 100 + pokus (01–99) – GP nedovolí číslo použít dvakrát.
- * - MERORDERNUM = číslo zálohové faktury → v avízu GP (RefNo) podle něj úloha „GP – denní výpis“ spáruje platbu se ZF.
+ * - Platit se dá hned po odeslání vratky, ještě než pomocník založí zálohovou fakturu: platba se váže na číslo
+ *   přijaté objednávky 991… (10 číslic), které dává Client a které je zároveň VS zálohové faktury v Pohodě.
+ * - ORDERNUMBER = číslo objednávky 991… + pokus (01–99) – GP nedovolí číslo použít dvakrát.
+ * - MERORDERNUM = číslo objednávky 991… → v avízu GP (RefNo) podle něj úloha „GP – denní výpis“ najde ZF podle VS.
  * - Podpis: RSA-SHA1 nad hodnotami spojenými „|“ v pořadí podle specifikace GP (LANG se nepodepisuje).
  * - Odpověď: DIGEST nad OPERATION|ORDERNUMBER|MERORDERNUM|MD|PRCODE|SRCODE|RESULTTEXT|… (jen přítomná pole),
  *   DIGEST1 = totéž + |MERCHANTNUMBER. Ověřuje se veřejným klíčem GP.
@@ -48,7 +50,7 @@ final class GpWebpay
     /** Lze u vratky platit kartou? (záloha vystavená, nezaplacená, kladná částka) */
     public static function canPay(array $ret): bool
     {
-        return self::enabled() && ($ret['pay_method'] ?? '') === 'karta' && !empty($ret['zf_no']) && empty($ret['zf_paid']) && preg_match('~^\d{9}$~', (string) $ret['zf_no'])
+        return self::enabled() && ($ret['pay_method'] ?? '') === 'karta' && empty($ret['zf_paid']) && preg_match('~^\d{10}$~', (string) ($ret['xorder_no'] ?? ''))
             && Service::advanceAmount($ret) > 0.005 && !in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true);
     }
 
@@ -72,7 +74,7 @@ final class GpWebpay
     public static function createPaymentUrl(array $ret): string
     {
         if (!self::canPay($ret)) throw new \RuntimeException('Doplatek teď nejde zaplatit kartou.');
-        $zf = (string) $ret['zf_no'];
+        $zf = (string) $ret['xorder_no'];   // reference platby (sloupec card_payments.zf_no)
         $amount = Service::advanceAmount($ret);
         $attempt = (int) Db::value('SELECT COUNT(*) FROM card_payments WHERE return_id = ?', [$ret['id']]) + 1;
         if ($attempt > 99) throw new \RuntimeException('Příliš mnoho pokusů o platbu. Zaplaťte prosím převodem.');
@@ -113,7 +115,7 @@ final class GpWebpay
     {
         $q = array_change_key_case($q, CASE_UPPER);
         $orderNo = (string) ($q['ORDERNUMBER'] ?? '');
-        $pay = preg_match('~^\d{11}$~', $orderNo) ? Db::one('SELECT * FROM card_payments WHERE order_number = ?', [$orderNo]) : null;
+        $pay = preg_match('~^\d{11,12}$~', $orderNo) ? Db::one('SELECT * FROM card_payments WHERE order_number = ?', [$orderNo]) : null;
         $ret = $pay ? Service::get((int) $pay['return_id']) : null;
         $token = $ret['token'] ?? null;
         $valid = isset($q['DIGEST'], $q['DIGEST1']) && self::verifyText(self::responseText($q), (string) $q['DIGEST'])

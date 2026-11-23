@@ -37,7 +37,8 @@ final class Notify
         $w = Service::words($lines);
         // výměna s doplatkem převodem: potvrzení počká na zálohovou fakturu (pomocník ji vystaví do pár minut),
         // aby zákazník dostal jeden e-mail i s platebními údaji a QR kódem; nejpozději po 15 minutách odejde samo
-        if (Service::advanceAmount($ret) > 0.005 && !empty($ret['xorder_no']) && in_array($ret['xorder_state'] ?? '', ['ceka', ''], true)) {
+        // (kartou se platí hned – potvrzení s tlačítkem na platbu odejde ihned)
+        if (Service::advanceAmount($ret) > 0.005 && !empty($ret['xorder_no']) && in_array($ret['xorder_state'] ?? '', ['ceka', ''], true) && !GpWebpay::canPay($ret)) {
             Db::exec('UPDATE returns SET notify_pending = 1 WHERE id = ?', [$ret['id']]);
         } else {
             self::confirm($ret, $lines);
@@ -60,7 +61,7 @@ final class Notify
     {
         if ($ret['email'] === '') return;
         $lines ??= Service::lines((int) $ret['id']);
-        $pay = $ret['zf_no'] && !$ret['zf_paid'] ? self::payData($ret) : null;
+        $pay = Service::payReady($ret) ? self::payData($ret) : null;
         $html = View::render('vratky:email', [
             'kicker' => Service::title($ret, $lines),
             'heading' => 'Děkujeme, máme to',

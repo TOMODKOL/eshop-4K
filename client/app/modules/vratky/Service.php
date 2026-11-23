@@ -615,6 +615,14 @@ final class Service
 
     /** QR Platba (SPAYD) k doplatku výměny, '' když se neplatí převodem nebo zatím není záloha. */
     /** Variabilní symbol doplatku = číslo nové objednávky 991… (zálohová faktura ho má jako VS). */
+    /** Dá se doplatek zaplatit? Převodem až se zálohovou fakturou v Pohodě, kartou hned po odeslání vratky
+     *  (platba se váže na číslo objednávky 991…, které je i VS zálohové faktury). */
+    public static function payReady(array $ret): bool
+    {
+        if (!empty($ret['zf_paid']) || self::advanceAmount($ret) <= 0.005) return false;
+        return !empty($ret['zf_no']) || GpWebpay::canPay($ret);
+    }
+
     public static function payVs(array $ret): string
     {
         return preg_replace('~\D~', '', (string) (($ret['xorder_no'] ?? '') ?: ($ret['zf_no'] ?? '')));
@@ -624,7 +632,7 @@ final class Service
     {
         $amount = self::advanceAmount($ret);
         $iban = self::iban((string) Config::get('shop.bank_account', ''));
-        if ($amount <= 0.005 || !$ret['zf_no'] || $ret['zf_paid'] || $iban === '') return '';
+        if ($amount <= 0.005 || !self::payReady($ret) || $iban === '') return '';
         $msg = 'Doplatek vymena obj ' . self::ref($ret);
         return 'SPD*1.0*ACC:' . $iban . '*AM:' . number_format($amount, 2, '.', '') . '*CC:CZK*X-VS:' . self::payVs($ret)
             . '*MSG:' . strtoupper(preg_replace('~[^A-Za-z0-9 -]~', '', iconv('UTF-8', 'ASCII//TRANSLIT', $msg) ?: $msg));
@@ -825,7 +833,7 @@ final class Service
             'note' => 'Doplatek ' . money($amount) . ($how === 'kartou' ? ' jsme přijali kartou' : ' jsme přijali') . '. Děkujeme.',
             'public' => 1, 'user_id' => null, 'created_at' => Db::now()]);
         if ($how === 'kartou') Db::insert('return_events', ['return_id' => $r['id'], 'status' => null,
-            'note' => 'Platba kartou GP webpay, objednávka ' . $cardOrder . ' (zálohová faktura ' . $r['zf_no'] . '). V Pohodě se záloha spáruje z avíza GP další pracovní den.',
+            'note' => 'Platba kartou GP webpay, objednávka GP ' . $cardOrder . ' (VS ' . self::payVs($r) . ($r['zf_no'] ? ', zálohová faktura ' . $r['zf_no'] : '') . '). V Pohodě se záloha spáruje z avíza GP další pracovní den.',
             'public' => 0, 'user_id' => null, 'created_at' => Db::now()]);
         Notify::paid(self::get((int) $r['id']));
         $r = self::get((int) $r['id']);
@@ -857,7 +865,7 @@ final class Service
                 'public' => 0, 'user_id' => null, 'created_at' => Db::now()]);
             $fresh = self::get((int) $r['id']);
             if (!empty($r['notify_pending'])) { Db::exec('UPDATE returns SET notify_pending = 0 WHERE id = ?', [$r['id']]); Notify::confirm($fresh); }
-            elseif ($zf !== '') Notify::advance($fresh);
+            elseif ($zf !== '' && ($fresh['pay_method'] ?? '') !== 'karta') Notify::advance($fresh);   // u karty odkaz na platbu už zákazník má
         } elseif (!empty($r['notify_pending'])) {
             // objednávka jen jako návrh nebo chyba → potvrzení bez platebních údajů hned
             Db::exec('UPDATE returns SET notify_pending = 0 WHERE id = ?', [$r['id']]);
