@@ -142,3 +142,14 @@ html.k4u .OrderDetailState #PohodaOrderItemList>.footer .documentTotalPriceVat.v
 .k4u-pdf-detail{margin:0 8px 0 0;vertical-align:middle}
 /* objednávka z e-shopu: tisk stránky nahrazuje PDF z Pohody */
 html.k4u .OrderDetailState #PohodaOrderMaster.k4u-obj-pdf .PohodaOrderButtons a.print{display:none!important}
+/* filtr pryč (zákazník má pár dokladů, datum ani kód produktu nevyplní); u objednávek při více stranách jen „Jen nevyřízené“ */
+html.k4u .InvoiceListState #PohodaInvoiceList>.filter{display:none!important}
+html.k4u .OrderListState #PohodaOrderList:not(.k4u-vice-stran)>.filter{display:none!important}
+html.k4u .OrderListState #PohodaOrderList.k4u-vice-stran>.filter>dc-root>span:not(.onlyNotCompleted),
+html.k4u .OrderListState #PohodaOrderList.k4u-vice-stran>.filter>dc-root>a.button,
+html.k4u .OrderListState #PohodaOrderList.k4u-vice-stran>.filter .PagingView{display:none!important}
+html.k4u .OrderListState #PohodaOrderList.k4u-vice-stran>.filter{padding:12px 16px!important}
+html.k4u .OrderListState #PohodaOrderList.k4u-vice-stran>.filter dc-con{margin:0!important}
+/* stránkování pod seznamem */
+html.k4u .OrderListState #PohodaOrderList>.PagingView,html.k4u .InvoiceListState #PohodaInvoiceList>.PagingView{margin:16px 0 0!important}
+html.k4u .InvoiceListState #PohodaInvoiceList>.summary .PagingView{display:none!important}

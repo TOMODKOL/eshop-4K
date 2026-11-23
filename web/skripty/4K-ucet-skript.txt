@@ -123,6 +123,8 @@
       popis();
       L.classList.add('k4u-sbalit');
     } else { L.classList.remove('k4u-sbalit'); if (sw) sw.remove(); }
+    // filtr je schovaný; „Jen nevyřízené“ se ukáže jen při víc než jedné stránce objednávek
+    L.classList.toggle('k4u-vice-stran', L.querySelectorAll('.PagingView a.page').length > 1 || !!L.querySelector('.onlyNotCompleted input:checked'));
     if (hotovo) document.documentElement.classList.add('k4u');
   }
 
