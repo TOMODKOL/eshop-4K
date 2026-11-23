@@ -99,7 +99,7 @@
 body:has(.BreadcrumbNavigation a[href*="/obleceni-c296/"]) #PDAvailabilityPanel::after,
 body:has(.BreadcrumbNavigation a[href*="tretry"]) #PDAvailabilityPanel::after{content:"Vrácení do 14 dnů – i výměna velikosti"}
 body:has(.BreadcrumbNavigation a[href*="/obleceni-c296/"]) #PDAvailabilityPanel .delivery::after,
-body:has(.BreadcrumbNavigation a[href*="tretry"]) #PDAvailabilityPanel .delivery::after{content:" · PPL nebo Zásilkovna, nad 2 500 Kč zdarma";font-weight:400;color:#3b3b3b}
+body:has(.BreadcrumbNavigation a[href*="tretry"]) #PDAvailabilityPanel .delivery::after{content:" · PPL nebo Zásilkovna, nad 3 000 Kč zdarma";font-weight:400;color:#3b3b3b}
 /* kola */
 body:has(.BreadcrumbNavigation a[href*="/jizdni-kola-c276/"]) #PDAvailabilityPanel .delivery::after{content:" · složené, seřízené a zkontrolované. Před odesláním se vám ozveme.";font-weight:400;color:#3b3b3b}
 
