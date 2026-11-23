@@ -153,3 +153,5 @@ html.k4u .OrderListState #PohodaOrderList.k4u-vice-stran>.filter dc-con{margin:0
 /* stránkování pod seznamem */
 html.k4u .OrderListState #PohodaOrderList>.PagingView,html.k4u .InvoiceListState #PohodaInvoiceList>.PagingView{margin:16px 0 0!important}
 html.k4u .InvoiceListState #PohodaInvoiceList>.summary .PagingView{display:none!important}
+/* 23. 11. 23:05: filtr objednávek schovaný vždy (zaškrtávátko „Jen nevyřízené“ nebylo vidět zaškrtnuté a zákazník ho nepotřebuje) */
+html.k4u .OrderListState #PohodaOrderList.k4u-vice-stran>.filter{display:none!important}
