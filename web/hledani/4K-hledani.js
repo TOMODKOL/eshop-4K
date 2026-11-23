@@ -28,7 +28,7 @@
   };
 
   /* ---------- index ---------- */
-  var D = null, VOC = null, VKEYS = null;
+  var D = null, VOC = null, VKEYS = null, KOLA = {};
   function load() {
     if (K4H.ready) return K4H.ready;
     return (K4H.ready = fetch(BASE + 'index.json').then(function (r) { return r.json(); }).then(function (d) {
@@ -52,6 +52,7 @@
         if (p[8]) add(String(p[8]), i, 4);
       });
       VKEYS = Object.keys(VOC);
+      d.c.forEach(function (c, ci) { if (/^Eshop > (Jízdní kola|Elektrokola)/.test(c[0])) KOLA[ci] = 1; });
       return d;
     }));
   }
@@ -123,6 +124,7 @@
       if (!ok) continue;
       var p = D.p[id];
       sc *= p[4] === 1 ? 1.15 : p[4] === 2 ? 1.05 : 0.8;
+      if (KOLA[p[6]]) sc *= 1.25;   // kola jsou hlavní sortiment – při shodě dopředu
       res.push([+id, sc]);
     }
     res.sort(function (a, b) { return b[1] - a[1] || (D.p[b[0]][4] === 1) - (D.p[a[0]][4] === 1) || D.p[b[0]][3] - D.p[a[0]][3]; });
