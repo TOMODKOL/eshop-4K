@@ -7,6 +7,7 @@
 #  Jen doklady se střediskem e-shopu 4kluciodko (ostatní – prodejna, servis – portál označí „nenabízet“ a netisknou se).
 #  Zálohové faktury (sestava „Zálohová faktura“, ID 240) portál nezná – bere je pomocník z Pohody sám (všechny s e-mailem
 #  odběratele, poprvé od 1. 1. 2025) a posílá i e-mail a číslo objednávky. Hotové: stav\zalohy_pdf_hotove.json (číslo → otisk).
+#  Čerstvé objednávky 8810… (ještě bez faktury) bere pomocník z Pohody i s e-mailem – stav\objednavky_pdf_hotove.json.
 #  Změněné doklady: každý běh se zeptá Pohody na doklady změněné od minula (ftr:lastChanges). Když se jejich obsah opravdu
 #  liší (otisk hlavičky, položek a součtů ve stav\doklady_pdf_otisky.json), vytiskne je znovu a PDF v portálu přepíše.
 # Spouští se z reklamace-sync.ps1 (každých 5 minut, jen v době běhu mServeru). Ručně:
@@ -227,6 +228,66 @@ try {
     if ($davkaZ.Count) { $souhrn += ('zalohy: vytištěno {0}, v portálu {1}, čeká {2}{3}' -f $vytisk, $ulozZ, ($cekaji.Count - $davkaZ.Count),
         $(if ($spatneZ.Count) { '; NEVYŠLO: ' + ($spatneZ -join ', ') } else { '' })) }
 } catch { $souhrn += 'zalohy: CHYBA ' + $_.Exception.Message }
+
+# --- čerstvé objednávky z e-shopu (ještě bez faktury) ---
+# Portál zná objednávky jen z faktur. Nové objednávky (8810…, středisko e-shopu) proto bere pomocník přímo z Pohody
+# i s e-mailem odběratele, aby si zákazník stáhl „Objednávka (PDF)“ hned po objednání. Poprvé 30 dní zpět.
+$objOdF = Join-Path $StavDir 'objednavky_pdf_od.txt'
+$objHotF = Join-Path $StavDir 'objednavky_pdf_hotove.json'
+$objHot = NactiJson $objHotF
+$objOd = if (Test-Path -LiteralPath $objOdF) { (Get-Content -LiteralPath $objOdF -Raw).Trim() } else { (Get-Date).AddDays(-30).ToString('yyyy-MM-ddT00:00:00') }
+try {
+    $dz = MServer 'objednavky-nove' ('<dat:dataPackItem id="objednavky-nove" version="2.0"><lst:listOrderRequest version="2.0" orderType="receivedOrder" orderVersion="2.0">' +
+        "<lst:requestOrder><ftr:filter><ftr:lastChanges>$objOd</ftr:lastChanges></ftr:filter></lst:requestOrder></lst:listOrderRequest></dat:dataPackItem>")
+    $cekaji = @()
+    foreach ($z in @($dz.SelectNodes("//*[local-name()='order']"))) {
+        $h = $z.SelectSingleNode("./*[local-name()='orderHeader']")
+        if (-not $h) { continue }
+        $n = $h.SelectSingleNode(".//*[local-name()='number']/*[local-name()='numberRequested']")
+        $c = if ($n) { $n.InnerText.Trim() } else { '' }
+        $em = $h.SelectSingleNode("./*[local-name()='partnerIdentity']//*[local-name()='email']")
+        $email = if ($em) { $em.InnerText.Trim() } else { '' }
+        $st = $h.SelectSingleNode("./*[local-name()='centre']/*[local-name()='ids']")
+        if (-not $st -or $st.InnerText.Trim() -ne $StrediskoEshop) { continue }
+        if ($c -notmatch '^8810\d{6}$' -or $email -notmatch '@' -or ([int]$chyby["objednavky:$c"]) -ge 3) { continue }
+        $obsah = (@('orderHeader', 'orderDetail', 'orderSummary') | ForEach-Object { $u = $z.SelectSingleNode("./*[local-name()='$_']"); if ($u) { $u.OuterXml } }) -join ''
+        $otisk = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($obsah))) -replace '-', ''
+        if ($objHot[$c] -ne $otisk) { $cekaji += [pscustomobject]@{ no = $c; email = $email; otisk = $otisk } }
+    }
+    $davkaO = @($cekaji | Select-Object -First $Pocet)
+    $vytisk = 0; $ulozO = 0; $spatneO = @()
+    if ($davkaO.Count) {
+        $polozky = foreach ($x in $davkaO) {
+            "<dat:dataPackItem id=""pdf-$($x.no)"" version=""2.0""><prn:print version=""1.0"">" +
+            "<prn:record agenda=""prijate_objednavky""><ftr:queryFilter><ftr:filter>OBJ.Cislo = '$($x.no)'</ftr:filter></ftr:queryFilter></prn:record>" +
+            "<prn:printerSettings><prn:report><prn:id>383</prn:id></prn:report><prn:pdf><prn:fileName>C:\Users\Public\pomocnik_objnove_$($x.no).pdf</prn:fileName>" +
+            '<prn:binaryData><prn:responseXml>true</prn:responseXml><prn:removeFile>true</prn:removeFile></prn:binaryData></prn:pdf></prn:printerSettings></prn:print></dat:dataPackItem>'
+        }
+        $doc = MServer 'pdf-objednavky-nove' ($polozky -join "`n")
+        $pdfs = @()
+        foreach ($it in @($doc.SelectNodes("//*[local-name()='responsePackItem']"))) {
+            $c = ($it.GetAttribute('id') -replace '^pdf-', '')
+            $x = $davkaO | Where-Object { $_.no -eq $c } | Select-Object -First 1
+            $data = $it.SelectSingleNode(".//*[local-name()='data' and @code='base64']")
+            if ($x -and $data -and $data.InnerText.Trim()) { $pdfs += [pscustomobject]@{ no = $c; pdf = ($data.InnerText -replace '\s', ''); email = $x.email; otisk = $x.otisk } }
+            else { $spatneO += $c; $chyby["objednavky:$c"] = [int]$chyby["objednavky:$c"] + 1 }
+        }
+        $vytisk = $pdfs.Count
+        for ($i = 0; $i -lt $pdfs.Count; $i += 5) {
+            $kus = @($pdfs[$i..([math]::Min($i + 4, $pdfs.Count - 1))])
+            $json = @{ pdfs = @($kus | Select-Object no, pdf, email) } | ConvertTo-Json -Depth 4 -Compress
+            $res = Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/objednavky-pdf') -Method Post -Body ([Text.Encoding]::UTF8.GetBytes($json)) `
+                -ContentType 'application/json; charset=utf-8' -Headers $apiHlav -TimeoutSec 120
+            $ulozO += [int]$res.saved
+            $chybne = @($res.errors | ForEach-Object { ($_ -split ':')[0] })
+            foreach ($p in $kus) { if ($chybne -notcontains $p.no) { $objHot[$p.no] = $p.otisk } }
+        }
+    }
+    if ($cekaji.Count -le $davkaO.Count -and -not $spatneO.Count) { Set-Content -LiteralPath $objOdF -Value $zacatek -Encoding ASCII }
+    UlozJson $objHot $objHotF
+    if ($davkaO.Count) { $souhrn += ('objednavky nove: vytištěno {0}, v portálu {1}, čeká {2}{3}' -f $vytisk, $ulozO, ($cekaji.Count - $davkaO.Count),
+        $(if ($spatneO.Count) { '; NEVYŠLO: ' + ($spatneO -join ', ') } else { '' })) }
+} catch { $souhrn += 'objednavky nove: CHYBA ' + $_.Exception.Message }
 
 if ($zmenyOk) { Set-Content -LiteralPath $zmenyF -Value $zacatek -Encoding ASCII }
 UlozJson $otisky $otiskyF

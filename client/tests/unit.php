@@ -306,6 +306,13 @@ t(Service::xorderPending() === [] , 'zaplacenou zálohu pomocník dál nehlídá
 array_map('unlink', glob("$kdir/*")); @rmdir($kdir);
 Config::load($cfg);
 
+// --- PDF čerstvé objednávky (bez faktury): e-mail ze souboru vedle PDF ---
+$pdf = base64_encode("%PDF-1.4 test");
+t(\App\Modules\Vratky\Invoices::save('8810999901', $pdf, 'objednavky', ['email' => 'Jana@Example.cz']) === null, 'objednávka bez faktury: PDF uloženo i s e-mailem');
+t(\App\Modules\Vratky\Invoices::findOrderSidecar('8810999901', 'jana@example.cz') === '8810999901', 'objednávka bez faktury: najde se podle e-mailu');
+t(\App\Modules\Vratky\Invoices::findOrderSidecar('8810999901', 'cizi@example.cz') === null, 'objednávka bez faktury: cizí e-mail nic nedostane');
+foreach (['pdf', 'json'] as $x) @unlink(APP_ROOT . '/storage/objednavky/8810999901.' . $x);
+
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
 exit($fail ? 1 : 0);

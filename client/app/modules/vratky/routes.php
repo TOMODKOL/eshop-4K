@@ -369,6 +369,8 @@ $pdfDoklad = function (string $kind) {
     } else {
         $o = $limit ? Invoices::find(Http::input('c'), Http::input('email')) : null;
         $no = $o ? (string) ($kind === 'objednavky' ? $o['order_no'] : $o['invoice_no']) : '';
+        // čerstvá objednávka bez faktury: portál ji zná jen z PDF, které poslal pomocník (s e-mailem odběratele)
+        if ($kind === 'objednavky' && $no === '' && $limit) $no = (string) Invoices::findOrderSidecar(Http::input('c'), Http::input('email'));
         // daňový doklad k objednávce: faktura, nebo prodejka (objednávka vyzvednutá a zaplacená na prodejně)
         if ($kind === 'faktury' && $no !== '') $kind = Invoices::kindOf($no);
     }

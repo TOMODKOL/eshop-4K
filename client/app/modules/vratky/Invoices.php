@@ -12,6 +12,7 @@ use App\Core\Db;
  * Stejně potvrzení objednávky (sestava „Potvrzení přijetí objednávky“, ID 383): storage/objednavky/<číslo>.pdf,
  * /objednavka-pdf?c=…&email=…, API /api/sync/objednavky-pdf. Zálohové faktury (sestava „Zálohová faktura“, ID 240):
  * storage/zalohy/<číslo>.pdf + <číslo>.json (e-mail odběratele, číslo objednávky – portál je jinak nezná), /zaloha-pdf?c=…&email=….
+ * Čerstvé objednávky (ještě bez faktury) posílá pomocník přímo z Pohody i s e-mailem: storage/objednavky/<číslo>.json.
  * Prodejky (sestava „Prodejka (daňový doklad)“, ID 170) k objednávkám z e-shopu vyzvednutým na prodejně: storage/prodejky/26PH….pdf,
  * stahují se stejnou adresou /faktura (podle čísla objednávky se pozná, jestli je doklad faktura, nebo prodejka).
  * Druh dokladu: 'faktury' | 'objednavky' | 'zalohy' | 'prodejky'.
@@ -89,7 +90,7 @@ final class Invoices
         if (!is_dir(self::dir($kind))) @mkdir(self::dir($kind), 0775, true);
         $tmp = self::path($no, $kind) . '.tmp';
         if (file_put_contents($tmp, $pdf, LOCK_EX) === false || !rename($tmp, self::path($no, $kind))) return 'nelze uložit';
-        if ($kind === 'zalohy') {
+        if ($kind === 'zalohy' || ($kind === 'objednavky' && trim((string) ($meta['email'] ?? '')) !== '')) {
             $email = mb_strtolower(trim((string) ($meta['email'] ?? '')));
             $order = preg_replace('/\D+/', '', (string) ($meta['order_no'] ?? '')) ?? '';
             file_put_contents(self::dir($kind) . '/' . $no . '.json', json_encode(['email' => $email, 'order_no' => $order]), LOCK_EX);
@@ -107,6 +108,16 @@ final class Invoices
             "SELECT * FROM orders WHERE source IN ('eshop','faktura','prodejna') AND LOWER(email) = ? AND (UPPER(invoice_no) = ? OR order_no = ?) ORDER BY invoice_date DESC LIMIT 1",
             [$email, $num, $num]
         );
+    }
+
+    /** Objednávka, kterou portál ještě nezná z faktury (čerstvá, nevyřízená): číslo z <číslo>.json vedle PDF, e-mail musí sedět. */
+    public static function findOrderSidecar(string $number, string $email): ?string
+    {
+        $email = mb_strtolower(trim($email));
+        $num = preg_replace('/\D+/', '', $number) ?? '';
+        if ($email === '' || $num === '') return null;
+        $m = json_decode((string) @file_get_contents(self::dir('objednavky') . '/' . $num . '.json'), true);
+        return is_array($m) && ($m['email'] ?? '') !== '' && $m['email'] === $email ? $num : null;
     }
 
     /** Zálohová faktura podle čísla zálohy nebo objednávky a e-mailu odběratele (z <číslo>.json). Vrací číslo zálohy. */
