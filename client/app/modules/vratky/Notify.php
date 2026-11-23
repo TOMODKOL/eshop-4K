@@ -11,6 +11,20 @@ use App\Core\View;
 /** E-maily zákazníkovi a prodejně. */
 final class Notify
 {
+    /**
+     * E-mail zákazníkovi. Vratky a reklamace založené před ostrým provozem (mail.customer_from) žádné e-maily
+     * zákazníkům nedostávají – jen záznam do logu (staré reklamace z Pohody i zkušební vratky).
+     */
+    private static function toCustomer(array $ret, string $subject, string $html): void
+    {
+        $from = trim((string) Config::get('mail.customer_from', ''));
+        if ($from !== '' && (string) ($ret['created_at'] ?? '') < $from) {
+            @file_put_contents(APP_ROOT . '/storage/log/mail.log', date('c') . "  NEODESLÁNO (založeno před ostrým provozem) " . ($ret['no'] ?? '') . ' → ' . $ret['email'] . ': ' . $subject . "\n", FILE_APPEND);
+            return;
+        }
+        Mailer::send($ret['email'], $subject, $html);
+    }
+
     public static function statusUrl(array $ret): string
     {
         return rtrim((string) Config::get('app_url'), '/') . '/vratky/stav/' . $ret['token'];
@@ -30,7 +44,7 @@ final class Notify
                     : self::nextStepText($ret),
                 'url' => self::statusUrl($ret),
             ]);
-            Mailer::send($ret['email'], Service::title($ret, $lines) . ' – potvrzení', $html);
+            self::toCustomer($ret, Service::title($ret, $lines) . ' – potvrzení', $html);
             self::packetaMissing($ret);
             return;
         }
@@ -70,7 +84,7 @@ final class Notify
             'pay' => $pay,
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], Service::title($ret, $lines) . ' – ' . self::shortNext($ret) . ($pay ? ', doplatek ' . money($pay['amount']) : ''), $html);
+        self::toCustomer($ret, Service::title($ret, $lines) . ' – ' . self::shortNext($ret) . ($pay ? ', doplatek ' . money($pay['amount']) : ''), $html);
     }
 
     private static function payData(array $ret): array
@@ -97,7 +111,7 @@ final class Notify
             'pay' => self::payData($ret),
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], Service::title($ret, $lines) . ($reminder ? ' – připomínáme doplatek ' : ' – doplatek ') . money($amount), $html);
+        self::toCustomer($ret, Service::title($ret, $lines) . ($reminder ? ' – připomínáme doplatek ' : ' – doplatek ') . money($amount), $html);
     }
 
     /** Doplatek přišel (pomocník ho uvidí zlikvidovaný v Pohodě). */
@@ -112,7 +126,7 @@ final class Notify
             'text' => 'Doplatek ' . money(Service::advanceAmount($ret)) . ' za výměnu jsme přijali. Děkujeme.',
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], Service::title($ret, $lines) . ' – doplatek přijat', $html);
+        self::toCustomer($ret, Service::title($ret, $lines) . ' – doplatek přijat', $html);
     }
 
     /** Zákazník po 7 dnech zboží neposlal → připomínka s postupem. */
@@ -127,7 +141,7 @@ final class Notify
             'text' => 'Připomínáme, že zboží k nám ještě nedorazilo. ' . self::nextStepText($ret) . ' Pokud jste ho už poslali, děkujeme – tuto zprávu prosím neřešte.',
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], Service::title($ret, $lines) . ' – zboží zatím nedorazilo', $html);
+        self::toCustomer($ret, Service::title($ret, $lines) . ' – zboží zatím nedorazilo', $html);
     }
 
     /** Zboží dorazilo → prodejně e-mail s tlačítky „v pořádku“ / „problém“ (podepsaný odkaz, bez přihlášení). */
@@ -177,7 +191,7 @@ final class Notify
             'text' => $ret['status'] === 'zamitnuto' ? self::statusText('zamitnuto', $w, $note) : ($note !== '' ? $note : self::statusText($ret['status'], $w)),
             'url' => self::statusUrl($ret),
         ]);
-        Mailer::send($ret['email'], Service::title($ret, $lines) . ': ' . $label, $html);
+        self::toCustomer($ret, Service::title($ret, $lines) . ': ' . $label, $html);
     }
 
     /** „číslo objednávky 8810012345“ (7. pád: „číslem objednávky …“). */

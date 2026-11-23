@@ -107,5 +107,7 @@ return [
         'smtp_pass'   => '',
         // Testovací režim: všechny e-maily (i zákazníkům) jen na tuto adresu. Prázdné = ostrý provoz (od 23. 11. 2026).
         'redirect_to' => '',
+        // E-maily zákazníkům jen u vratek a reklamací založených od tohoto okamžiku (starší – i reklamace načtené z Pohody – nic nedostanou).
+        'customer_from' => '2026-11-23 23:45:00',
     ],
 ];
