@@ -138,3 +138,5 @@ html.k4u .OrderDetailState #PohodaOrderItemList>.footer .documentTotalPriceVat.v
   html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>.codeValue{padding-left:80px}
   html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>dc-con{padding-left:80px}
 }
+/* detail faktury: tlačítko PDF vedle Vytisknout */
+.k4u-pdf-detail{margin:0 8px 0 0;vertical-align:middle}

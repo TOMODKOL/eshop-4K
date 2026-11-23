@@ -102,3 +102,6 @@ try {
 
 # doklady k vratkám (opravný daňový doklad / faktura) – stejná úloha, každých 5 minut
 try { & (Join-Path $PSScriptRoot 'vratky-doklady.ps1') } catch { Zapis-Log 'vratky_doklady' ('CHYBA ' + $_.Exception.Message) }
+
+# faktury v PDF pro zákazníky (tisk z Pohody sestavou Faktura → portál) – stejná úloha, každých 5 minut
+try { & (Join-Path $PSScriptRoot 'faktury-pdf.ps1') } catch { Zapis-Log 'faktury_pdf' ('CHYBA ' + $_.Exception.Message) }

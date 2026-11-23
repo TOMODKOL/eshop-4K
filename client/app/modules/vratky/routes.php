@@ -10,6 +10,7 @@ use App\Core\Session;
 use App\Core\View;
 use App\Modules\Vratky\Eshop;
 use App\Modules\Vratky\GpWebpay;
+use App\Modules\Vratky\Invoices;
 use App\Modules\Vratky\Notify;
 use App\Modules\Vratky\Packeta;
 use App\Modules\Vratky\Photos;
@@ -358,6 +359,34 @@ Http::post('/admin/vratky/{no}', function (string $no) {
     Http::redirect('/admin/vratky/' . $no);
 });
 
+
+// faktura v PDF z účtu na e-shopu: /faktura?c=<číslo faktury nebo objednávky>&email=<e-mail z objednávky>
+// PDF tiskne z Pohody pomocník (sestava Faktura) – viz Invoices a /api/sync/faktury-pdf
+Http::get('/faktura', function () {
+    $c = Http::input('c');
+    $email = Http::input('email');
+    $o = RateLimit::hit('faktura_pdf', 60, 3600) ? Invoices::find($c, $email) : null;
+    if (!$o) {
+        http_response_code(404);
+        View::page('layout/message', ['title' => 'Fakturu jsme nenašli',
+            'text' => 'Zkontrolujte prosím, že jste přihlášení na e-shopu pod e-mailem z objednávky, nebo nám zavolejte na ' . Config::get('shop.phone') . '.']);
+        return;
+    }
+    $no = (string) $o['invoice_no'];
+    if (!Invoices::has($no)) {
+        View::page('layout/message', ['title' => 'Faktura se připravuje',
+            'text' => 'Fakturu č. ' . $no . ' právě připravujeme ve formátu PDF. Zkuste to prosím za pár minut znovu.']);
+        return;
+    }
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: ' . (Http::input('stahnout') === '1' ? 'attachment' : 'inline') . '; filename="Faktura-' . $no . '.pdf"');
+    header('Content-Length: ' . filesize(Invoices::path($no)));
+    header('Cache-Control: private, no-store');
+    header('X-Robots-Tag: noindex');
+    readfile(Invoices::path($no));
+    exit;
+});
+
 // ================= API pro pomocníka (Pohoda) =================
 
 $syncAuth = function (): array {
@@ -415,4 +444,21 @@ Http::post('/api/sync/doklady', function () use ($syncAuth) {
     $n = 0;
     foreach ((array) ($d['results'] ?? []) as $x) if (is_array($x) && Service::docResult($x)) $n++;
     Http::json(['ok' => true, 'updated' => $n]);
+});
+
+// faktury v PDF: GET = čísla faktur, ke kterým chybí PDF (?limit=…), POST {"pdfs":[{"invoice_no":"260102162","pdf":"<base64>"}]}
+Http::get('/api/sync/faktury-pdf', function () use ($syncAuth) {
+    $syncAuth();
+    Http::json(['ok' => true, 'invoices' => Invoices::missing(max(1, min(500, (int) (Http::input('limit') ?: 40))))]);
+});
+
+Http::post('/api/sync/faktury-pdf', function () use ($syncAuth) {
+    $d = $syncAuth();
+    $ok = 0; $err = [];
+    foreach ((array) ($d['pdfs'] ?? []) as $x) {
+        if (!is_array($x)) continue;
+        $e = Invoices::save((string) ($x['invoice_no'] ?? ''), (string) ($x['pdf'] ?? ''));
+        if ($e) $err[] = ($x['invoice_no'] ?? '?') . ': ' . $e; else $ok++;
+    }
+    Http::json(['ok' => true, 'saved' => $ok, 'errors' => $err]);
 });
