@@ -428,8 +428,10 @@
       if (ids.length < 2 || !h1 || document.querySelector('.k4h-detail')) return;
       var box = document.createElement('div'); box.className = 'k4h-detail';
       box.innerHTML = '<div class="k4h-h">Varianty (' + ids.length + ')</div>' + dlazdice(ids, me);
-      var host = h1.closest('dc-con') || h1;
-      host.parentNode.insertBefore(box, host.nextSibling);
+      // detail BSSHOP je mřížka s pevnými řádky → blok dáme do panelu s cenou (pravý sloupec pod názvem)
+      var t = [].filter.call(document.querySelectorAll('.ProductDetailTableView'), function (e) { return e.querySelector('.price') && getComputedStyle(e).display === 'flex'; })[0];
+      if (t) { box.style.cssText = 'flex:0 0 100%;width:100%;margin:14px 0 4px'; t.style.flexWrap = 'wrap'; t.appendChild(box); }
+      else h1.insertAdjacentElement('afterend', box);
     })['catch'](function () {});
   }
 })();
