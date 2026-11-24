@@ -72,7 +72,7 @@ return [
         // Lhůta na vyřízení reklamace (dny)
         'claim_resolve_days' => 30,
         // Kam poslat upozornění na novou vratku (prázdné = nikam)
-        'notify_staff' => 'info@4kluciodkol.cz',
+        'notify_staff' => 'eshop@4kluciodkol.cz',
     ],
 
     // GP webpay – doplatek výměny kartou. Obchodní místo je stejné jako e-shop (jedno obchodní místo = jeden klíč).
@@ -99,7 +99,7 @@ return [
         'enabled'     => false,
         'from'        => 'client@4kluciodkol.cz',
         'from_name'   => '4 KLUCI OD KOL',
-        'reply_to'    => 'info@4kluciodkol.cz',
+        'reply_to'    => 'eshop@4kluciodkol.cz',
         'smtp_host'   => 'smtp.forpsi.com',
         'smtp_port'   => 465,
         'smtp_secure' => 'ssl',   // ssl (465) nebo tls (587)
