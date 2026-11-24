@@ -7,6 +7,8 @@
   if (window.K4H) return;
   var ME = document.currentScript && document.currentScript.src || '';
   var BASE = ME.replace(/[^\/]*$/, '');
+  // index přímo z GitHubu: obnoví se do 5 minut po nočním sestavení (jsDelivr si větev @main drží i půl dne)
+  var INDEX = /cdn\.jsdelivr\.net\/gh\/TOMODKOL\/eshop-4K@main\//.test(BASE) ? 'https://raw.githubusercontent.com/TOMODKOL/eshop-4K/main/web/hledani/index.json' : BASE + 'index.json';
   var CDN = 'https://cdn.4kluciodkol.cz/images/0/';
   var K4H = window.K4H = { ready: null };
 
@@ -49,7 +51,7 @@
   var D = null, VOC = null, VKEYS = null, KOLA = {}, GRP = {}, LAB = {};
   function load() {
     if (K4H.ready) return K4H.ready;
-    return (K4H.ready = fetch(BASE + 'index.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (d) {
+    return (K4H.ready = fetch(INDEX, { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (d) {
       D = d; VOC = Object.create(null);
       function add(t, i, w) {
         if (!t || STOP[t]) return;
