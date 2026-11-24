@@ -1,7 +1,7 @@
 /* 4K – vlastní vyhledávání na 4kluciodkol.cz (zkušební verze 23. 11. 2026).
    Našeptávač pod polem „Zadejte hledaný výraz…“ a vlastní stránka výsledků /hledat/?q=…
    Index produktů (index.json vedle tohoto souboru) vzniká z výpisů kategorií e-shopu.
-   Zapíná se jen pro toho, kdo otevře web s ?hledani=1 (vypnutí ?hledani=0) – zákazníci zatím vidí původní hledání. */
+   Zapíná se jen pro toho, kdo otevře web s #hledani=1 (vypnutí #hledani=0; web otazník v adrese zahodí) – zákazníci zatím vidí původní hledání. */
 (function () {
   'use strict';
   if (window.K4H) return;
