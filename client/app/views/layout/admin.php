@@ -16,7 +16,7 @@ $u = \App\Core\Auth::user(); $active = $active ?? ''; ?>
   <a class="logo" href="<?= url('/admin') ?>" aria-label="Administrace"><img src="<?= asset('logo-white.png') ?>" alt="4 KLUCI OD KOL" width="187" height="28"></a>
   <?php if ($u): ?>
   <nav class="adminnav" aria-label="Administrace">
-    <?php if (cfg('modules.vratky')): ?><a href="<?= url('/admin/vratky') ?>" class="<?= $active === 'vratky' ? 'on' : '' ?>">Vratky</a><?php endif; ?>
+    <?php if (cfg('modules.vratky')): ?><a href="<?= url('/admin/vratky') ?>" class="<?= $active === 'vratky' ? 'on' : '' ?>">Reklamace a vratky</a><?php endif; ?>
     <?php if ($u['role'] === 'admin'): ?><a href="<?= url('/admin/uzivatele') ?>" class="<?= $active === 'users' ? 'on' : '' ?>">Kolegové</a><?php endif; ?>
     <span><?= e($u['name']) ?></span>
     <form method="post" action="<?= url('/admin/odhlaseni') ?>" style="margin:0"><?= csrf_field() ?><button class="link" style="color:#fff;padding:0;font-size:13px">Odhlásit</button></form>

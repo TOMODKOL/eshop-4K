@@ -177,8 +177,7 @@ footer.foot strong{color:var(--text)}
 .vcard .act button{height:38px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:700}
 .vcard .act button.go{background:var(--ink);color:#fff;border-color:var(--ink)}
 .warn{color:var(--red);font-weight:700}
-.stat{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
-@media (max-width:1100px){.stat{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
 @media (max-width:520px){.stat{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .stat div,.stat a{background:#fff;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;color:inherit;text-decoration:none;border:2px solid transparent}
 .stat a:hover{border-color:var(--ink)}
@@ -408,3 +407,10 @@ span.ai-img{background:var(--soft)}
 @media (min-width:900px){.mtotal{display:none!important}}
 /* doplatek: na mobilu QR pod údaji bez mezery */
 @media (max-width:520px){.paybox .ai-sum{flex:0 0 auto}}
+
+/* přehled: záložky Reklamace / Vratky / Výměny */
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--ink);margin:4px 0 2px}
+.tabs a{padding:10px 18px 9px;border-radius:10px 10px 0 0;color:var(--ink);text-decoration:none;font-weight:700;font-size:15px;background:#fff;border:2px solid transparent;border-bottom:0;margin-bottom:-2px}
+.tabs a.on{background:var(--ink);color:#fff}
+.tabs a small{display:inline-block;min-width:22px;padding:1px 7px;margin-left:4px;border-radius:999px;background:var(--yel);color:var(--ink);font-size:12px;text-align:center}
+.vcard .typ{font-family:inherit;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}

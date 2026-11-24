@@ -256,23 +256,45 @@ Http::post('/vratky/kontrola/{no}', function (string $no) use ($checkPage) {
 
 Http::get('/admin/vratky', function () {
     Auth::require();
+    // tři oddělené přehledy: reklamace / vratky / výměny (smíšená žádost patří k „nejtěžší“ části)
+    $TYP = "CASE WHEN EXISTS (SELECT 1 FROM return_lines l WHERE l.return_id = r.id AND l.action = 'reklamovat') THEN 'reklamace'"
+        . " WHEN EXISTS (SELECT 1 FROM return_lines l WHERE l.return_id = r.id AND l.action = 'vymenit') THEN 'vymena' ELSE 'vratka' END";
+    $typ = Http::input('typ');
+    if (!isset(Service::TYPY[$typ])) $typ = (string) Session::get('vratky_typ', 'reklamace');
+    if (!isset(Service::TYPY[$typ])) $typ = 'reklamace';
+    Session::set('vratky_typ', $typ);
     $stav = Http::input('stav');
     $q = Http::input('q');
+    $FILTR = [
+        'proplatit' => "r.doc_type = 'odd' AND r.doc_state = 'hotovo' AND r.status NOT IN ('vyrizeno','zamitnuto')",
+        'doplatek'  => "r.zf_no IS NOT NULL AND r.zf_no <> '' AND r.zf_paid = 0 AND r.status NOT IN ('vyrizeno','zamitnuto')",
+        ''          => "r.status NOT IN ('vyrizeno','zamitnuto')",
+    ];
     $where = [];
     $p = [];
-    if ($stav === 'proplatit') { $where[] = "r.doc_type = 'odd' AND r.doc_state = 'hotovo' AND r.status NOT IN ('vyrizeno','zamitnuto')"; }
-    elseif ($stav !== '' && isset(Service::STATUS[$stav])) { $where[] = 'r.status = ?'; $p[] = $stav; }
-    elseif ($stav === '' && $q === '') { $where[] = "r.status NOT IN ('vyrizeno','zamitnuto')"; }   // hledání bez filtru prohledá i vyřízené a zamítnuté
+    if ($q === '') { $where[] = "($TYP) = ?"; $p[] = $typ; }    // hledá se napříč všemi typy a stavy
+    if ($q === '' || $stav !== '') {
+        if (isset($FILTR[$stav])) $where[] = $FILTR[$stav];
+        elseif (isset(Service::STATUS[$stav])) { $where[] = 'r.status = ?'; $p[] = $stav; }
+    }
     if ($q !== '') { $where[] = '(r.no LIKE ? OR r.pohoda_no LIKE ? OR r.email LIKE ? OR r.customer_name LIKE ? OR o.order_no LIKE ? OR o.invoice_no LIKE ?)'; array_push($p, "%$q%", "%$q%", "%$q%", "%$q%", "%$q%", "%$q%"); }
-    $rows = Db::all('SELECT r.*, o.order_no, o.invoice_no FROM returns r LEFT JOIN orders o ON o.id = r.order_id' .
+    $rows = Db::all("SELECT r.*, o.order_no, o.invoice_no, ($TYP) AS typ FROM returns r LEFT JOIN orders o ON o.id = r.order_id" .
         ($where ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY r.id DESC LIMIT 200', $p);
     foreach ($rows as &$r) $r['lines'] = Service::lines((int) $r['id']);
+    unset($r);
+    // počty: po typech a stavech + zvláštní dlaždice
     $counts = [];
-    foreach (Db::all('SELECT status, COUNT(*) c FROM returns GROUP BY status') as $c) $counts[$c['status']] = (int) $c['c'];
+    foreach (array_keys(Service::TYPY) as $t) $counts[$t] = ['' => 0, 'proplatit' => 0, 'doplatek' => 0];
+    foreach (Db::all("SELECT ($TYP) t, r.status, COUNT(*) c FROM returns r GROUP BY t, r.status") as $c) {
+        $counts[$c['t']][$c['status']] = (int) $c['c'];
+        if (!in_array($c['status'], ['vyrizeno', 'zamitnuto'], true)) $counts[$c['t']][''] += (int) $c['c'];
+    }
+    foreach (['proplatit', 'doplatek'] as $f) {
+        foreach (Db::all("SELECT ($TYP) t, COUNT(*) c FROM returns r WHERE {$FILTR[$f]} GROUP BY t") as $c) $counts[$c['t']][$f] = (int) $c['c'];
+    }
     $lastSync = Db::one('SELECT * FROM sync_log ORDER BY id DESC LIMIT 1');
-    $counts['proplatit'] = (int) Db::value("SELECT COUNT(*) FROM returns WHERE doc_type = 'odd' AND doc_state = 'hotovo' AND status NOT IN ('vyrizeno','zamitnuto')");
-    View::page('vratky:admin_list', ['title' => 'Vratky', 'active' => 'vratky', 'rows' => $rows, 'counts' => $counts,
-        'stav' => $stav, 'q' => $q, 'lastSync' => $lastSync], 'admin');
+    View::page('vratky:admin_list', ['title' => Service::TYPY[$typ], 'active' => 'vratky', 'rows' => $rows, 'counts' => $counts,
+        'typ' => $typ, 'stav' => $stav, 'q' => $q, 'lastSync' => $lastSync], 'admin');
 });
 
 // hromadně: peníze odeslány (po zadání příkazů v bance) → Vyřízeno + e-mail zákazníkovi

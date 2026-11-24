@@ -11,6 +11,16 @@ final class Service
 {
     public const ACTIONS = ['vratit' => 'Vrácení', 'vymenit' => 'Výměna velikosti', 'reklamovat' => 'Reklamace'];
 
+    /** Přehledy v administraci (podle „nejtěžší“ části žádosti). */
+    public const TYPY = ['reklamace' => 'Reklamace', 'vratka' => 'Vratky', 'vymena' => 'Výměny'];
+
+    /** Dlaždice přehledu pro každý typ: klíč filtru => popisek (null = název stavu). */
+    public const DLAZDICE = [
+        'reklamace' => ['' => 'Otevřené', 'novy' => null, 'na_ceste' => null, 'dorazilo' => 'Dorazilo – posoudit', 'v_reseni' => 'U dodavatele', 'proplatit' => 'K proplacení', 'vyrizeno' => null, 'zamitnuto' => null],
+        'vratka'    => ['' => 'Otevřené', 'novy' => null, 'na_ceste' => null, 'dorazilo' => 'Dorazilo – zkontrolovat', 'proplatit' => 'K proplacení', 'vyrizeno' => null, 'zamitnuto' => null],
+        'vymena'    => ['' => 'Otevřené', 'novy' => null, 'doplatek' => 'Čeká na doplatek', 'na_ceste' => null, 'dorazilo' => 'Dorazilo – poslat nové', 'vyrizeno' => null, 'zamitnuto' => null],
+    ];
+
     /** Stavy vratky v pořadí, jak jdou za sebou. */
     public const STATUS = [
         'novy'      => 'Čeká na odeslání',

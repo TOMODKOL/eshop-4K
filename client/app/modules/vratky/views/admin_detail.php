@@ -7,7 +7,7 @@ $docState = (string) ($ret['doc_state'] ?? '');
 $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => Service::shippingRefund($ret)] : []), $lines);
 ?>
 <div class="col wide">
-  <a class="link" href="<?= url('/admin/vratky') ?>" style="align-self:flex-start;padding:0">← Přehled vratek</a>
+  <a class="link" href="<?= url('/admin/vratky') ?>" style="align-self:flex-start;padding:0">← Přehled</a>
   <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
     <h1 class="h2"><?= e(mb_strtoupper(Service::words($lines)['n'])) ?> <?= e(Service::displayNo($ret)) ?></h1>
     <span class="st s<?= array_search($ret['status'], array_keys(Service::STATUS), true) ?>" style="font-size:13px"><?= e(Service::STATUS[$ret['status']] ?? $ret['status']) ?></span>
