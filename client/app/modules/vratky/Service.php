@@ -962,12 +962,14 @@ final class Service
         $out = []; $touched = []; $now = Db::now();
         foreach ($claims as $c) {
             $num = trim((string) ($c['number'] ?? '')); $st = trim((string) ($c['status'] ?? ''));
+            $ex = trim((string) ($c['executed'] ?? ''));
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $ex)) $st .= '|' . $ex;     // vyřízeno v Pohodě
             if ($num === '') continue;
             $line = Db::one('SELECT * FROM return_lines WHERE pohoda_no = ?', [$num]);
             if ($line) {
                 if ($st !== '' && $line['pohoda_status'] !== $st) {
                     Db::exec('UPDATE return_lines SET pohoda_status = ? WHERE id = ?', [$st, $line['id']]);
-                    Db::insert('return_events', ['return_id' => $line['return_id'], 'status' => null, 'note' => 'Stav v Pohodě (' . $num . '): ' . $st,
+                    Db::insert('return_events', ['return_id' => $line['return_id'], 'status' => null, 'note' => 'Stav v Pohodě (' . $num . '): ' . str_replace('|', ', vyřízeno ', $st),
                         'public' => 0, 'user_id' => null, 'created_at' => $now]);
                     $touched[(int) $line['return_id']] = true;
                 }
@@ -1072,17 +1074,26 @@ final class Service
      * Servis = předáno dodavateli/do servisu, Zák_… = předáno zákazníkovi (vyřízeno).
      * Vrací [stav portálu nebo null, text pro zákazníka].
      */
+    /**
+     * Stav položky z Pohody: „Stav reklamace“ + případně „|RRRR-MM-DD“ = vyplněné datum Vyřízeno.
+     * Rozhoduje datum Vyřízeno (uzavřená reklamace); neuznaná → zamítnuto. Bez data: Servis/Serv_… = u dodavatele.
+     */
     public static function fromPohodaStatus(string $s): array
     {
+        [$st, $done] = array_pad(explode('|', $s, 2), 2, '');
         $vyrizeni = [
-            'Zák_oprava' => 'zboží jsme opravili', 'Zák_výměna' => 'zboží jsme vyměnili za nové',
-            'Zák_dobropis' => 'vystavili jsme opravný daňový doklad (dobropis) a peníze vám vrátíme',
-            'Zák_opr.daň.dokl.' => 'vystavili jsme opravný daňový doklad a peníze vám vrátíme',
-            'Zák_převod' => 'peníze vám vracíme převodem na účet', 'Zák_hotovost' => 'peníze jsme vám vrátili v hotovosti',
+            'oprava' => 'zboží jsme opravili', 'výměna' => 'zboží jsme vyměnili za nové',
+            'dobropis' => 'vystavili jsme opravný daňový doklad (dobropis) a peníze vám vrátíme',
+            'opr.daň.dokl.' => 'vystavili jsme opravný daňový doklad a peníze vám vrátíme',
+            'převod' => 'peníze vám vracíme převodem na účet', 'hotovost' => 'peníze jsme vám vrátili v hotovosti',
         ];
-        if ($s === 'Servis') return ['v_reseni', 'reklamaci jsme předali k posouzení dodavateli'];
-        if ($s === 'Zák_neuznaná') return ['zamitnuto', 'reklamace bohužel nebyla uznána'];
-        if (isset($vyrizeni[$s])) return ['vyrizeno', $vyrizeni[$s]];
+        $kind = preg_replace('/^(Zák|Serv)_/u', '', $st);
+        $rejected = (bool) preg_match('/neuzn/iu', $st);
+        if ($done !== '' || preg_match('/^Zák_/u', $st)) {
+            if ($rejected) return ['zamitnuto', 'reklamace bohužel nebyla uznána'];
+            if ($done !== '' || isset($vyrizeni[$kind])) return ['vyrizeno', $vyrizeni[$kind] ?? ''];
+        }
+        if ($st === 'Servis' || str_starts_with($st, 'Serv_')) return ['v_reseni', 'reklamaci jsme předali k posouzení dodavateli'];
         return [null, ''];
     }
 

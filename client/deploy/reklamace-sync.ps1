@@ -13,6 +13,9 @@ if ($hodina -lt $MServerOd -or $hodina -ge $MServerDo) { return }
 
 $stavF = Join-Path $StavDir 'reklamace_sync.json'
 $prvni = -not (Test-Path -LiteralPath $stavF)
+$celkem = $false     # „posledni“: „vse“ = jednorázově znovu načíst všechny reklamace od 2024 (bez e-mailů)
+if (-not $prvni) { try { $celkem = ((Get-Content -LiteralPath $stavF -Raw -Encoding UTF8 | ConvertFrom-Json).posledni -eq 'vse') } catch {} }
+if ($celkem) { $prvni = $true }
 $zacatek = (Get-Date).AddMinutes(-2)        # rezerva na rozdíl hodin KANCL × server Pohody
 
 $udaj  = Nacti-Udaj 'mserver'
@@ -32,7 +35,8 @@ function Text($n, [string]$cesta) { $u = Uzel $n $cesta; if ($u) { $u.InnerText.
 
 try {
     if ($prvni) {
-        $filtr = '<ftr:filter><ftr:dateFrom>' + (Get-Date -Month 1 -Day 1).ToString('yyyy-MM-dd') + '</ftr:dateFrom></ftr:filter>'
+        $od = if ($celkem) { '2024-01-01' } else { (Get-Date -Month 1 -Day 1).ToString('yyyy-MM-dd') }
+        $filtr = '<ftr:filter><ftr:dateFrom>' + $od + '</ftr:dateFrom></ftr:filter>'
     } else {
         $posledni = (Get-Content -LiteralPath $stavF -Raw -Encoding UTF8 | ConvertFrom-Json).posledni
         $filtr = '<ftr:filter><ftr:lastChanges>' + $posledni + '</ftr:lastChanges></ftr:filter>'
@@ -65,6 +69,7 @@ try {
             status        = (Text $h 'status/ids')
             received      = (Text $h 'received')
             settle_until  = (Text $h 'settleUntil')
+            executed      = (Text $h 'executed')          # datum vyřízení v Pohodě = reklamace je uzavřená
             document_no   = (Text $h 'numberDocument')
             document_date = (Text $h 'dateDocument')
             name          = $jmeno

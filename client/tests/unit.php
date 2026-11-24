@@ -313,6 +313,12 @@ t(\App\Modules\Vratky\Invoices::findOrderSidecar('8810999901', 'jana@example.cz'
 t(\App\Modules\Vratky\Invoices::findOrderSidecar('8810999901', 'cizi@example.cz') === null, 'objednávka bez faktury: cizí e-mail nic nedostane');
 foreach (['pdf', 'json'] as $x) @unlink(APP_ROOT . '/storage/objednavky/8810999901.' . $x);
 
+// stav reklamace z Pohody: rozhoduje datum Vyřízeno
+t(Service::fromPohodaStatus('Serv_výměna|2026-11-23')[0] === 'vyrizeno' && Service::fromPohodaStatus('Přijetí reklamace|2025-10-01')[0] === 'vyrizeno', 'vyplněné Vyřízeno = vyřízeno');
+t(Service::fromPohodaStatus('Serv_neuznaná|2026-11-23')[0] === 'zamitnuto' && Service::fromPohodaStatus('Zák_neuznaná')[0] === 'zamitnuto', 'neuznaná = zamítnuto');
+t(Service::fromPohodaStatus('Serv_dobropis')[0] === 'v_reseni' && Service::fromPohodaStatus('Servis')[0] === 'v_reseni' && Service::fromPohodaStatus('Přijetí reklamace')[0] === null, 'bez data: u dodavatele / beze změny');
+t(Service::fromPohodaStatus('Zák_oprava')[0] === 'vyrizeno', 'Zák_… bez data = vyřízeno jako dřív');
+
 // smazání zkušební vratky: zmizí i s řádky a historií, číslo se uvolní; zaplacená smazat nejde
 $noDel = $x3['no'];
 $d = Service::deleteTest(Service::get((int) $x3['id']), null);
