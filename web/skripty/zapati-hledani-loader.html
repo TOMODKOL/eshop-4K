@@ -1,5 +1,5 @@
 <script>
-/* 4K – zkušební vlastní vyhledávání (24. 11. 2026): zapne odkaz s #hledani=1, vypne #hledani=0 – platí jen v prohlížeči, kde se odkaz otevřel.
-   Kód: github.com/TOMODKOL/eshop-4K, složka web/hledani. Ostatní návštěvníci mají původní hledání BSSHOP. */
-(function () { var on = false; try { var m = (location.search + location.hash).match(/[?&#]hledani=([01])/); if (m) localStorage.setItem('4k_hledani', m[1]); on = localStorage.getItem('4k_hledani') === '1'; } catch (e) {} if (!on) return; var s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/gh/TOMODKOL/eshop-4K@main/web/hledani/4K-hledani.js?h=' + Math.floor(Date.now() / 36e5); document.head.appendChild(s); })();
+/* 4K – vlastní vyhledávání (ostrý provoz od 24. 11. 2026): zapnuté pro všechny; #hledani=0 ho v daném prohlížeči vypne, #hledani=1 zase zapne.
+   Kód: github.com/TOMODKOL/eshop-4K, složka web/hledani. Když se index nenačte, zůstane původní hledání BSSHOP. */
+(function () { var on = true; try { var m = (location.search + location.hash).match(/[?&#]hledani=([01])/); if (m) localStorage.setItem('4k_hledani', m[1]); on = localStorage.getItem('4k_hledani') !== '0'; } catch (e) {} if (!on) return; var s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/gh/TOMODKOL/eshop-4K@main/web/hledani/4K-hledani.js?h=' + Math.floor(Date.now() / 36e5); document.head.appendChild(s); })();
 </script>
