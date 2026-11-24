@@ -59,7 +59,10 @@
         var ids = GRP[g]; if (ids.length < 2) return;
         var t = ids.map(function (i) { return d.p[i][1].split(' '); }), n = 0;
         while (t.every(function (x) { return x[n] !== undefined && x[n].toLowerCase() === t[0][n].toLowerCase(); })) n++;
-        ids.forEach(function (i, k) { LAB[i] = t[k].slice(n).join(' ').replace(/^[-–\s]+/, '') || d.p[i][1]; });
+        // „iPhone 18 Pro - Ocean“ × „iPhone 18 Pro Max - Ocean“: když se některé liší modelem a jiné jen barvou, ukázat i model
+        var dash = t.map(function (x) { return /^[-–]$/.test(x[n] || ''); });
+        if (n > 0 && dash.some(Boolean) && !dash.every(Boolean)) n--;
+        ids.forEach(function (i, k) { LAB[i] = t[k].slice(n).join(' ').replace(/^[-–\s]+/, '').replace(/\s+[-–]\s+/g, ' · ') || d.p[i][1]; });
       });
       d.c.forEach(function (c, ci) { if (/^Eshop > (Jízdní kola|Elektrokola)/.test(c[0])) KOLA[ci] = 1; });
       return d;
