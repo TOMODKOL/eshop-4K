@@ -151,7 +151,7 @@
     sets.forEach(function (m) { for (var x in m) all[x] = 1; });
     // všechna slova musí sedět; když nesedí nic, stačí všechna kromě jednoho („dámský dres krátký rukáv“)
     for (var pass = 0; pass < 2 && !res.length; pass++) {
-    if (pass === 1) { if (sets.length < 3) break; relaxed = true; }
+    if (pass === 1) { if (sets.length < 2) break; relaxed = true; }
     for (var id in all) {
       var sc = 0, miss = 0;
       for (var j = 0; j < sets.length; j++) { var v = sets[j][id]; if (v == null) miss++; else sc += v; }
