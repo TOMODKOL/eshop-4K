@@ -64,6 +64,28 @@ Http::get('/admin', function () {
 });
 
 // ---- kolegové (jen správce)
+// ---- odeslané e-maily (Client posílá přes SMTP, do schránky se kopie neukládá) – záznam z storage/log/mail.log
+Http::get('/admin/emaily', function () {
+    Auth::require('admin');
+    $f = APP_ROOT . '/storage/log/mail.log';
+    $rows = [];
+    if (is_file($f)) {
+        $fh = fopen($f, 'r'); $size = filesize($f);
+        if ($size > 400000) fseek($fh, $size - 400000);
+        $data = (string) stream_get_contents($fh); fclose($fh);
+        foreach (explode("\n", $data) as $ln) {
+            // [2026-11-24 10:25:01] odesláno → x@y.cz | předmět    /  2026-11-24T10:25:01+01:00  NEODESLÁNO (…) V-… → x@y.cz: předmět
+            if (preg_match('/^\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] (odesláno|CHYBA|NEODESLÁNO[^→]*?)\s*→ ([^|]*)\| (.*)$/u', $ln, $m)) {
+                $rows[] = ['at' => $m[1], 'state' => trim($m[2]), 'to' => trim($m[3]), 'subject' => trim(preg_replace('/ \| .*$/u', '', $m[4]))];
+            } elseif (preg_match('/^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)\S*\s+(NEODESLÁNO \([^)]*\))\s*(\S*) → ([^:]*): (.*)$/u', $ln, $m)) {
+                $rows[] = ['at' => str_replace('T', ' ', $m[1]), 'state' => $m[2] . ($m[3] !== '' ? ' ' . $m[3] : ''), 'to' => trim($m[4]), 'subject' => trim($m[5])];
+            }
+        }
+    }
+    $rows = array_reverse(array_slice($rows, -500));
+    View::page('admin/emails', ['title' => 'Odeslané e-maily', 'rows' => $rows, 'active' => 'emaily'], 'admin');
+});
+
 Http::get('/admin/uzivatele', function () {
     Auth::require('admin');
     $users = Db::all('SELECT id, name, email, role, active, last_login FROM users ORDER BY active DESC, name');
