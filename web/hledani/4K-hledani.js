@@ -148,7 +148,17 @@
   function cena(n) { return n ? String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' Kč' : ''; }
   function img(p, size) { return p[2] ? CDN + p[2].replace('|', '/' + size + '/') : ''; }
   var DOST = ['Na objednávku', 'Skladem', 'Skladem u dodavatele'];   // web v datech nerozliší „u dodavatele“ od „není“
-  function varianty(i) { var g = D.p[i][9]; return g != null && GRP[g] && GRP[g].length > 1 ? GRP[g].filter(function (j) { return j !== i; }) : []; }
+  function skupina(i) { var g = D.p[i][9]; return g != null && GRP[g] && GRP[g].length > 1 ? GRP[g].slice().sort(function (a, b) { return (LAB[a] || '').localeCompare(LAB[b] || '', 'cs'); }) : []; }
+  function varianty(i) { return skupina(i).filter(function (j) { return j !== i; }); }
+  function nVar(n) { return n + ' ' + (n === 1 ? 'další varianta' : n < 5 ? 'další varianty' : 'dalších variant'); }
+  // dlaždice variant: malá fotka + to, čím se varianta liší (barva, model); aktuální zvýrazněná
+  function dlazdice(ids, cur) {
+    return '<div class="k4h-vt">' + ids.map(function (j) {
+      var p = D.p[j];
+      return '<a href="' + esc(p[0]) + '" title="' + esc(p[1]) + '"' + (j === cur ? ' class="k4h-cur"' : '') + '><span class="k4h-vi" style="background-image:url(\'' + esc(img(p, 0)) + '\')"></span><span class="k4h-vl">' + esc(LAB[j] || p[1]) + '</span>' +
+        (p[4] === 1 ? '' : '<span class="k4h-vn">' + DOST[p[4]] + '</span>') + '</a>';
+    }).join('') + '</div>';
+  }
   function vKat(i, path) { var c = D.c[D.p[i][6]]; return !!c && (c[0] === path || c[0].lastIndexOf(path + ' > ', 0) === 0); }
   function catName(ci) { var c = D.c[ci]; return c ? c[0].split(' > ').slice(1).join(' › ') : ''; }
 
@@ -222,6 +232,18 @@
     '.k4h-kat{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;margin:0 0 20px;font-size:15px}',
     '.k4h-kat a{color:#231F20}',
     '.k4h-dalsi{text-align:center;margin-top:28px}',
+    '.k4h-vt{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}',
+    '.k4h-vt a{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:6px 4px;border:1px solid #e6e6e3;border-radius:3px;color:#231F20;text-decoration:none;background:#fff;font-size:12px;line-height:1.25}',
+    '.k4h-vt a:hover{border-color:#231F20}',
+    '.k4h-vt a.k4h-cur{border:2px solid #231F20;padding:5px 3px}',
+    '.k4h-vi{width:64px;height:64px;background:#fff center/contain no-repeat}',
+    '.k4h-vn{color:#6a6a66;font-size:11px}',
+    '.k4h-vbtn{display:inline-block;margin:0 0 4px 82px;padding:2px 0;border:0;background:none;font:inherit;font-size:12px;color:#231F20;text-decoration:underline;cursor:pointer}',
+    '.k4h-itw .k4h-vt{margin:4px 6px 10px 82px;grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}',
+    '.k4h-card .k4h-vbtn{margin:8px 0 0;text-align:left}',
+    '.k4h-card .k4h-vt{margin-top:8px;grid-template-columns:repeat(auto-fill,minmax(80px,1fr))}',
+    '.k4h-detail{margin:10px 0 18px}',
+    '.k4h-detail .k4h-vt{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}',
     '.k4h-tip{background:#f4f4f2;padding:14px 18px;margin:0 0 20px;font-size:14px}',
     '#SearchMaster.k4h-vlastni>:not(h1):not(.k4h-page){display:none!important}'
   ].join('\n');
@@ -263,13 +285,26 @@
     html += '</div><div class="k4h-main"><div class="k4h-h">Produkty' + (it.length ? ' (' + it.length + ')' : '') + '</div>';
     if (it.length) {
       html += '<div class="k4h-list">' + it.slice(0, 8).map(function (i) {
-        var p = D.p[i];
-        return '<a class="k4h-it" href="' + esc(p[0]) + '"><span class="k4h-img" style="background-image:url(\'' + esc(img(p, 0)) + '\')"></span><span><span class="k4h-n">' + esc(p[1]) + '</span><span class="k4h-p">' + cena(p[3]) +
-          '<span class="k4h-s k4h-s' + p[4] + '">' + DOST[p[4]] + '</span></span>' + (varianty(i).length ? '<span class="k4h-var">+ ' + varianty(i).length + ' ' + (varianty(i).length < 4 ? 'další varianty' : 'dalších variant') + '</span>' : '') + '</span></a>';
+        var p = D.p[i], v = varianty(i);
+        return '<div class="k4h-itw"><a class="k4h-it" href="' + esc(p[0]) + '"><span class="k4h-img" style="background-image:url(\'' + esc(img(p, 0)) + '\')"></span><span><span class="k4h-n">' + esc(p[1]) + '</span><span class="k4h-p">' + cena(p[3]) +
+          '<span class="k4h-s k4h-s' + p[4] + '">' + DOST[p[4]] + '</span></span></span></a>' +
+          (v.length ? '<button type="button" class="k4h-vbtn" data-i="' + i + '">+ ' + nVar(v.length) + '</button>' : '') + '</div>';
       }).join('') + '</div><a class="k4h-all" href="/hledat/?q=' + encodeURIComponent(q) + '">Zobrazit všech ' + it.length + ' výsledků</a>';
     } else html += '<div class="k4h-none">K „' + esc(q) + '“ jsme nic nenašli. Zkuste jiné slovo, nebo nám zavolejte na 604 998 800.</div>';
     html += '</div>';
     drop.innerHTML = html; sel = -1; place(); drop.hidden = false;
+    // „+ N dalších variant“ rozbalí všechny varianty přímo v nabídce
+    [].forEach.call(drop.querySelectorAll('.k4h-vbtn'), function (b) {
+      b.onmousedown = function (e) { e.preventDefault(); };   // pole hledání nesmí ztratit fokus
+      b.onclick = function (e) {
+        e.preventDefault(); e.stopPropagation();
+        var w = b.parentNode, open = w.querySelector('.k4h-vt'), i = +b.getAttribute('data-i');
+        if (open) { open.remove(); w.style.gridColumn = ''; b.textContent = '+ ' + nVar(varianty(i).length); return; }
+        w.style.gridColumn = '1 / -1';
+        w.insertAdjacentHTML('beforeend', dlazdice(skupina(i), i));
+        b.textContent = 'Skrýt varianty';
+      };
+    });
   }
 
   function onInput() {
@@ -353,7 +388,7 @@
           h += '<div class="k4h-grid">' + list.slice(0, state.shown).map(function (i) {
             var p = D.p[i], v = varianty(i);
             return '<div class="k4h-card"><a href="' + esc(p[0]) + '"><span class="k4h-img" style="background-image:url(\'' + esc(img(p, 1)) + '\')"></span><span class="k4h-n">' + esc(p[1]) + '</span><span class="k4h-p">' + cena(p[3]) + '</span><span class="k4h-s k4h-s' + p[4] + '">' + DOST[p[4]] + '</span></a>' +
-              (v.length ? '<div class="k4h-vars">' + v.slice(0, 8).map(function (j) { return '<a href="' + esc(D.p[j][0]) + '" title="' + esc(D.p[j][1]) + '">' + esc(LAB[j] || D.p[j][1]) + '</a>'; }).join('') + (v.length > 8 ? '<span>+' + (v.length - 8) + '</span>' : '') + '</div>' : '') + '</div>';
+              (v.length ? '<button type="button" class="k4h-vbtn" data-i="' + i + '">+ ' + nVar(v.length) + '</button>' : '') + '</div>';
           }).join('') + '</div>';
           if (list.length > state.shown) h += '<button class="k4h-more" id="k4h-more">Zobrazit další (' + (list.length - state.shown) + ')</button>';
           if (state.kat) h += '<div class="k4h-dalsi"><a class="k4h-all" href="' + esc(KAT[1]) + '">Další zboží z kategorie ' + esc(KAT[0].split(' > ').pop()) + ' →</a></div>';
@@ -363,6 +398,13 @@
           page.querySelector('#k4h-sort').value = state.sort;
           page.querySelector('#k4h-sort').onchange = function () { state.sort = this.value; draw(); };
           page.querySelector('#k4h-sk').onchange = function () { state.stock = this.checked; draw(); };
+          [].forEach.call(page.querySelectorAll('.k4h-vbtn'), function (b) {
+            b.onclick = function () {
+              var c = b.parentNode, open = c.querySelector('.k4h-vt'), i = +b.getAttribute('data-i');
+              if (open) { open.remove(); b.textContent = '+ ' + nVar(varianty(i).length); return; }
+              b.insertAdjacentHTML('afterend', dlazdice(skupina(i), i)); b.textContent = 'Skrýt varianty';
+            };
+          });
           var kx = page.querySelector('#k4h-kat-x');
           if (kx) kx.onclick = function (e) { e.preventDefault(); state.kat = ''; state.shown = 48; try { history.replaceState(null, '', location.pathname + location.search); } catch (er) {} draw(); };
           var more = page.querySelector('#k4h-more'); if (more) more.onclick = function () { state.shown += 48; draw(); };
@@ -372,5 +414,19 @@
         draw();
       })['catch'](function () { SM.classList.remove('k4h-vlastni'); page.remove(); h1.textContent = 'Hledat'; });
     }
+  }
+  /* ---------- detail produktu: ostatní varianty téhož modelu (samostatné karty) ---------- */
+  if (/-p\d+\/?$/.test(location.pathname)) {
+    load().then(function () {
+      var path = location.pathname.replace(/\/?$/, '/'), me = -1;
+      for (var i = 0; i < D.p.length; i++) if (D.p[i][0] === path) { me = i; break; }
+      var ids = me >= 0 ? skupina(me) : [];
+      var h1 = document.querySelector('h1');
+      if (ids.length < 2 || !h1 || document.querySelector('.k4h-detail')) return;
+      var box = document.createElement('div'); box.className = 'k4h-detail';
+      box.innerHTML = '<div class="k4h-h">Varianty (' + ids.length + ')</div>' + dlazdice(ids, me);
+      var host = h1.closest('dc-con') || h1;
+      host.parentNode.insertBefore(box, host.nextSibling);
+    })['catch'](function () {});
   }
 })();
