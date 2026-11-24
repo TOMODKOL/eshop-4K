@@ -330,6 +330,16 @@ Http::post('/admin/vratky/{no}', function (string $no) {
         Session::flash($err ?? (!empty($r['zf_no']) && empty($r['zf_paid']) ? 'Zapsáno – doklad se vystaví sám, až přijde doplatek.' : 'Doklad se vystaví v Pohodě ' . Service::pohodaEta() . '.'), $err ? 'err' : 'ok');
         Http::redirect('/admin/vratky/' . $no);
     }
+    if ($act === 'smazat_test') {
+        if (trim(Http::input('potvrzeni')) !== $ret['no']) {
+            Session::flash('Pro smazání opište číslo ' . $ret['no'] . '.', 'err');
+            Http::redirect('/admin/vratky/' . $no);
+        }
+        $r = Service::deleteTest($ret, (int) $u['id']);
+        if ($r['error']) { Session::flash($r['error'], 'err'); Http::redirect('/admin/vratky/' . $no); }
+        Session::flash($ret['no'] . ' je smazaná' . ($r['pohoda'] ? '. V Pohodě ještě smažte: ' . implode(', ', $r['pohoda']) . '.' : '.'));
+        Http::redirect('/admin/vratky');
+    }
     if ($act === 'doklad_znovu' && ($ret['doc_state'] ?? '') === 'chyba') {
         Db::exec("UPDATE returns SET doc_state = '', doc_error = NULL WHERE id = ?", [$ret['id']]);
         $err = Service::requestDoc(Service::get((int) $ret['id']), (array) ($_POST['new_code'] ?? []), (int) $u['id']);

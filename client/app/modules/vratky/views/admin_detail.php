@@ -152,6 +152,16 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
     </div>
     <?php if ($claim && $ret['claim_deadline']): ?><div class="card"><span class="kicker">Reklamace</span><div style="font-size:14px">Vyřídit nejpozději do <strong><?= e(date_cz($ret['claim_deadline'])) ?></strong></div></div><?php endif; ?>
     <?php if ($ret['note']): ?><div class="card"><span class="kicker">Poznámka zákazníka</span><div style="font-size:14px;white-space:pre-line"><?= e($ret['note']) ?></div></div><?php endif; ?>
+    <?php if (empty($ret['zf_paid']) && empty($ret['doc_no'])): ?>
+    <details class="card"><summary class="kicker" style="cursor:pointer">Smazat zkušební záznam</summary>
+      <form method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:8px 0 0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
+        <input type="hidden" name="act" value="smazat_test">
+        <span class="hint">Jen pro testy: smaže vratku i s historií a fotkami a zruší zpětnou zásilku u Zásilkovny, jako by nikdy nebyla. Zákazník nic nedostane. Doklady v Pohodě se pak smažou ručně (vypíšu je).</span>
+        <div class="field" style="margin:0"><label class="l" for="potvrzeni">Pro potvrzení opište <?= e($ret['no']) ?></label><input class="f" id="potvrzeni" name="potvrzeni" autocomplete="off" required></div>
+        <button class="btn" style="align-self:flex-start;background:#b3261e;border-color:#b3261e">Smazat natrvalo</button>
+      </form>
+    </details>
+    <?php endif; ?>
   </aside>
   </div>
 </div>

@@ -47,6 +47,24 @@ final class Packeta
         return true;
     }
 
+    /** Zruší zpětnou zásilku (cancelPacket). Vrací null = OK, jinak text chyby. */
+    public static function cancel(string $packetId): ?string
+    {
+        if ($packetId === '' || !self::enabled()) return null;
+        $x = new \XMLWriter();
+        $x->openMemory();
+        $x->startElement('cancelPacket');
+        $x->writeElement('apiPassword', (string) Config::get('packeta.api_password'));
+        $x->writeElement('packetId', $packetId);
+        $x->endElement();
+        try {
+            $r = self::parseResponse(self::post($x->outputMemory()));
+        } catch (\Throwable $e) {
+            return $e->getMessage();
+        }
+        return $r['ok'] ? null : $r['error'];
+    }
+
     public static function requestXml(array $attrs): string
     {
         $x = new \XMLWriter();

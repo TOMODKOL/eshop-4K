@@ -351,6 +351,44 @@ final class Service
         return sprintf('V-%s-%04d', $y, $n);
     }
 
+    /**
+     * Smaže zkušební vratku/výměnu, jako by nikdy nebyla: řádky, fotky, historii, platby kartou, zpětnou zásilku u Zásilkovny.
+     * Jen když nikdo nic nezaplatil a není vystavený konečný doklad. Doklady v Pohodě (objednávka 991…, zálohová faktura)
+     * se mažou ručně v Pohodě – vrací jejich seznam. Záznam o smazání jde do storage/log/smazane.log.
+     * @return array{error:?string, pohoda:string[]}
+     */
+    public static function deleteTest(array $ret, ?int $userId): array
+    {
+        if (!empty($ret['zf_paid'])) return ['error' => 'Doplatek je zaplacený – takovou vratku nejde smazat.', 'pohoda' => []];
+        if (!empty($ret['doc_no'])) return ['error' => 'K vratce je vystavený doklad ' . $ret['doc_no'] . ' – takovou vratku nejde smazat.', 'pohoda' => []];
+        if (Db::value("SELECT COUNT(*) FROM card_payments WHERE return_id = ? AND status = 'zaplaceno'", [$ret['id']])) {
+            return ['error' => 'Doplatek je zaplacený kartou – takovou vratku nejde smazat.', 'pohoda' => []];
+        }
+        if (!empty($ret['packeta_id'])) {
+            $err = Packeta::cancel((string) $ret['packeta_id']);
+            if ($err !== null && !preg_match('/cancel|zruš|storn|not found|nenalez/i', $err)) return ['error' => 'Zásilkovna: zpětnou zásilku se nepodařilo zrušit (' . $err . ').', 'pohoda' => []];
+        }
+        $pohoda = [];
+        if (!empty($ret['xorder_no'])) $pohoda[] = 'přijatá objednávka ' . $ret['xorder_no'];
+        if (!empty($ret['zf_no'])) $pohoda[] = 'vydaná zálohová faktura ' . $ret['zf_no'];
+        $lines = self::lines((int) $ret['id']);
+        $files = [];
+        foreach ($lines as $l) foreach (Photos::forLine((int) $l['id']) as $ph) $files[] = APP_ROOT . '/storage/uploads/' . $ph['file'];
+        $dir = APP_ROOT . '/storage/log';
+        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        file_put_contents($dir . '/smazane.log', json_encode(['at' => Db::now(), 'user' => $userId, 'ret' => $ret, 'lines' => $lines,
+            'pohoda' => $pohoda], JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
+        Db::tx(function () use ($ret) {
+            Db::exec('DELETE FROM card_payments WHERE return_id = ?', [$ret['id']]);
+            Db::exec('DELETE FROM return_events WHERE return_id = ?', [$ret['id']]);
+            Db::exec('DELETE FROM return_photos WHERE line_id IN (SELECT id FROM return_lines WHERE return_id = ?)', [$ret['id']]);
+            Db::exec('DELETE FROM return_lines WHERE return_id = ?', [$ret['id']]);
+            Db::exec('DELETE FROM returns WHERE id = ?', [$ret['id']]);
+        });
+        foreach ($files as $f) if (is_file($f) && !str_contains($f, '..')) @unlink($f);
+        return ['error' => null, 'pohoda' => $pohoda];
+    }
+
     /** Číslo přijaté objednávky v Pohodě pro výměnu: 991 + 7 číslic, nezávislé na roce (Pohoda ho přijme jako numberRequested). */
     public static function nextXorder(): string
     {

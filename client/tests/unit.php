@@ -313,6 +313,14 @@ t(\App\Modules\Vratky\Invoices::findOrderSidecar('8810999901', 'jana@example.cz'
 t(\App\Modules\Vratky\Invoices::findOrderSidecar('8810999901', 'cizi@example.cz') === null, 'objednávka bez faktury: cizí e-mail nic nedostane');
 foreach (['pdf', 'json'] as $x) @unlink(APP_ROOT . '/storage/objednavky/8810999901.' . $x);
 
+// smazání zkušební vratky: zmizí i s řádky a historií, číslo se uvolní; zaplacená smazat nejde
+$noDel = $x3['no'];
+$d = Service::deleteTest(Service::get((int) $x3['id']), null);
+t($d['error'] === null && Service::byNo($noDel) === null && !\App\Core\Db::value('SELECT COUNT(*) FROM return_lines WHERE return_id = ?', [$x3['id']]), 'zkušební vratka smazána i s řádky');
+t(Service::nextNumber() <= $noDel, 'číslo smazané vratky se znovu použije');
+\App\Core\Db::exec('UPDATE returns SET zf_paid = 1 WHERE id = ?', [$ret['id']]);
+t(Service::deleteTest(Service::get((int) $ret['id']), null)['error'] !== null && Service::byNo($ret['no']) !== null, 'zaplacenou vratku smazat nejde');
+
 @unlink($db);
 echo $fail ? "\n$fail CHYB\n" : "\nVše v pořádku.\n";
 exit($fail ? 1 : 0);
