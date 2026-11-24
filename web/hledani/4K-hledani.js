@@ -24,8 +24,26 @@
     prilba: 'helma', prilby: 'helma', boty: 'tretry', obuv: 'tretry', tretra: 'tretry', jersey: 'dres', brejle: 'bryle', plast: 'plast', pneumatika: 'plast', pneu: 'plast', galuska: 'plast',
     bidon: 'lahev', flasa: 'lahev', flaska: 'lahev', kosik: 'kosik', drzak: 'kosik', ekolo: 'elektrokolo', ebike: 'elektrokolo', elektrokola: 'elektrokolo',
     kalhotky: 'kalhoty', bibshort: 'kratasy', bibshorts: 'kratasy', vlozka: 'kratasy', navlek: 'navleky', retez: 'retez', kazeta: 'kazeta', svetlo: 'svetlo', svetla: 'svetlo',
-    hustilka: 'pumpa', pumpicka: 'pumpa', zamek: 'zamek', satky: 'satek', nakrcnik: 'satek', cepice: 'cepice', kulich: 'cepice'
+    hustilka: 'pumpa', pumpicka: 'pumpa', zamek: 'zamek', satky: 'satek', nakrcnik: 'satek', cepice: 'cepice', kulich: 'cepice',
+    // ze statistik BSADMIN „bez výsledků“ (1. 1.–24. 11. 2026)
+    majola: 'maloja', maloya: 'maloja', sedacka: 'sedlo', sedacky: 'sedlo', gabba: 'perfetto', gabra: 'perfetto', lahve: 'lahev', lahvicka: 'lahev', lahvi: 'lahev',
+    triko: 'tricko', tricko: 'triko', kompresor: 'pumpa', manometr: 'pumpa', plastenka: 'nepromokava', plastenky: 'nepromokava', lady: 'w', zenske: 'damske', zensky: 'damsky',
+    // české barvy → názvy barev výrobců (anglicky)
+    zluta: 'yellow', zluty: 'yellow', zlute: 'yellow', ruzova: 'pink', ruzovy: 'pink', ruzove: 'pink', cerna: 'black', cerny: 'black', cerne: 'black',
+    bila: 'white', bily: 'white', bile: 'white', modra: 'blue', modry: 'blue', modre: 'blue', cervena: 'red', cerveny: 'red', cervene: 'red',
+    zelena: 'green', zeleny: 'green', zelene: 'green', seda: 'gray', sedy: 'gray', sede: 'gray', oranzova: 'orange', oranzovy: 'orange', oranzove: 'orange',
+    fialova: 'purple', fialovy: 'purple', fialove: 'purple', hneda: 'brown', hnedy: 'brown', hnede: 'brown'
   };
+  // dotazy, které nejsou zboží: místo „nic jsme nenašli“ nabídnout stránku
+  var STRANKY = [
+    { k: /reklam|vrac|vrat|vymen|odstoup|formular/, t: 'Vrácení, výměna a reklamace', u: 'https://client.4kluciodkol.cz/vratky' },
+    { k: /reklam/, t: 'Reklamační podmínky', u: '/reklamacni-podminky/' },
+    { k: /servis|cenik|oprav/, t: 'Servis a ceník', u: '/servis/' },
+    { k: /kontakt|telefon|adresa|oteviraci|prodejn|kde jste/, t: 'Kontakt a otevírací doba', u: '/kontakt/' },
+    { k: /obchodni podminky|doprav|postovn|platb/, t: 'Obchodní podmínky, doprava a platba', u: '/obchodni-podminky/' }
+  ];
+  function stranky(q) { var n = norm(q); return STRANKY.filter(function (x) { return x.k.test(n); }); }
+  K4H.stranky = stranky;
 
   /* ---------- index ---------- */
   var D = null, VOC = null, VKEYS = null, KOLA = {}, GRP = {}, LAB = {};
@@ -129,20 +147,25 @@
       if (Object.keys(m).length) sets.push(m); else ignored.push(t);
     });
     if (!sets.length) return { items: [], ignored: ignored };
-    var base = sets[0], res = [];
-    for (var id in base) {
-      var sc = 0, ok = true;
-      for (var j = 0; j < sets.length; j++) { var v = sets[j][id]; if (v == null) { ok = false; break; } sc += v; }
-      if (!ok) continue;
+    var res = [], all = {}, relaxed = false;
+    sets.forEach(function (m) { for (var x in m) all[x] = 1; });
+    // všechna slova musí sedět; když nesedí nic, stačí všechna kromě jednoho („dámský dres krátký rukáv“)
+    for (var pass = 0; pass < 2 && !res.length; pass++) {
+    if (pass === 1) { if (sets.length < 3) break; relaxed = true; }
+    for (var id in all) {
+      var sc = 0, miss = 0;
+      for (var j = 0; j < sets.length; j++) { var v = sets[j][id]; if (v == null) miss++; else sc += v; }
+      if (miss > pass) continue;
       var p = D.p[id];
       sc *= p[4] === 1 ? 1.15 : p[4] === 2 ? 1.05 : 0.8;
       if (KOLA[p[6]]) sc *= 1.25;   // kola jsou hlavní sortiment – při shodě dopředu
       res.push([+id, sc]);
     }
+    }
     res.sort(function (a, b) { return b[1] - a[1] || (D.p[b[0]][4] === 1) - (D.p[a[0]][4] === 1) || D.p[b[0]][3] - D.p[a[0]][3]; });
     var seen = {}, items = [];
     res.forEach(function (r) { var g = D.p[r[0]][9]; if (g == null || GRP[g].length < 2) items.push(r[0]); else if (!seen[g]) { seen[g] = 1; items.push(r[0]); } });
-    return { items: items, ignored: ignored, terms: terms };
+    return { items: items, ignored: ignored, terms: terms, relaxed: relaxed };
   }
   K4H.search = function (q) { return load().then(function () { return search(q); }); };
 
@@ -274,6 +297,8 @@
     var it = r.items, html = '';
     var cs = categories(it, q), bs = brands(it).slice(0, 8);
     html += '<div class="k4h-side">';
+    var st = stranky(q);
+    if (st.length) html += '<div class="k4h-h">Stránky</div><div class="k4h-cats">' + st.map(function (x) { return '<a href="' + esc(x.u) + '">' + esc(x.t) + ' →</a>'; }).join('') + '</div>';
     if (cs.length) html += '<div class="k4h-h">Kategorie</div><div class="k4h-cats">' + cs.map(function (c) {
       var parts = D.c[c][0].split(' > ').slice(1);
       // kategorie s nalezeným zbožím → výsledky hledání jen v ní; kategorie nalezená jen podle názvu → rovnou kategorie
@@ -284,7 +309,7 @@
     if (bs.length) html += '<div class="k4h-h">Značky</div><div class="k4h-brands">' + bs.map(function (b) {
       return '<a href="/hledat/?q=' + encodeURIComponent(q) + '#znacka=' + encodeURIComponent(D.b[b]) + '">' + esc(D.b[b]) + '</a>';
     }).join('') + '</div>';
-    if (!cs.length && !bs.length) html += '<div class="k4h-none">Nic dalšího k dotazu.</div>';
+    if (!cs.length && !bs.length && !st.length) html += '<div class="k4h-none">Nic dalšího k dotazu.</div>';
     html += '</div><div class="k4h-main"><div class="k4h-h">Produkty' + (it.length ? ' (' + it.length + ')' : '') + '</div>';
     if (it.length) {
       html += '<div class="k4h-list">' + it.slice(0, 8).map(function (i) {
@@ -378,6 +403,9 @@
             (r.ignored.length ? ' · slovo „' + esc(r.ignored.join(', ')) + '“ jsme v názvech nenašli, hledáme bez něj' : '') + '</span>' +
             '<label><input type="checkbox" id="k4h-sk"' + (state.stock ? ' checked' : '') + '> Jen skladem</label>' +
             '<select id="k4h-sort" aria-label="Řazení"><option value="rel">Nejvíc odpovídá</option><option value="asc">Od nejlevnějšího</option><option value="desc">Od nejdražšího</option></select></div>';
+          var stp = stranky(Q);
+          if (stp.length) h += '<div class="k4h-kat">Hledáte stránku? ' + stp.map(function (x) { return '<a href="' + esc(x.u) + '">' + esc(x.t) + ' →</a>'; }).join(' ') + '</div>';
+          if (r.relaxed && list.length) h += '<div class="k4h-kat">Přesnou shodu se všemi slovy jsme nenašli, ukazujeme nejbližší.</div>';
           if (state.kat) {
             var kn = KAT[0].split(' > ').pop();
             h += '<div class="k4h-kat">Jen v kategorii <b>' + esc(kn) + '</b> <a href="#" id="k4h-kat-x">hledat všude (' + r.items.length + ')</a> <a href="' + esc(KAT[1]) + '">celá kategorie ' + esc(kn) + ' →</a></div>';
