@@ -253,11 +253,11 @@
       var parts = D.c[c][0].split(' > ').slice(1);
       // kategorie s nalezeným zbožím → výsledky hledání jen v ní; kategorie nalezená jen podle názvu → rovnou kategorie
       var n = it.filter(function (i) { return vKat(i, D.c[c][0]); }).length;
-      var href = n ? '/hledat/?q=' + encodeURIComponent(q) + '&kat=' + encodeURIComponent(D.c[c][1]) : D.c[c][1];
+      var href = n ? '/hledat/?q=' + encodeURIComponent(q) + '#kat=' + encodeURIComponent(D.c[c][1]) : D.c[c][1];
       return '<a href="' + esc(href) + '">' + esc(parts[parts.length - 1]) + (parts.length > 1 ? '<small>' + esc(parts.slice(0, -1).join(' › ')) + '</small>' : '') + '</a>';
     }).join('') + '</div>';
     if (bs.length) html += '<div class="k4h-h">Značky</div><div class="k4h-brands">' + bs.map(function (b) {
-      return '<a href="/hledat/?q=' + encodeURIComponent(q) + '&znacka=' + encodeURIComponent(D.b[b]) + '">' + esc(D.b[b]) + '</a>';
+      return '<a href="/hledat/?q=' + encodeURIComponent(q) + '#znacka=' + encodeURIComponent(D.b[b]) + '">' + esc(D.b[b]) + '</a>';
     }).join('') + '</div>';
     if (!cs.length && !bs.length) html += '<div class="k4h-none">Nic dalšího k dotazu.</div>';
     html += '</div><div class="k4h-main"><div class="k4h-h">Produkty' + (it.length ? ' (' + it.length + ')' : '') + '</div>';
@@ -310,7 +310,9 @@
   /* ---------- stránka výsledků /hledat/ ---------- */
   var SM = document.getElementById('SearchMaster');
   if (SM && /^\/hledat\//.test(location.pathname)) {
-    var P = new URLSearchParams(location.search), Q = (P.get('q') || '').trim();
+    // web zahodí neznámé parametry za otazníkem → filtry jdou za mřížkou (#kat=…, #znacka=…)
+    var P = new URLSearchParams(location.search), H = new URLSearchParams(location.hash.replace(/^#/, '')), Q = (P.get('q') || '').trim();
+    H.forEach(function (v, k) { if (!P.has(k)) P.set(k, v); });
     if (inp && Q) inp.value = Q;
     if (Q) {
       var page = document.createElement('div'); page.className = 'k4h-page';
@@ -362,7 +364,7 @@
           page.querySelector('#k4h-sort').onchange = function () { state.sort = this.value; draw(); };
           page.querySelector('#k4h-sk').onchange = function () { state.stock = this.checked; draw(); };
           var kx = page.querySelector('#k4h-kat-x');
-          if (kx) kx.onclick = function (e) { e.preventDefault(); state.kat = ''; state.shown = 48; P.delete('kat'); try { history.replaceState(null, '', location.pathname + '?' + P.toString()); } catch (er) {} draw(); };
+          if (kx) kx.onclick = function (e) { e.preventDefault(); state.kat = ''; state.shown = 48; try { history.replaceState(null, '', location.pathname + location.search); } catch (er) {} draw(); };
           var more = page.querySelector('#k4h-more'); if (more) more.onclick = function () { state.shown += 48; draw(); };
           [].forEach.call(page.querySelectorAll('[data-cat]'), function (b) { b.onclick = function () { state.cat = b.getAttribute('data-cat'); state.shown = 48; draw(); }; });
           [].forEach.call(page.querySelectorAll('[data-brand]'), function (b) { b.onclick = function () { var v = b.getAttribute('data-brand'); state.brand = state.brand === v ? '' : v; state.cat = ''; state.shown = 48; draw(); }; });
