@@ -64,10 +64,24 @@ SKUPINY_NE = ('Komponenty', 'Výživa', 'Dárkové')
 MODEL = {'sl', 'lite', 'race', 'aero', 'ultra', 'mips', 'team', 'comp', 'hi-mod', 'himod', 'lab71', 'spherical',
          'women', "women's", 'wmn', 'w', "w's", 'lady', 'man', 'men', "men's", 'jr', 'junior', 'kids', 'xc', 'gt',
          'rs', 'rsx', 'se', 'cv', 'elite', 'expert', 'thermal', 'wind', 'rain', 'jacket', 'vest', 'tights', 'bibtight', 'bib',
-         'shorts', 'jersey', 'tee', 'gloves', 'armwarmers', 'soks', 'socks', 'anorak', 'supercross'}
-def modelove(r):   # začíná zbytek názvu slovem modelu? („Carbon Uranium Black“ ano, samotné „Carbon“ je barva)
-    t = r[0].lower()
-    return t in MODEL or (t == 'carbon' and len(r) >= 3)
+         'shorts', 'jersey', 'tee', 'gloves', 'armwarmers', 'soks', 'socks', 'anorak', 'supercross',
+         # skupina = jen barvy téhož výrobku: jiná velikost / provedení / model telefonu je jiný výrobek
+         'pro', 'max', 'plus', 'mini', 'standard', 'air', 'medium', 'small', 'large', 'micro', 'long', 'short',
+         'wide', 'narrow', 'regular', 'xs', 's', 'm', 'l', 'xl', 'xxl', 'uni', 'slim', 'stand', 'vent', 'vhb',
+         'ultra', 'fz', 'hz', 'ls', 'ss', 'half', 'zip', 'light'}
+BARVA_I_MODEL = {'light', 'air', 'carbon'}   # „Light Black“, „Air Blue“: když za nimi jde další slovo, může to být barva
+def slova_modelu(r):   # slova modelu/velikosti ve zbytku názvu (kromě „Light Black“ apod., kde jde o barvu)
+    out = []
+    for k, t in enumerate(r):
+        t = t.lower().strip('-–/,')
+        if t in BARVA_I_MODEL:
+            nxt = r[k + 1].lower() if k + 1 < len(r) else ''
+            if t == 'carbon' and len(r) < 3: continue          # samotné „Carbon“ = barva
+            if t in ('light', 'air') and nxt and nxt not in MODEL and nxt not in ('-', '–'): continue
+        if t in MODEL or t in BARVA_I_MODEL: out.append(t)
+    return sorted(out)
+def zaklad(n):   # „Peak Design Everyday Case - iPhone 14 Pro - Charcoal“ → vše před posledním „ - “
+    return n.rsplit(' - ', 1)[0].lower() if ' - ' in n else None
 parent = list(range(len(prods)))
 def find(i):
     while parent[i] != i:
@@ -90,7 +104,8 @@ for (ci, bi), ids in buckets.items():
             ra, rb = x[l:], y[l:]
             mx = 5 if l >= bpos + 3 else 3   # dlouhé barvy („Hydrogen White/Uranium Black Matt“) jen u delšího názvu modelu
             if l >= bpos + 2 and 0 < len(ra) <= mx and 0 < len(rb) <= mx and nodig(ra) and nodig(rb) \
-                    and not modelove(ra) and not modelove(rb):
+                    and slova_modelu(ra) == slova_modelu(rb) \
+                    and zaklad(prods[ids[a]][1]) == zaklad(prods[ids[b]][1]):
                 parent[find(ids[a])] = find(ids[b])
 for i, p in enumerate(prods): p.append(find(i))
 print('skupin s více barvami', sum(1 for i in range(len(prods)) if sum(1 for q in prods if q[9] == i) > 1))
