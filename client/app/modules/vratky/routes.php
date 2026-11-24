@@ -262,7 +262,7 @@ Http::get('/admin/vratky', function () {
     $p = [];
     if ($stav === 'proplatit') { $where[] = "r.doc_type = 'odd' AND r.doc_state = 'hotovo' AND r.status NOT IN ('vyrizeno','zamitnuto')"; }
     elseif ($stav !== '' && isset(Service::STATUS[$stav])) { $where[] = 'r.status = ?'; $p[] = $stav; }
-    elseif ($stav === '') { $where[] = "r.status NOT IN ('vyrizeno','zamitnuto')"; }
+    elseif ($stav === '' && $q === '') { $where[] = "r.status NOT IN ('vyrizeno','zamitnuto')"; }   // hledání bez filtru prohledá i vyřízené a zamítnuté
     if ($q !== '') { $where[] = '(r.no LIKE ? OR r.pohoda_no LIKE ? OR r.email LIKE ? OR r.customer_name LIKE ? OR o.order_no LIKE ? OR o.invoice_no LIKE ?)'; array_push($p, "%$q%", "%$q%", "%$q%", "%$q%", "%$q%", "%$q%"); }
     $rows = Db::all('SELECT r.*, o.order_no, o.invoice_no FROM returns r LEFT JOIN orders o ON o.id = r.order_id' .
         ($where ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY r.id DESC LIMIT 200', $p);

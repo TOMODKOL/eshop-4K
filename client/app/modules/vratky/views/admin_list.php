@@ -14,16 +14,15 @@ $open = ($counts['novy'] ?? 0) + ($counts['na_ceste'] ?? 0) + ($counts['dorazilo
       <button class="pill">Hledat</button>
     </form>
   </div>
-  <div class="stat">
-    <?php foreach (['novy', 'na_ceste', 'dorazilo', 'v_reseni', 'vyrizeno'] as $s): ?>
-      <div><b><?= (int) ($counts[$s] ?? 0) ?></b><span><?= e(Service::STATUS[$s]) ?></span></div>
-    <?php endforeach; ?>
-  </div>
-  <nav class="chips" aria-label="Filtr podle stavu">
-    <a class="pill <?= $stav === '' ? 'on' : '' ?>" href="<?= url('/admin/vratky') ?>" style="display:inline-flex;align-items:center;text-decoration:none">Otevřené (<?= $open ?>)</a>
-    <a class="pill <?= $stav === 'proplatit' ? 'on' : '' ?>" href="<?= url('/admin/vratky?stav=proplatit') ?>" style="display:inline-flex;align-items:center;text-decoration:none<?= ($counts['proplatit'] ?? 0) ? ';border-color:var(--ink);font-weight:700' : '' ?>">K proplacení (<?= (int) ($counts['proplatit'] ?? 0) ?>)</a>
-    <?php foreach (Service::STATUS as $k => $lab): ?>
-      <a class="pill <?= $stav === $k ? 'on' : '' ?>" href="<?= url('/admin/vratky?stav=' . $k) ?>" style="display:inline-flex;align-items:center;text-decoration:none"><?= e($lab) ?></a>
+  <?php
+  // dlaždice = přepínače: klik vyfiltruje, aktivní je žlutá; „Otevřené“ je výchozí přehled
+  $tiles = ['' => ['Otevřené', $open], 'novy' => null, 'na_ceste' => null, 'dorazilo' => null, 'v_reseni' => null,
+            'proplatit' => ['K proplacení', (int) ($counts['proplatit'] ?? 0)], 'vyrizeno' => null, 'zamitnuto' => null];
+  ?>
+  <nav class="stat" aria-label="Filtr podle stavu">
+    <?php foreach ($tiles as $k => $t): $t ??= [Service::STATUS[$k], (int) ($counts[$k] ?? 0)];
+      $href = $k === '' ? url('/admin/vratky') : url('/admin/vratky?stav=' . $k); ?>
+      <a href="<?= $href ?>" class="<?= $stav === $k ? 'on' : '' ?><?= $k === 'proplatit' && $t[1] ? ' hot' : '' ?>" aria-current="<?= $stav === $k ? 'true' : 'false' ?>"><b><?= (int) $t[1] ?></b><span><?= e($t[0]) ?></span></a>
     <?php endforeach; ?>
   </nav>
   <?php \App\Modules\Vratky\Eshop::$budget = 6; // výpis nečeká na desítky stránek e-shopu ?>
