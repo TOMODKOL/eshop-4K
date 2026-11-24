@@ -60,6 +60,14 @@ for p in d['products']:
 def toks(n): return re.sub(r'\s+', ' ', n.strip()).split(' ')
 def nodig(ts): return not any(re.search(r'\d', t) for t in ts)
 SKUPINY_NE = ('Komponenty', 'Výživa', 'Dárkové')
+# slova, která patří k názvu modelu (ne k barvě): „Cytal Lite“, „Cytal Carbon“, „SuperSix EVO 1 SL“ jsou jiné modely
+MODEL = {'sl', 'lite', 'race', 'aero', 'ultra', 'mips', 'team', 'comp', 'hi-mod', 'himod', 'lab71', 'spherical',
+         'women', "women's", 'wmn', 'w', "w's", 'lady', 'man', 'men', "men's", 'jr', 'junior', 'kids', 'xc', 'gt',
+         'rs', 'rsx', 'se', 'cv', 'elite', 'expert', 'thermal', 'wind', 'rain', 'jacket', 'vest', 'tights', 'bibtight', 'bib',
+         'shorts', 'jersey', 'tee', 'gloves', 'armwarmers', 'soks', 'socks', 'anorak', 'supercross'}
+def modelove(r):   # začíná zbytek názvu slovem modelu? („Carbon Uranium Black“ ano, samotné „Carbon“ je barva)
+    t = r[0].lower()
+    return t in MODEL or (t == 'carbon' and len(r) >= 3)
 parent = list(range(len(prods)))
 def find(i):
     while parent[i] != i:
@@ -80,7 +88,9 @@ for (ci, bi), ids in buckets.items():
             l = 0
             while l < min(len(x), len(y)) and x[l].lower() == y[l].lower(): l += 1
             ra, rb = x[l:], y[l:]
-            if l >= bpos + 2 and 0 < len(ra) <= 3 and 0 < len(rb) <= 3 and nodig(ra) and nodig(rb):
+            mx = 5 if l >= bpos + 3 else 3   # dlouhé barvy („Hydrogen White/Uranium Black Matt“) jen u delšího názvu modelu
+            if l >= bpos + 2 and 0 < len(ra) <= mx and 0 < len(rb) <= mx and nodig(ra) and nodig(rb) \
+                    and not modelove(ra) and not modelove(rb):
                 parent[find(ids[a])] = find(ids[b])
 for i, p in enumerate(prods): p.append(find(i))
 print('skupin s více barvami', sum(1 for i in range(len(prods)) if sum(1 for q in prods if q[9] == i) > 1))
