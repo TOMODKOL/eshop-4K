@@ -149,6 +149,7 @@
   function img(p, size) { return p[2] ? CDN + p[2].replace('|', '/' + size + '/') : ''; }
   var DOST = ['Na objednávku', 'Skladem', 'Skladem u dodavatele'];   // web v datech nerozliší „u dodavatele“ od „není“
   function varianty(i) { var g = D.p[i][9]; return g != null && GRP[g] && GRP[g].length > 1 ? GRP[g].filter(function (j) { return j !== i; }) : []; }
+  function vKat(i, path) { var c = D.c[D.p[i][6]]; return !!c && (c[0] === path || c[0].lastIndexOf(path + ' > ', 0) === 0); }
   function catName(ci) { var c = D.c[ci]; return c ? c[0].split(' > ').slice(1).join(' › ') : ''; }
 
   function categories(items, q) {
@@ -218,6 +219,9 @@
     '.k4h-card .k4h-p{font-size:24px;margin-top:6px}',
     '.k4h-card .k4h-s{display:block;margin:2px 0 0}',
     '.k4h-more{display:block;margin:28px auto 0;background:#231F20;color:#fff;border:0;padding:12px 26px;border-radius:3px;font:inherit;cursor:pointer}',
+    '.k4h-kat{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;margin:0 0 20px;font-size:15px}',
+    '.k4h-kat a{color:#231F20}',
+    '.k4h-dalsi{text-align:center;margin-top:28px}',
     '.k4h-tip{background:#f4f4f2;padding:14px 18px;margin:0 0 20px;font-size:14px}',
     '#SearchMaster.k4h-vlastni>:not(h1):not(.k4h-page){display:none!important}'
   ].join('\n');
@@ -247,7 +251,10 @@
     html += '<div class="k4h-side">';
     if (cs.length) html += '<div class="k4h-h">Kategorie</div><div class="k4h-cats">' + cs.map(function (c) {
       var parts = D.c[c][0].split(' > ').slice(1);
-      return '<a href="' + esc(D.c[c][1]) + '">' + esc(parts[parts.length - 1]) + (parts.length > 1 ? '<small>' + esc(parts.slice(0, -1).join(' › ')) + '</small>' : '') + '</a>';
+      // kategorie s nalezeným zbožím → výsledky hledání jen v ní; kategorie nalezená jen podle názvu → rovnou kategorie
+      var n = it.filter(function (i) { return vKat(i, D.c[c][0]); }).length;
+      var href = n ? '/hledat/?q=' + encodeURIComponent(q) + '&kat=' + encodeURIComponent(D.c[c][1]) : D.c[c][1];
+      return '<a href="' + esc(href) + '">' + esc(parts[parts.length - 1]) + (parts.length > 1 ? '<small>' + esc(parts.slice(0, -1).join(' › ')) + '</small>' : '') + '</a>';
     }).join('') + '</div>';
     if (bs.length) html += '<div class="k4h-h">Značky</div><div class="k4h-brands">' + bs.map(function (b) {
       return '<a href="/hledat/?q=' + encodeURIComponent(q) + '&znacka=' + encodeURIComponent(D.b[b]) + '">' + esc(D.b[b]) + '</a>';
@@ -312,11 +319,15 @@
       h1.parentNode.insertBefore(page, h1.nextSibling);
       SM.classList.add('k4h-vlastni');
       page.querySelector('#k4h-puvodni').addEventListener('click', function (e) { e.preventDefault(); SM.classList.remove('k4h-vlastni'); page.remove(); h1.textContent = 'Hledat'; });
-      var state = { cat: P.get('kategorie') || '', brand: P.get('znacka') || '', stock: P.get('skladem') === '1', sort: 'rel', shown: 48 };
+      var KAT = null, kurl = P.get('kat') || '';
+      var state = { kat: kurl, cat: P.get('kategorie') || '', brand: P.get('znacka') || '', stock: P.get('skladem') === '1', sort: 'rel', shown: 48 };
       K4H.search(Q).then(function (r) {
         function top(ci) { var s = D.c[ci] ? D.c[ci][0].split(' > ') : []; return s[1] || ''; }
+        if (state.kat) D.c.forEach(function (c) { if (c[1] === state.kat) KAT = c; });
+        if (!KAT) state.kat = '';
         function draw() {
           var all = r.items;
+          if (state.kat) all = all.filter(function (i) { return vKat(i, KAT[0]); });
           var base = all.filter(function (i) { var p = D.p[i]; return (!state.brand || D.b[p[5]] === state.brand) && (!state.stock || p[4] === 1); });
           var list = base.filter(function (i) { return !state.cat || top(D.p[i][6]) === state.cat; });
           if (state.sort === 'asc') list = list.slice().sort(function (a, b) { return D.p[a][3] - D.p[b][3]; });
@@ -327,8 +338,12 @@
             (r.ignored.length ? ' · slovo „' + esc(r.ignored.join(', ')) + '“ jsme v názvech nenašli, hledáme bez něj' : '') + '</span>' +
             '<label><input type="checkbox" id="k4h-sk"' + (state.stock ? ' checked' : '') + '> Jen skladem</label>' +
             '<select id="k4h-sort" aria-label="Řazení"><option value="rel">Nejvíc odpovídá</option><option value="asc">Od nejlevnějšího</option><option value="desc">Od nejdražšího</option></select></div>';
+          if (state.kat) {
+            var kn = KAT[0].split(' > ').pop();
+            h += '<div class="k4h-kat">Jen v kategorii <b>' + esc(kn) + '</b> <a href="#" id="k4h-kat-x">hledat všude (' + r.items.length + ')</a> <a href="' + esc(KAT[1]) + '">celá kategorie ' + esc(kn) + ' →</a></div>';
+          }
           var ck = Object.keys(cc).sort(function (a, b) { return cc[b] - cc[a]; });
-          if (ck.length > 1 || state.cat) h += '<div class="k4h-facets"><button class="k4h-chip' + (state.cat ? '' : ' k4h-on') + '" data-cat="">Vše<small>' + base.length + '</small></button>' +
+          if (!state.kat && (ck.length > 1 || state.cat)) h += '<div class="k4h-facets"><button class="k4h-chip' + (state.cat ? '' : ' k4h-on') + '" data-cat="">Vše<small>' + base.length + '</small></button>' +
             ck.map(function (c) { return '<button class="k4h-chip' + (state.cat === c ? ' k4h-on' : '') + '" data-cat="' + esc(c) + '">' + esc(c) + '<small>' + cc[c] + '</small></button>'; }).join('') + '</div>';
           var bk = Object.keys(bc).sort(function (a, b) { return bc[b] - bc[a]; });
           if (bk.length > 1 || state.brand) h += '<div class="k4h-facets">' + bk.slice(0, 14).map(function (b) { return '<button class="k4h-chip' + (state.brand === b ? ' k4h-on' : '') + '" data-brand="' + esc(b) + '">' + esc(b) + '<small>' + bc[b] + '</small></button>'; }).join('') + '</div>';
@@ -339,12 +354,15 @@
               (v.length ? '<div class="k4h-vars">' + v.slice(0, 8).map(function (j) { return '<a href="' + esc(D.p[j][0]) + '" title="' + esc(D.p[j][1]) + '">' + esc(LAB[j] || D.p[j][1]) + '</a>'; }).join('') + (v.length > 8 ? '<span>+' + (v.length - 8) + '</span>' : '') + '</div>' : '') + '</div>';
           }).join('') + '</div>';
           if (list.length > state.shown) h += '<button class="k4h-more" id="k4h-more">Zobrazit další (' + (list.length - state.shown) + ')</button>';
+          if (state.kat) h += '<div class="k4h-dalsi"><a class="k4h-all" href="' + esc(KAT[1]) + '">Další zboží z kategorie ' + esc(KAT[0].split(' > ').pop()) + ' →</a></div>';
           var keep = page.querySelector('.k4h-tip').outerHTML;
           page.innerHTML = keep + h;
           page.querySelector('#k4h-puvodni').addEventListener('click', function (e) { e.preventDefault(); SM.classList.remove('k4h-vlastni'); page.remove(); h1.textContent = 'Hledat'; });
           page.querySelector('#k4h-sort').value = state.sort;
           page.querySelector('#k4h-sort').onchange = function () { state.sort = this.value; draw(); };
           page.querySelector('#k4h-sk').onchange = function () { state.stock = this.checked; draw(); };
+          var kx = page.querySelector('#k4h-kat-x');
+          if (kx) kx.onclick = function (e) { e.preventDefault(); state.kat = ''; state.shown = 48; P.delete('kat'); try { history.replaceState(null, '', location.pathname + '?' + P.toString()); } catch (er) {} draw(); };
           var more = page.querySelector('#k4h-more'); if (more) more.onclick = function () { state.shown += 48; draw(); };
           [].forEach.call(page.querySelectorAll('[data-cat]'), function (b) { b.onclick = function () { state.cat = b.getAttribute('data-cat'); state.shown = 48; draw(); }; });
           [].forEach.call(page.querySelectorAll('[data-brand]'), function (b) { b.onclick = function () { var v = b.getAttribute('data-brand'); state.brand = state.brand === v ? '' : v; state.cat = ''; state.shown = 48; draw(); }; });
