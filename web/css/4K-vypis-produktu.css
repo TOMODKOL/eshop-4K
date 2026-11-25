@@ -3,7 +3,7 @@
    Vypnutí: Internetový obchod → Stylesheety → odškrtnout Aktivní.
 
    ▶ POČET PRODUKTŮ VEDLE SEBE NA POČÍTAČI: změňte číslo 3 na 4 (nic jiného měnit netřeba). */
-:root{--4k-sloupce:3}
+:root{--k4-sloupce:3}
 
 /* ===================== FILTR ===================== */
 
@@ -145,7 +145,7 @@ html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important
 
 
 /* ===================== MŘÍŽKA + KARTA PRODUKTU ===================== */
-#ProductListDefault .items{display:grid!important;grid-template-columns:repeat(var(--4k-sloupce),minmax(0,1fr))!important;gap:calc(40px + (4 - var(--4k-sloupce)) * 8px) calc(24px + (4 - var(--4k-sloupce)) * 8px)!important;margin:0!important;padding:0!important}
+#ProductListDefault .items{display:grid!important;grid-template-columns:repeat(var(--k4-sloupce),minmax(0,1fr))!important;gap:calc(40px + (4 - var(--k4-sloupce)) * 8px) calc(24px + (4 - var(--k4-sloupce)) * 8px)!important;margin:0!important;padding:0!important}
 #ProductListDefault .items>:not(.productHolder){display:none!important}
 #ProductListDefault .items>.productHolder{width:auto!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;float:none!important}
 
@@ -163,18 +163,18 @@ html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important
 #ProductListDefault .ProductView .ActionIcons{order:0;position:absolute!important;top:0!important;right:0!important;left:auto!important;bottom:auto!important;z-index:3;width:auto!important;height:auto!important;padding:0!important;pointer-events:none}
 
 /* název (celá karta je odkaz – klik kamkoli otevře detail) */
-#ProductListDefault .ProductView h2{order:2;margin:14px 0 0!important;padding:0!important;border:0!important;font:400 calc(17px + (4 - var(--4k-sloupce)) * 3px)/1.3 'GoodSans-Regular',Arial,sans-serif!important;color:#231F20!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;height:auto!important}
+#ProductListDefault .ProductView h2{order:2;margin:14px 0 0!important;padding:0!important;border:0!important;font:400 calc(17px + (4 - var(--k4-sloupce)) * 3px)/1.3 'GoodSans-Regular',Arial,sans-serif!important;color:#231F20!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;height:auto!important}
 #ProductListDefault .ProductView h2 a{position:static!important;color:inherit!important;text-decoration:none!important;font:inherit!important}
 #ProductListDefault .ProductView h2 a span{font:inherit!important;color:inherit!important}
 #ProductListDefault .ProductView h2 a::after{content:"";position:absolute;inset:0;z-index:1}
 #ProductListDefault .ProductView:hover h2{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 
 /* krátký popis – 2 řádky */
-#ProductListDefault .ProductView .description{order:3;margin:6px 0 0!important;padding:0!important;font-size:calc(13px + (4 - var(--4k-sloupce)) * 1px)!important;line-height:1.45!important;color:#6a6a66!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:auto!important;max-height:none!important}
+#ProductListDefault .ProductView .description{order:3;margin:6px 0 0!important;padding:0!important;font-size:calc(13px + (4 - var(--k4-sloupce)) * 1px)!important;line-height:1.45!important;color:#6a6a66!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:auto!important;max-height:none!important}
 
 /* cena: akční nadpisovým písmem, původní přeškrtnutá */
 #ProductListDefault .ProductView .dcPrice{order:4;display:flex!important;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:12px 0 0!important;padding:0!important;border:0!important}
-#ProductListDefault .ProductView .dcPrice .price.user .value{font-family:'FKScreamer-Upright',Impact,sans-serif!important;font-weight:400!important;font-synthesis:none!important;font-size:calc(28px + (4 - var(--4k-sloupce)) * 6px)!important;line-height:1!important;color:#231F20!important}
+#ProductListDefault .ProductView .dcPrice .price.user .value{font-family:'FKScreamer-Upright',Impact,sans-serif!important;font-weight:400!important;font-synthesis:none!important;font-size:calc(28px + (4 - var(--k4-sloupce)) * 6px)!important;line-height:1!important;color:#231F20!important}
 #ProductListDefault .ProductView .dcPrice .price.retail .value{font:400 15px 'GoodSans-Regular',Arial,sans-serif!important;color:#8a8a86!important;text-decoration:line-through}
 #ProductListDefault .ProductView .dcPrice .price{margin:0!important;padding:0!important}
 /* „Varianty“ jen otevírá detail → schované (klikací je celá karta); „Do košíku“ u produktů bez variant zůstává */
