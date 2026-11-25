@@ -1,4 +1,4 @@
-/* 4K – výpis produktů (v1, 5. 11. 2026)
+/* 4K – výpis produktů (v2, 25. 11. 2026 – tlačítka filtru se zalamují do řádků)
    Filtr jako řádek tlačítek, mřížka produktů, nová karta produktu.
    Vypnutí: Internetový obchod → Stylesheety → odškrtnout Aktivní.
 
@@ -16,8 +16,8 @@
 #ScrollToProductHost{display:none!important}
 
 /* řádek tlačítek: Cena ▾ Velikost ▾ Výrobce ▾ | Skladem · Skladem u dodavatele · Black Friday */
-#AttributeTabsFilter .tabpages{display:grid!important;grid-template-columns:repeat(var(--tab-count,3),max-content) minmax(0,1fr)!important;grid-template-rows:auto auto!important;grid-auto-flow:row!important;column-gap:8px!important;row-gap:14px!important;align-items:center;margin:0!important;padding:14px 0!important;background:none!important;border:0!important;border-top:1px solid #e6e6e3!important;border-bottom:1px solid #e6e6e3!important}
-#AttributeTabsFilter .tab{grid-row:1!important;box-sizing:border-box;height:44px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px;margin:0!important;padding:0 16px!important;border:1px solid #dcdcd8!important;border-radius:22px!important;background:#fff!important;color:#231F20!important;font:400 15px 'GoodSans-Regular',Arial,sans-serif!important;line-height:1!important;cursor:pointer;box-shadow:none!important;white-space:nowrap;user-select:none}
+#AttributeTabsFilter .tabpages{display:flex!important;flex-wrap:wrap!important;column-gap:8px!important;row-gap:8px!important;align-items:center;margin:0!important;padding:14px 0!important;background:none!important;border:0!important;border-top:1px solid #e6e6e3!important;border-bottom:1px solid #e6e6e3!important}
+#AttributeTabsFilter .tab{order:0!important;flex:0 0 auto;box-sizing:border-box;height:44px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px;margin:0!important;padding:0 16px!important;border:1px solid #dcdcd8!important;border-radius:22px!important;background:#fff!important;color:#231F20!important;font:400 15px 'GoodSans-Regular',Arial,sans-serif!important;line-height:1!important;cursor:pointer;box-shadow:none!important;white-space:nowrap;user-select:none}
 #AttributeTabsFilter .tab:hover{border-color:#231F20!important}
 #AttributeTabsFilter .tab span{align-self:center!important;color:inherit!important;font:inherit!important;padding:0!important;margin:0!important}
 #AttributeTabsFilter .tab::before{display:none!important}
@@ -30,7 +30,9 @@
 
 /* rychlé filtry vytažené ze záložky Cena do řádku tlačítek */
 #AttributeTabsFilter .page[data-pageid="0"],#AttributeTabsFilter #CompoundFilterSimple{display:contents!important}
-#AttributeTabsFilter .SimpleFilter{grid-column:-2 / -1!important;grid-row:1!important;display:flex!important;flex-wrap:wrap;align-items:center;gap:8px;margin:0!important;padding:0 0 0 14px!important;border:0!important;border-left:1px solid #e6e6e3!important;background:none!important}
+/* zalomení řádku: panel vždy začíná pod tlačítky */
+#AttributeTabsFilter .tabpages::after{content:""!important;display:block!important;order:2!important;flex:0 0 100%!important;height:0!important;margin:-8px 0 0!important;border:0!important}
+#AttributeTabsFilter .SimpleFilter{order:1!important;display:flex!important;flex-wrap:wrap;align-items:center;gap:8px;margin:0!important;padding:0 0 0 14px!important;border:0!important;border-left:1px solid #e6e6e3!important;background:none!important}
 #AttributeTabsFilter .SimpleFilter label{position:relative;box-sizing:border-box;height:44px;display:flex!important;align-items:center;margin:0!important;padding:0 16px!important;border:1px solid #dcdcd8;border-radius:22px;background:#fff;color:#231F20;font:400 15px 'GoodSans-Regular',Arial,sans-serif;line-height:1;cursor:pointer;white-space:nowrap}
 #AttributeTabsFilter .SimpleFilter label:hover{border-color:#231F20}
 #AttributeTabsFilter .SimpleFilter label input{position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;margin:0!important;pointer-events:none}
@@ -38,6 +40,12 @@
 #AttributeTabsFilter .SimpleFilter label span::before{display:none!important}
 #AttributeTabsFilter .SimpleFilter label:has(input:checked){background:#231F20;border-color:#231F20;color:#fff}
 #AttributeTabsFilter .SimpleFilter label:has(input:focus-visible){outline:2px solid #231F20;outline-offset:2px}
+/* Skladem / Skladem u dodavatele: přepínače, ne rozbalovací tlačítka – šedý podklad bez rámečku a barevná tečka dostupnosti */
+#AttributeTabsFilter .SimpleFilter label.onlyOnStore,#AttributeTabsFilter .SimpleFilter label.onlyOnAnyStore{gap:8px;border-color:#f0f0ed;background:#f0f0ed}
+#AttributeTabsFilter .SimpleFilter label.onlyOnStore:hover,#AttributeTabsFilter .SimpleFilter label.onlyOnAnyStore:hover{border-color:#231F20}
+#AttributeTabsFilter .SimpleFilter label.onlyOnStore::before,#AttributeTabsFilter .SimpleFilter label.onlyOnAnyStore::before{content:"";flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:#1f7a3a}
+#AttributeTabsFilter .SimpleFilter label.onlyOnAnyStore::before{background:#a85200}
+#AttributeTabsFilter .SimpleFilter label.onlyOnStore:has(input:checked)::before,#AttributeTabsFilter .SimpleFilter label.onlyOnAnyStore:has(input:checked)::before{box-shadow:0 0 0 2px #fff}
 /* Black Friday: černé se žlutým písmem, zapnuté naopak žluté
    (název „BLACK FRIDAY“ místo „Výprodej“ dodává hlavní CSS – po akci stačí tyto 4 řádky smazat) */
 #AttributeTabsFilter .SimpleFilter label.flag03{background:#231F20;border-color:#231F20;color:#FFC524}
@@ -46,7 +54,7 @@
 #AttributeTabsFilter .SimpleFilter label.flag03:has(input:checked) span::after{color:#231F20!important}
 
 /* panel pod tlačítky (bílá karta) */
-#AttributeTabsFilter .page:not([data-pageid="0"]),#AttributeTabsFilter #PriceFilter{grid-column:1 / -1!important;grid-row:2!important;box-sizing:border-box;width:100%;max-width:720px;margin:0!important;padding:22px!important;border:1px solid #e6e6e3!important;border-radius:10px!important;background:#fff!important;box-shadow:0 12px 32px rgba(35,31,32,.10)!important}
+#AttributeTabsFilter .page:not([data-pageid="0"]),#AttributeTabsFilter #PriceFilter{order:3!important;flex:0 1 720px;box-sizing:border-box;width:100%;max-width:720px;margin:6px 0 0!important;padding:22px!important;border:1px solid #e6e6e3!important;border-radius:10px!important;background:#fff!important;box-shadow:0 12px 32px rgba(35,31,32,.10)!important}
 /* cena patří jen k záložce Cena */
 #AttributeTabsFilter .tabpages:not(:has(.tab[data-pageid="0"].selected)) #PriceFilter{display:none!important}
 
@@ -54,9 +62,21 @@
    Bez skriptu zůstane chování BSSHOP (panel otevřený) – filtr tak nikdy nepřestane fungovat. */
 html.fx-js:not(.fx-open) #AttributeTabsFilter .page:not([data-pageid="0"]),
 html.fx-js:not(.fx-open) #AttributeTabsFilter #PriceFilter{display:none!important}
-html.fx-js:not(.fx-open) #AttributeTabsFilter .tabpages{row-gap:0!important}
 html.fx-js.fx-open #AttributeTabsFilter .tab.selected,
 html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important;border-color:#231F20!important;color:#fff!important}
+
+/* mobil: tlačítka v jednom řádku, posouvají se do strany; panel se otevře pod řádkem přes výpis */
+@media (max-width:700px){
+#AttributeTabsFilter{position:relative!important}
+#AttributeTabsFilter .tabpages{flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none;-webkit-overflow-scrolling:touch;position:static!important}
+#AttributeTabsFilter .tabpages::-webkit-scrollbar{display:none}
+#AttributeTabsFilter .tabpages::after{display:none!important}
+#AttributeTabsFilter .tab{height:40px!important;padding:0 14px!important;font-size:14px!important}
+#AttributeTabsFilter .tab[data-pageid="0"] span::before{font-size:14px}
+#AttributeTabsFilter .SimpleFilter{flex-wrap:nowrap!important;padding-left:8px!important}
+#AttributeTabsFilter .SimpleFilter label{height:40px;padding:0 14px!important;font-size:14px}
+#AttributeTabsFilter .page:not([data-pageid="0"]),#AttributeTabsFilter #PriceFilter{position:absolute!important;left:0;right:0;top:100%;z-index:20;max-width:none!important;margin:4px 0 0!important}
+}
 
 /* panel Cena: posuvník + pole od–do + tlačítko */
 #PriceFilter{display:grid!important;grid-template-columns:1fr 1fr auto;grid-template-rows:auto auto;gap:18px 12px;align-items:end}
@@ -73,11 +93,11 @@ html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important
 #PriceFilter .button.showItems span{color:inherit!important;font:inherit!important}
 
 /* panely s hodnotami (Velikost, Výrobce, …): dlaždice */
-#AttributeTabsFilter .AttributeFilterValues>dc-con{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:0!important;padding:0!important}
+#AttributeTabsFilter .AttributeFilterValues>dc-con{display:flex!important;flex-wrap:wrap;gap:8px;margin:0!important;padding:0!important}
 #AttributeTabsFilter .AttributeFilterValues .value{position:relative;width:auto!important;margin:0!important;padding:0!important;float:none!important}
-#AttributeTabsFilter .AttributeFilterValues .value dc-root{position:relative;display:flex!important;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;min-height:48px;padding:6px 10px!important;border:1px solid #dcdcd8;border-radius:6px;background:#fff;cursor:pointer}
+#AttributeTabsFilter .AttributeFilterValues .value dc-root{position:relative;display:flex!important;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;min-height:48px;min-width:64px;padding:6px 14px!important;border:1px solid #dcdcd8;border-radius:6px;background:#fff;cursor:pointer}
 #AttributeTabsFilter .AttributeFilterValues .value input{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0!important;opacity:0!important;cursor:pointer;z-index:1}
-#AttributeTabsFilter .AttributeFilterValues .value label{margin:0!important;padding:0!important;font:400 16px 'GoodSans-Regular',Arial,sans-serif!important;color:#231F20!important;text-align:center}
+#AttributeTabsFilter .AttributeFilterValues .value label{position:static!important;float:none!important;width:auto!important;min-width:0!important;white-space:nowrap;margin:0!important;padding:0!important;font:400 16px 'GoodSans-Regular',Arial,sans-serif!important;color:#231F20!important;text-align:center}
 #AttributeTabsFilter .AttributeFilterValues .value label::before,#AttributeTabsFilter .AttributeFilterValues .value label::after{display:none!important}
 #AttributeTabsFilter .AttributeFilterValues .value .count{font-size:12px!important;color:#8a8a86!important}
 #AttributeTabsFilter .AttributeFilterValues .value dc-root:hover{border-color:#231F20}
@@ -173,17 +193,12 @@ html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important
  #ProductListDefault .items{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:40px 20px!important}
 }
 @media (max-width:899px){
- /* filtr: tlačítka se posouvají vodorovně, rychlé filtry na druhém řádku */
- #AttributeTabsFilter .tabpages{grid-template-columns:repeat(var(--tab-count,3),max-content) minmax(0,1fr)!important;row-gap:10px!important}
+ /* filtr: menší tlačítka */
  #AttributeTabsFilter .tab{height:40px!important;padding:0 14px!important}
- #AttributeTabsFilter .SimpleFilter{grid-column:1 / -1!important;grid-row:2!important;flex-wrap:nowrap;overflow-x:auto;padding:0!important;border-left:0!important;scrollbar-width:none}
- #AttributeTabsFilter .SimpleFilter::-webkit-scrollbar{display:none}
  #AttributeTabsFilter .SimpleFilter label{flex:0 0 auto;height:40px;padding:0 14px!important}
- #AttributeTabsFilter .page:not([data-pageid="0"]),#AttributeTabsFilter #PriceFilter{grid-row:3!important;max-width:none;padding:16px!important}
- html.fx-js:not(.fx-open) #AttributeTabsFilter .tabpages{row-gap:10px!important}
+ #AttributeTabsFilter .page:not([data-pageid="0"]),#AttributeTabsFilter #PriceFilter{max-width:none;padding:16px!important}
  #PriceFilter{grid-template-columns:1fr 1fr}
  #PriceFilter .button.showItems{grid-column:1 / -1;grid-row:3;justify-content:center}
- #AttributeTabsFilter .AttributeFilterValues>dc-con{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
  /* řazení vodorovně posuvné */
  #CompoundPagingTop .ProductSorting{flex-wrap:wrap}
  #CompoundPagingTop .ProductSorting .sortingBox{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%}
