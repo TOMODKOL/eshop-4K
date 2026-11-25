@@ -26,3 +26,12 @@ Definice se vkládá v BSADMIN přes „Přidat ze schránky“ (obsah souboru 4
 | Vyrobce | Výrobce |
 | EAN | EAN |
 | Hmotnost | Hmotnost |
+
+## Spouštění (od 25. 11. 2026)
+- Robot **„Automatický import - 4K univerzální“** (Nastavení robotů, Id 72): importér 4K - univerzální, jen Aktualizovat změněné, zdroj Z webu = `https://raw.githubusercontent.com/TOMODKOL/eshop-4K/main/web/importy/4K-univerzalni.csv`, sledování změn → C:\IPODNIK\BSSHOP\Importy\4K-univerzalni-zmeny.csv a e-mail tomas@4kluciodkol.cz.
+- Úloha **„Automatický import 4K univerzální“** (Nastavení automatických úloh, fronta 2, Ruční spouštěč).
+- Spuštění: Roboti → Ovládání robotů → 2. fronta → Automatická úloha „Automatický import 4K univerzální“ → Spustit (běh ~1 min).
+- Postup: do `4K-univerzalni.csv` dát řádky (Kod + jen měněné sloupce) → push → Spustit → kontrola. Soubor je veřejný: nedávat ceny ani interní data.
+
+## GLS
+- Robot „Automatický import - 4K nadrozměrné (GLS)“ (Id 73, loopback, jen Aktualizovat změněné), úloha „Automatický import 4K nadrozměrné (GLS)“ fronta 2, denně 1:15.
