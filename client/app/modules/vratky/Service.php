@@ -276,6 +276,8 @@ final class Service
         }
         $onlyReturn = $lines && count(array_filter($lines, fn($l) => $l['action'] !== 'vratit')) === 0;
         $postageApplies = $onlyReturn && self::usesPacketa($ship);
+        // pravidlo 26. 11. 2026: když si zákazník z objednávky nechá zboží aspoň za hranici dopravy zdarma, poštovné za vrácení neodečítáme
+        if ($postageApplies && $order && self::keepsFreeShipping($order, $refund)) $postageApplies = false;
         $postage = Config::get('vratky.return_postage');
         $c = [
             'refund' => round($refund, 2),
@@ -330,6 +332,41 @@ final class Service
         $back = (float) Db::value("SELECT COALESCE(SUM(l.unit_price * l.qty),0) FROM return_lines l JOIN returns r ON r.id = l.return_id
             WHERE r.order_id = ? AND l.action = 'vratit' AND r.status <> 'zamitnuto'", [$order['id']]);
         return [round($price - $paid, 2), round($total - $back, 2), (float) $rule['free_from']];
+    }
+
+    /** Zboží, které zákazníkovi z objednávky zůstane před touto vratkou, a hranice dopravy zdarma k datu objednávky. */
+    public static function keptInfo(array $order, ?int $excludeReturnId = null): array
+    {
+        $rule = self::shippingRule((string) $order['invoice_date']);
+        $total = 0.0;
+        foreach (Db::all('SELECT * FROM order_items WHERE order_id = ? AND qty > 0', [$order['id']]) as $i) {
+            if (!self::isServiceLine($i)) $total += (float) $i['unit_price'] * (float) $i['qty'];
+        }
+        $back = (float) Db::value("SELECT COALESCE(SUM(l.unit_price * l.qty),0) FROM return_lines l JOIN returns r ON r.id = l.return_id
+            WHERE r.order_id = ? AND l.action = 'vratit' AND r.status <> 'zamitnuto' AND r.id <> ?", [$order['id'], (int) $excludeReturnId]);
+        return [round($total - $back, 2), (float) ($rule['free_from'] ?? 0)];
+    }
+
+    /** Po vrácení si zákazník nechá zboží aspoň za hranici dopravy zdarma → poštovné za vrácení se neodečítá. */
+    public static function keepsFreeShipping(array $order, float $refundNow, ?int $excludeReturnId = null): bool
+    {
+        [$left, $limit] = self::keptInfo($order, $excludeReturnId);
+        return $limit > 0 && $left - $refundNow >= $limit - 0.005;
+    }
+
+    /** Jednorázově (migrace v13): pravidlo o poštovném i na otevřené vratky, u kterých ještě není vystavený doklad. */
+    public static function recheckPostage(): void
+    {
+        foreach (Db::all("SELECT * FROM returns WHERE postage_applies = 1 AND order_id IS NOT NULL AND doc_state IN ('', 'ceka', 'navrh')
+            AND status NOT IN ('vyrizeno', 'zamitnuto')") as $r) {
+            $order = self::order((int) $r['order_id']);
+            if (!$order || !self::keepsFreeShipping($order, (float) $r['refund_total'], (int) $r['id'])) continue;
+            [$left, $limit] = self::keptInfo($order, (int) $r['id']);
+            Db::exec('UPDATE returns SET postage_applies = 0, postage = NULL, updated_at = ? WHERE id = ?', [Db::now(), $r['id']]);
+            Db::insert('return_events', ['return_id' => $r['id'], 'status' => null,
+                'note' => 'Poštovné za vrácení se neodečítá – zákazník si z objednávky nechává zboží za ' . money($left - (float) $r['refund_total']) . ' (doprava zdarma od ' . money($limit) . ').',
+                'public' => 0, 'user_id' => null, 'created_at' => Db::now()]);
+        }
     }
 
     /** Zbytek objednávky po vrácení klesne pod hranici dopravy zdarma → doprava podle ceníku. Při vrácení všeho se neúčtuje. */

@@ -30,7 +30,7 @@ final class Installer
     }
 
     /** Doplnění sloupců do už nainstalované databáze (na Forpsi). Značka v storage/ zajistí, že se to spustí jen jednou. */
-    public const SCHEMA = 12;
+    public const SCHEMA = 13;
 
     /** Tabulka plateb kartou (GP webpay) z sql/mysql.sql – pro doplnění do už nainstalované databáze. */
     public static function cardPaymentsSql(): string
@@ -100,6 +100,8 @@ final class Installer
                 if (!preg_match('/duplicate|already exists/i', $e->getMessage())) throw $e;
             }
         }
+        // v13: poštovné za vrácení se neodečítá, když si zákazník nechá zboží aspoň za hranici dopravy zdarma
+        if (class_exists(\App\Modules\Vratky\Service::class)) \App\Modules\Vratky\Service::recheckPostage();
         @file_put_contents($mark, date('c'));
     }
 

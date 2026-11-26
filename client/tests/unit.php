@@ -198,6 +198,24 @@ $x3 = Service::create($o3, ['lines' => [$mk($i3[1], 'vratit')], 'ship' => 'zbox'
 t(Service::payout($x3) == 800 - 79 - 89, 'zákazník dostane 800 − 79 poštovné − 89 doprava = ' . Service::payout($x3));
 t(Service::shippingRule('2026-11-20')['free_from'] == 2500 && Service::shippingRule('2026-11-21')['free_from'] == 3000, 'objednávka před 23. 11. podle starých podmínek');
 
+// poštovné se neodečítá, když si zákazník nechá zboží aspoň za hranici dopravy zdarma (pravidlo 26. 11. 2026)
+Sync::import(['orders' => [['invoice_no' => '260102301', 'order_no' => '8810009101', 'invoice_date' => '2026-11-10', 'email' => 'p@l.cz',
+    'items' => [['code' => 'J-L', 'name' => 'bunda Castelli L', 'qty' => 1, 'unit_price' => 4390], ['code' => 'J-XL', 'name' => 'bunda Castelli XL', 'qty' => 1, 'unit_price' => 4390],
+                ['name' => 'Zásilkovna ČR', 'qty' => 1, 'unit_price' => 0]]]]]);
+$o4 = Service::findOrder('p@l.cz', '8810009101');
+$i4 = Service::items((int) $o4['id']);
+$c4 = Service::calc([$mk($i4[1], 'vratit')], 'zbox', $o4);
+t(!$c4['postage_applies'] && $c4['balance'] == 4390, 'vrátí jednu ze dvou bund, nechá si 4 390 ≥ 2 500 → bez poštovného, vrací se 4 390');
+$c5 = Service::calc([$mk($i4[0], 'vratit'), $mk($i4[1], 'vratit')], 'zbox', $o4);
+t($c5['postage_applies'] && $c5['balance'] == 8780 - 79, 'vrací obě → poštovné se odečte');
+t($c1['postage_applies'], 'nechá si 2 500 < 3 000 → poštovné se odečte');
+// stará vratka s poštovným → migrace v13 ho zruší
+$x4 = Service::create($o4, ['lines' => [$mk($i4[1], 'vratit')], 'ship' => 'zbox', 'account' => '123456789/0800', 'note' => '', 'phone' => '', 'calc' => array_merge($c4, ['postage_applies' => true, 'postage' => 79.0, 'balance' => 4311])]);
+t(Service::payout(Service::get((int) $x4['id'])) == 4311, 'před migrací 4 311');
+Service::recheckPostage();
+t(Service::payout(Service::get((int) $x4['id'])) == 4390, 'po migraci 4 390 (poštovné zrušeno)');
+Service::deleteTest(Service::get((int) $x4['id']), null);
+
 // velikosti z e-shopu
 $es = \App\Modules\Vratky\Eshop::parse((string) file_get_contents(__DIR__ . '/fixtures/eshop_variant.html'));
 t($es !== null && count($es['sizes']) === 4, 'e-shop: 4 dlaždice velikostí');

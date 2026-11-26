@@ -14,6 +14,8 @@
   var shipChargeCfg = parseFloat(form.getAttribute('data-ship-charge')) || 0;
   var goodsLeft = parseFloat(form.getAttribute('data-goods-left')) || 0;
   var freeFrom = parseFloat(form.getAttribute('data-free-from')) || 0;
+  var keptLeft = parseFloat(form.getAttribute('data-kept-left')) || 0;
+  var keptLimit = parseFloat(form.getAttribute('data-kept-limit')) || 0;
   var codFee = parseFloat(form.getAttribute('data-cod-fee')) || 0;
   var current = 1;
   var LABEL = { vratit: 'Vrácení', vymenit: 'Výměna velikosti', reklamovat: 'Reklamace' };
@@ -70,6 +72,7 @@
     var after = goodsLeft - refund;
     var shipCharge = (shipChargeCfg > 0 && refund > 0 && after > 0.005 && after < freeFrom) ? shipChargeCfg : 0;
     var postageApplies = onlyReturn && (ship() === 'zbox' || ship() === 'vm');
+    if (postageApplies && keptLimit > 0 && keptLeft - refund >= keptLimit - 0.005) postageApplies = false; // nechá si zboží za dopravu zdarma
     var balance = refund + diff - (postageApplies && postage !== null ? postage : 0) - shipCharge;
     var payEl = $('input[name="pay_method"]:checked');
     var cod = balance < -0.005 && payEl && payEl.value === 'dobirka' ? codFee : 0;

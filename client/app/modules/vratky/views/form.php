@@ -5,11 +5,12 @@ use App\Modules\Vratky\Eshop;
 $o = fn(string $k, $id = null, $def = '') => $id === null ? ($old[$k] ?? $def) : ($old[$k][$id] ?? $def);
 $postage = cfg('vratky.return_postage');
 [$shipCharge, $goodsLeft, $freeFrom] = Service::freeShippingInfo($order);
+[$keptLeft, $keptLimit] = Service::keptInfo($order);
 $steps = ['Položky', 'Doprava', 'Kontakt a peníze', 'Souhrn'];
 ?>
 <form id="vrform" class="layout" method="post" action="<?= url('/vratky/novy') ?>" enctype="multipart/form-data" novalidate
       data-postage="<?= $postage === null ? '' : e((string) $postage) ?>"
-      data-ship-charge="<?= e((string) $shipCharge) ?>" data-goods-left="<?= e((string) $goodsLeft) ?>" data-free-from="<?= e((string) $freeFrom) ?>" data-cod-fee="<?= e((string) cfg('vratky.cod_fee', 69)) ?>" data-product-url="<?= url('/vratky/zbozi') ?>" data-search-url="<?= url('/vratky/hledat') ?>" data-draft-url="<?= url('/vratky/koncept') ?>" data-shop-url="<?= e(rtrim((string) cfg('shop.web'), '/')) ?>/eshop-c372/" data-start="<?= (int) ($start ?? 1) ?>">
+      data-ship-charge="<?= e((string) $shipCharge) ?>" data-goods-left="<?= e((string) $goodsLeft) ?>" data-free-from="<?= e((string) $freeFrom) ?>" data-kept-left="<?= e((string) $keptLeft) ?>" data-kept-limit="<?= e((string) $keptLimit) ?>" data-cod-fee="<?= e((string) cfg('vratky.cod_fee', 69)) ?>" data-product-url="<?= url('/vratky/zbozi') ?>" data-search-url="<?= url('/vratky/hledat') ?>" data-draft-url="<?= url('/vratky/koncept') ?>" data-shop-url="<?= e(rtrim((string) cfg('shop.web'), '/')) ?>/eshop-c372/" data-start="<?= (int) ($start ?? 1) ?>">
 <?= csrf_field() ?>
 <div class="main"><div class="col">
 

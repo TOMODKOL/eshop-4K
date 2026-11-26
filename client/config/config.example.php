@@ -47,6 +47,7 @@ return [
         // Reklamace do 24 měsíců od data faktury
         'claim_months' => 24,
         // Poštovné za vrácení (Kč s DPH), které se strhne z vrácené částky – jen u čistého vrácení přes Zásilkovnu.
+        // Neodečítá se, když si zákazník z objednávky nechá zboží aspoň za hranici dopravy zdarma (free_from níže, rozhodnuto 26. 11. 2026).
         // 79 Kč = zpětná zásilka Zásilkovny stojí 75,02 Kč s DPH (62 Kč bez paliva a mýta), rozhodnuto 20. 11. 2026.
         'return_postage' => 79,
         'cod_fee' => 69,                // dobírka za doplatek při výměně za dražší zboží
