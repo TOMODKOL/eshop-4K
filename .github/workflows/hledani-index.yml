@@ -18,6 +18,7 @@ jobs:
         working-directory: web/hledani
         run: |
           python crawl.py
+          python doplnit_kody.py produkty.json kody.json
           python build_index.py produkty.json index.json
           rm -f produkty.json
           rm -rf cache
@@ -26,7 +27,7 @@ jobs:
         run: |
           git config user.name "Otik (4 KLUCI OD KOL)"
           git config user.email "info@4kluciodkol.cz"
-          git add web/hledani/index.json
+          git add web/hledani/index.json web/hledani/kody.json
           git diff --cached --quiet || (git commit -m "Index vyhledávání $(date +%F)" && git push)
       - name: Obnovit cache jsDelivr
         run: |
