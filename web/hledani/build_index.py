@@ -74,7 +74,7 @@ MODEL = {'sl', 'lite', 'race', 'aero', 'ultra', 'mips', 'team', 'comp', 'hi-mod'
          'lefty', 'eq', 'smartsense', 'bar',
          # jiný výrobek téže řady (26. 11.): „Resistance Enduro Glove“ × „… Adj Glove“, „Premio Glove“ × „Premio Evo Glove“,
          # „Flanders Warm“ × „… Neck“, „Core Jersey“ × „Core Lightweight Jersey“, „Winter Socks“ × „… EVO“, „Blinder Mini“ přední × zadní × Twinpack
-         'adj', 'adjustable', 'evo', 'neck', 'lightweight', 'unisea', 'twinpack', 'přední', 'zadní'}
+         'adj', 'adjustable', 'wf', 'evo', 'neck', 'lightweight', 'unisea', 'twinpack', 'přední', 'zadní'}
 BARVA_I_MODEL = {'light', 'air', 'carbon'}   # „Light Black“, „Air Blue“: když za nimi jde další slovo, může to být barva
 def slova_modelu(r):   # slova modelu/velikosti ve zbytku názvu (kromě „Light Black“ apod., kde jde o barvu)
     out = []
@@ -104,21 +104,76 @@ if os.path.exists(_rf):
         if model.startswith('_'): continue
         for si, kody in enumerate(skupiny):
             for k in kody: ROZ[k] = (model, si)
-# kód výrobce (POC, Castelli, ASSOS) z kody.json: jiný kód modelu = jiný výrobek, stejný kód = barvy téhož výrobku
-#   POC PC303341815SML1 → model PC30334 (pak barva 1815, velikost SML), brýle EL10019587ONE1 → EL1001 · Castelli 4523026-424-M → 4523026 · ASSOS P13.60.677.18.I → P13.60.677
+# ---------- kód výrobce (kody.json = {url: [sku variant]} z detailů produktů, doplnit_kody.py) ----------
+# U každé značky se z dat zjistí, jestli a jak její kódy rozlišují model (bez barvy a velikosti):
+#   POC PC303341815SML1 → PC30334 (barva 1815, velikost SML1) · Castelli 4523026-424-M → 4523026 · ASSOS P13.60.677.18.I → P13.60.677
+# Vyzkouší se několik způsobů (oddělovače, useknutí konce, pevná délka) a porovnají se se skupinami podle názvu.
+# Značka, jejíž kódy neodpovídají (naše interní čísla 00078046, kódy bez struktury), se řídí jen názvem.
 KODY = {}
 _kf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'kody.json')
 if os.path.exists(_kf):
     KODY = json.load(open(_kf, encoding='utf-8'))
-def model_kod(p):
-    k = (KODY.get(p[0]) or '').strip().upper()
-    for rx in (r'^([A-Z]{2,3}\d+)\d{4}[A-Z0-9]{3}\d$', r'^(\d{7})-', r'^(P?\d{2}\.\d{2}\.\d{3})\.'):
-        m = re.match(rx, k)
-        if m: return m.group(1)
-    return None
-MK = [model_kod(p) for p in prods]
-parent = list(range(len(prods)))
-znacky = [{ROZ[p[7]]} if p[7] in ROZ else set() for p in prods]   # (model, skupina) v každé skupině
+SEP = re.compile(r'[-._/ ]')
+VEL = re.compile(r'^(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|[2-5]XL|S/M|M/L|L/XL|XS/S|ONE|UNI|OS|TU|0|I|II|III|IV|V|\d{2}(,5|\.5)?|\d{3})$', re.I)
+def zaklad_kodu(skus):   # kód výrobku bez velikosti
+    skus = [x.strip().upper().rstrip('*') for x in skus if x and x.strip()]
+    if not skus: return None
+    if re.match(r'^0\d{7}(-.*)?$', skus[0]) or re.match(r'^\d{1,7}$', skus[0]): return None   # naše interní číslo karty
+    if len(skus) > 1:
+        z = os.path.commonprefix(skus).rstrip('-._/ ')
+    else:
+        z = skus[0]
+        c = SEP.split(z)
+        if len(c) > 1 and VEL.match(c[-1]): z = z[:len(z) - len(c[-1])].rstrip('-._/ ')
+        else: z = re.sub(r'(XSM|SML|MED|LRG|XLG|XXL|ONE)\d$', '', z)
+    return z if len(z) >= 4 else None
+ZK = [zaklad_kodu(KODY.get(p[0]) or []) for p in prods]
+def klic(z, f):   # jeden ze způsobů, jak z kódu výrobku udělat kód modelu
+    if not z: return None
+    if f == 'sep':
+        c = SEP.split(z); return z[:len(z) - len(c[-1])].rstrip('-._/ ') if len(c) > 1 else None
+    if f == 'sep2':   # M-MM-AA-BK-1 → M-MM-AA (barva BK, provedení 1)
+        c = SEP.split(z); return z[:len(z) - len(c[-1]) - len(c[-2]) - 1].rstrip('-._/ ') if len(c) > 2 else None
+    if f[0] == 'd': n = int(f[1:]); return z[:-n] if len(z) > n + 2 else None
+    if f[0] == 'p': n = int(f[1:]); return z[:n] if len(z) > n else None
+ZPUSOBY = ['sep', 'sep2'] + ['d%d' % n for n in range(1, 6)] + ['p%d' % n for n in range(4, 11)]
+
+def seskupit(MK, vypis=False):   # skupiny barev; MK = kód modelu u každého produktu (nebo None)
+    global parent, znacky
+    parent = list(range(len(prods)))
+    znacky = [{ROZ[p[7]]} if p[7] in ROZ else set() for p in prods]   # (model, skupina) v každé skupině
+    pary = []   # (a, b, podle názvu stejný výrobek?) pro učení kódů
+    for (ci, bi), ids in buckets.items():
+        bl = brands[bi].lower()
+        T = {i: toks(prods[i][1]) for i in ids}
+        for a in range(len(ids)):
+            for b in range(a + 1, len(ids)):
+                x, y = T[ids[a]], T[ids[b]]
+                bpos = next((k for k, t in enumerate(x) if t.lower() == bl or bl.startswith(t.lower())), None)
+                if bpos is None: continue
+                l = 0
+                while l < min(len(x), len(y)) and x[l].lower() == y[l].lower(): l += 1
+                if l < bpos + 2: continue
+                ra, rb = x[l:], y[l:]
+                mx = 5 if l >= bpos + 3 else 3   # dlouhé barvy („Hydrogen White/Uranium Black Matt“) jen u delšího názvu modelu
+                stejna_slova = slova_modelu(ra) == slova_modelu(rb) and cast_modelu(ra) == cast_modelu(rb)
+                podle_nazvu = 0 < len(ra) <= mx and 0 < len(rb) <= mx and nodig(ra) and nodig(rb) and stejna_slova \
+                    and zaklad(prods[ids[a]][1]) == zaklad(prods[ids[b]][1])
+                pary.append((ids[a], ids[b], podle_nazvu))
+                if not lze_spojit(ids[a], ids[b]): continue
+                ka, kb = MK[ids[a]], MK[ids[b]]
+                vada = 'vada' in (prods[ids[a]][1] + prods[ids[b]][1]).lower()   # kus s vadou nechat zvlášť
+                if ka and kb and not vada:
+                    if ka == kb and stejna_slova: spoj(ids[a], ids[b])   # stejný kód modelu → barvy téhož výrobku (pokud název
+                    #   neříká jiné provedení, např. „Ventral Air WF MIPS“ × „Ventral Air MIPS“)
+                    continue                                     # jiný kód modelu → jiný výrobek
+                if podle_nazvu: spoj(ids[a], ids[b])
+    return pary
+
+buckets = {}
+for i, p in enumerate(prods):
+    if any(k in cats[p[6]][0] for k in SKUPINY_NE) or not brands[p[5]]: continue
+    buckets.setdefault((p[6], p[5]), []).append(i)
 def find(i):
     while parent[i] != i:
         parent[i] = parent[parent[i]]; i = parent[i]
@@ -130,32 +185,32 @@ def spoj(a, b):
     ra, rb = find(a), find(b)
     if ra == rb: return
     parent[ra] = rb; znacky[rb] |= znacky[ra]
-buckets = {}
-for i, p in enumerate(prods):
-    if any(k in cats[p[6]][0] for k in SKUPINY_NE) or not brands[p[5]]: continue
-    buckets.setdefault((p[6], p[5]), []).append(i)
-for (ci, bi), ids in buckets.items():
-    bl = brands[bi].lower()
-    T = {i: toks(prods[i][1]) for i in ids}
-    for a in range(len(ids)):
-        for b in range(a + 1, len(ids)):
-            x, y = T[ids[a]], T[ids[b]]
-            bpos = next((k for k, t in enumerate(x) if t.lower() == bl or bl.startswith(t.lower())), None)
-            if bpos is None: continue
-            l = 0
-            while l < min(len(x), len(y)) and x[l].lower() == y[l].lower(): l += 1
-            ra, rb = x[l:], y[l:]
-            mx = 5 if l >= bpos + 3 else 3   # dlouhé barvy („Hydrogen White/Uranium Black Matt“) jen u delšího názvu modelu
-            ka, kb = MK[ids[a]], MK[ids[b]]
-            if ka and kb and ka != kb: continue          # jiný kód modelu u výrobce → jiný výrobek
-            vada = 'vada' in (prods[ids[a]][1] + prods[ids[b]][1]).lower()   # kus s vadou nechat zvlášť
-            if ka and kb and not vada and l >= bpos + 2 and lze_spojit(ids[a], ids[b]):
-                spoj(ids[a], ids[b]); continue           # stejný kód modelu → barvy téhož výrobku
-            if l >= bpos + 2 and 0 < len(ra) <= mx and 0 < len(rb) <= mx and nodig(ra) and nodig(rb) \
-                    and slova_modelu(ra) == slova_modelu(rb) and cast_modelu(ra) == cast_modelu(rb) \
-                    and zaklad(prods[ids[a]][1]) == zaklad(prods[ids[b]][1]) \
-                    and lze_spojit(ids[a], ids[b]):
-                spoj(ids[a], ids[b])
+
+# 1) jen podle názvu → páry „stejný výrobek“ / „jiný výrobek“ pro každou značku
+pary = seskupit([None] * len(prods))
+po_znacce = {}
+for a, b, stejny in pary:
+    if ZK[a] and ZK[b]: po_znacce.setdefault(prods[a][5], []).append((a, b, stejny))
+# 2) u každé značky vybrat způsob, který s názvy souhlasí nejlépe: barvy téhož výrobku podle názvu musí mít
+#    stejný kód modelu aspoň v 88 % a různé výrobky podle názvu jiný kód aspoň v 75 % (název někdy dlouhou barvu
+#    neodhalí, proto ne 100 %; kód, který nerozlišuje, např. jen pořadové číslo, tím neprojde)
+ZPUSOB = {}
+for bi, pp in po_znacce.items():
+    st = [(a, b) for a, b, s in pp if s]; ji = [(a, b) for a, b, s in pp if not s]
+    if len(st) < 5 or len(ji) < 3: continue
+    nej = None
+    for f in ZPUSOBY:
+        ks = [klic(ZK[a], f) for a, b in st]; kj = [klic(ZK[a], f) for a, b in ji]
+        if any(k is None for k in ks + kj): continue
+        s1 = sum(klic(ZK[a], f) == klic(ZK[b], f) for a, b in st) / len(st)
+        s2 = sum(klic(ZK[a], f) != klic(ZK[b], f) for a, b in ji) / len(ji)
+        if s1 >= 0.88 and s2 >= 0.75 and (nej is None or s1 + s2 > nej[0]): nej = (s1 + s2, f, s1, s2, len(st), len(ji))
+    if nej: ZPUSOB[bi] = nej
+for bi, n in sorted(ZPUSOB.items(), key=lambda x: brands[x[0]]):
+    print('kódy: %-22s %-4s stejné %3.0f %% (%d)  různé %3.0f %% (%d)' % (brands[bi], n[1], n[2] * 100, n[4], n[3] * 100, n[5]))
+# 3) výsledné skupiny: u značek s funkčním kódem rozhoduje kód, jinak název
+MK = [klic(ZK[i], ZPUSOB[p[5]][1]) if p[5] in ZPUSOB else None for i, p in enumerate(prods)]
+seskupit(MK)
 for i, p in enumerate(prods): p.append(find(i))
 print('skupin s více barvami', sum(1 for i in range(len(prods)) if sum(1 for q in prods if q[9] == i) > 1))
 json.dump({'v': datetime.date.today().isoformat(), 'c': cats, 'b': brands, 'p': prods}, open(out, 'w', encoding='utf-8'),
