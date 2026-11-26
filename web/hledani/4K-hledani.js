@@ -175,7 +175,8 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function cena(n) { return n ? String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' Kč' : ''; }
   function img(p, size) { return p[2] ? CDN + p[2].replace('|', '/' + size + '/') : ''; }
-  var DOST = ['Na objednávku', 'Skladem', 'Skladem u dodavatele'];   // web v datech nerozliší „u dodavatele“ od „není“
+  var DOST = ['', 'Skladem', 'Skladem u dodavatele'];   // 0 = není skladem: nic nepsat („Na objednávku“ neuvádíme, 26. 11. 2026); web v datech nerozliší „u dodavatele“ od „není“
+  function dost(p) { return DOST[p[4]] ? '<span class="k4h-s k4h-s' + p[4] + '">' + DOST[p[4]] + '</span>' : ''; }
   function skupina(i) { var g = D.p[i][9]; return g != null && GRP[g] && GRP[g].length > 1 ? GRP[g].slice().sort(function (a, b) { return (LAB[a] || '').localeCompare(LAB[b] || '', 'cs'); }) : []; }
   function varianty(i) { return skupina(i).filter(function (j) { return j !== i; }); }
   function nVar(n) { return n + ' ' + (n === 1 ? 'další varianta' : n < 5 ? 'další varianty' : 'dalších variant'); }
@@ -184,7 +185,7 @@
     return '<div class="k4h-vt">' + ids.map(function (j) {
       var p = D.p[j];
       return '<a href="' + esc(p[0]) + '" title="' + esc(p[1]) + '"' + (j === cur ? ' class="k4h-cur"' : '') + '><span class="k4h-vi" style="background-image:url(\'' + esc(img(p, 0)) + '\')"></span><span class="k4h-vl">' + esc(LAB[j] || p[1]) + '</span>' +
-        (p[4] === 1 ? '' : '<span class="k4h-vn">' + DOST[p[4]] + '</span>') + '</a>';
+        (p[4] === 1 || !DOST[p[4]] ? '' : '<span class="k4h-vn">' + DOST[p[4]] + '</span>') + '</a>';
     }).join('') + '</div>';
   }
   function vKat(i, path) { var c = D.c[D.p[i][6]]; return !!c && (c[0] === path || c[0].lastIndexOf(path + ' > ', 0) === 0); }
@@ -317,7 +318,7 @@
       html += '<div class="k4h-list">' + it.slice(0, 8).map(function (i) {
         var p = D.p[i], v = varianty(i);
         return '<div class="k4h-itw"><a class="k4h-it" href="' + esc(p[0]) + '"><span class="k4h-img" style="background-image:url(\'' + esc(img(p, 0)) + '\')"></span><span><span class="k4h-n">' + esc(p[1]) + '</span><span class="k4h-p">' + cena(p[3]) +
-          '<span class="k4h-s k4h-s' + p[4] + '">' + DOST[p[4]] + '</span></span></span></a>' +
+          dost(p) + '</span></span></a>' +
           (v.length ? '<button type="button" class="k4h-vbtn" data-i="' + i + '">+ ' + nVar(v.length) + '</button>' : '') + '</div>';
       }).join('') + '</div><a class="k4h-all" href="/hledat/?q=' + encodeURIComponent(q) + '">Zobrazit všech ' + it.length + ' výsledků</a>';
     } else html += '<div class="k4h-none">K „' + esc(q) + '“ jsme nic nenašli. Zkuste jiné slovo, nebo nám zavolejte na 604 998 800.</div>';
@@ -420,7 +421,7 @@
           if (!list.length) h += '<p class="k4h-none">Nic jsme nenašli. Zkuste jiné slovo, nebo nám zavolejte na 604 998 800 – poradíme.</p>';
           h += '<div class="k4h-grid">' + list.slice(0, state.shown).map(function (i) {
             var p = D.p[i], v = varianty(i);
-            return '<div class="k4h-card"><a href="' + esc(p[0]) + '"><span class="k4h-img" style="background-image:url(\'' + esc(img(p, 1)) + '\')"></span><span class="k4h-n">' + esc(p[1]) + '</span><span class="k4h-p">' + cena(p[3]) + '</span><span class="k4h-s k4h-s' + p[4] + '">' + DOST[p[4]] + '</span></a>' +
+            return '<div class="k4h-card"><a href="' + esc(p[0]) + '"><span class="k4h-img" style="background-image:url(\'' + esc(img(p, 1)) + '\')"></span><span class="k4h-n">' + esc(p[1]) + '</span><span class="k4h-p">' + cena(p[3]) + '</span>' + dost(p) + '</a>' +
               (v.length ? '<button type="button" class="k4h-vbtn" data-i="' + i + '">+ ' + nVar(v.length) + '</button>' : '') + '</div>';
           }).join('') + '</div>';
           if (list.length > state.shown) h += '<button class="k4h-more" id="k4h-more">Zobrazit další (' + (list.length - state.shown) + ')</button>';
