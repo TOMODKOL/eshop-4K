@@ -15,14 +15,14 @@ final class Notify
      * E-mail zákazníkovi. Vratky a reklamace založené před ostrým provozem (mail.customer_from) žádné e-maily
      * zákazníkům nedostávají – jen záznam do logu (staré reklamace z Pohody i zkušební vratky).
      */
-    private static function toCustomer(array $ret, string $subject, string $html): void
+    private static function toCustomer(array $ret, string $subject, string $html, array $attachments = []): void
     {
         $from = trim((string) Config::get('mail.customer_from', ''));
         if ($from !== '' && (string) ($ret['created_at'] ?? '') < $from) {
             @file_put_contents(APP_ROOT . '/storage/log/mail.log', date('c') . "  NEODESLÁNO (založeno před ostrým provozem) " . ($ret['no'] ?? '') . ' → ' . $ret['email'] . ': ' . $subject . "\n", FILE_APPEND);
             return;
         }
-        Mailer::send($ret['email'], $subject, $html);
+        Mailer::send($ret['email'], $subject, $html, null, $attachments);
     }
 
     public static function statusUrl(array $ret): string
@@ -112,6 +112,25 @@ final class Notify
             'url' => self::statusUrl($ret),
         ]);
         self::toCustomer($ret, Service::title($ret, $lines) . ($reminder ? ' – připomínáme doplatek ' : ' – doplatek ') . money($amount), $html);
+    }
+
+    /** Vratka peněz: dobropis je vystavený → e-mail s dobropisem v PDF (jako ruční e-mail z Pohody „Vratka vyřízena – dobropis č. …“). */
+    public static function creditNote(array $ret, ?string $pdf): void
+    {
+        if ($ret['email'] === '') return;
+        $lines = Service::lines((int) $ret['id']);
+        $no = (string) $ret['doc_no'];
+        $html = View::render('vratky:email', [
+            'kicker' => 'Vratka vyřízena',
+            'heading' => 'Vratka dorazila, vše je v pořádku',
+            'ret' => array_merge($ret, ['status' => 'vyrizeno']), 'lines' => $lines, 'showCode' => false,
+            'text' => "Vrácené zboží k nám v pořádku dorazilo a vratku jsme zpracovali. Děkujeme za trpělivost.\n\n"
+                . 'Opravný daňový doklad (dobropis) č. ' . $no . ($pdf !== null ? ' najdete v příloze tohoto e-mailu.' : '.') . "\n\n"
+                . 'Částku ' . money(Service::payout($ret)) . ' vám v nejbližších dnech pošleme na účet ' . $ret['bank_account'] . ', který jste nám uvedli. Nic dalšího už nemusíte řešit.',
+            'url' => self::statusUrl($ret),
+        ]);
+        $att = $pdf !== null ? [['name' => 'Dobropis_' . $no . '.pdf', 'mime' => 'application/pdf', 'data' => $pdf]] : [];
+        self::toCustomer($ret, 'Vratka vyřízena – dobropis č. ' . $no, $html, $att);
     }
 
     /** Doplatek přišel (pomocník ho uvidí zlikvidovaný v Pohodě). */

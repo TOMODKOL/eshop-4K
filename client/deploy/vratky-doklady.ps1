@@ -68,6 +68,7 @@ function MServer([string]$id, [string]$obsah, [string]$poznamka) {
   xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
   xmlns:ord="http://www.stormware.cz/schema/version_2/order.xsd"
   xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
+  xmlns:prn="http://www.stormware.cz/schema/version_2/print.xsd"
   xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
 $obsah
 </dat:dataPack>
@@ -343,6 +344,22 @@ $polozky
 try {
     $vyplaty = @((Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/doklady') -Headers $apiHlav -TimeoutSec 60).payouts)
     if ($vyplaty.Count -gt 0) {
+        # e-mail zákazníkovi s dobropisem: vytisknout PDF z Pohody (sestava 190 jako faktury) a poslat do Clientu, ten e-mail odešle (jen jednou)
+        foreach ($v in @($vyplaty | Where-Object { $_.mail })) {
+            $c = ([string]$v.doc_no) -replace "[^0-9A-Za-z]", ''
+            $pdf = ''
+            try {
+                $dp = MServer ("vratka_pdf_" + $c) ("<dat:dataPackItem id=`"pdf-$c`" version=`"2.0`"><prn:print version=`"1.0`"><prn:record agenda=`"vydane_faktury`"><ftr:queryFilter><ftr:filter>FA.Cislo = '$c'</ftr:filter></ftr:queryFilter></prn:record>" +
+                    "<prn:printerSettings><prn:report><prn:id>190</prn:id></prn:report><prn:pdf><prn:fileName>C:\Users\Public\pomocnik_odd_$c.pdf</prn:fileName>" +
+                    '<prn:binaryData><prn:responseXml>true</prn:responseXml><prn:removeFile>true</prn:removeFile></prn:binaryData></prn:pdf></prn:printerSettings></prn:print></dat:dataPackItem>') 'Vratky - tisk dobropisu do PDF'
+                $data = $dp.SelectSingleNode("//*[local-name()='data' and @code='base64']")
+                if ($data) { $pdf = $data.InnerText -replace '\s', '' }
+            } catch { Zapis-Log $uloha ("CHYBA tisku dobropisu {0}: {1} – zkusí se znovu" -f $c, $_.Exception.Message); continue }   # výpadek mServeru → příště
+            $json = ConvertTo-Json -InputObject @{ results = @(@{ no = [string]$v.no; state = 'dobropis_mail'; doc_no = $c; pdf = $pdf }) } -Depth 5 -Compress
+            Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/doklady') -Method Post -Body ([Text.Encoding]::UTF8.GetBytes($json)) `
+                -ContentType 'application/json; charset=utf-8' -Headers $apiHlav -TimeoutSec 120 | Out-Null
+            Zapis-Log $uloha ("E-MAIL  {0}: dobropis {1} zákazníkovi{2}" -f $v.no, $c, $(if ($pdf) { ' s PDF' } else { ' BEZ PDF (tisk nevyšel)' }))
+        }
         $cisla = ($vyplaty | ForEach-Object { "'" + (([string]$_.doc_no) -replace "[^0-9A-Za-z]", '') + "'" }) -join ','
         $d = MServer 'vratky_uhrady_odd' ("<dat:dataPackItem id=`"odd`" version=`"2.0`"><lst:listInvoiceRequest version=`"2.0`" invoiceType=`"issuedCorrectiveTax`" invoiceVersion=`"2.0`"><lst:requestInvoice><ftr:queryFilter><ftr:filter>FA.Cislo IN ($cisla) AND FA.KcLikv = 0</ftr:filter></ftr:queryFilter></lst:requestInvoice></lst:listInvoiceRequest></dat:dataPackItem>") 'Vratky - uhrada ODD (jen cteni)'
         $uhrazene = @{}

@@ -509,6 +509,7 @@ Http::post('/api/sync/doklady', function () use ($syncAuth) {
     foreach ((array) ($d['results'] ?? []) as $x) {
         if (!is_array($x)) continue;
         if (($x['state'] ?? '') === 'proplaceno') { if (Service::payoutDone($x)) $n++; continue; }   // ODD uhrazený v bance
+        if (($x['state'] ?? '') === 'dobropis_mail') { if (Service::creditNoteMail($x)) $n++; continue; }   // PDF dobropisu → e-mail zákazníkovi
         if (Service::docResult($x)) $n++;
     }
     Http::json(['ok' => true, 'updated' => $n]);

@@ -220,6 +220,11 @@ $x5 = Service::create($o4, ['lines' => [$mk($i4[1], 'vratit')], 'ship' => 'zbox'
 \App\Core\Db::exec("UPDATE returns SET status = 'dorazilo', doc_type = 'odd', doc_state = 'hotovo', doc_no = '260400300' WHERE id = ?", [$x5['id']]);
 $pp = array_values(array_filter(Service::payoutPending(), fn($p) => $p['no'] === $x5['no']));
 t(count($pp) === 1 && $pp[0]['doc_no'] === '260400300', 'pomocník hlídá úhradu ODD 260400300');
+t(($pp[0]['mail'] ?? false) === true, 'dobropis ještě nebyl poslán e-mailem');
+$fakePdf = base64_encode("%PDF-1.4\n%test\n");
+t(Service::creditNoteMail(['no' => $x5['no'], 'pdf' => $fakePdf]) && !empty(Service::get((int) $x5['id'])['doc_mailed_at']), 'PDF dobropisu → e-mail zákazníkovi');
+t(!Service::creditNoteMail(['no' => $x5['no'], 'pdf' => $fakePdf]), 'e-mail s dobropisem jen jednou');
+@unlink(\App\Modules\Vratky\Invoices::path('260400300', 'faktury'));
 t(Service::payoutDone(['no' => $x5['no'], 'state' => 'proplaceno']) && Service::get((int) $x5['id'])['status'] === 'vyrizeno', 'ODD uhrazen → Vyřízeno');
 t(!Service::payoutDone(['no' => $x5['no'], 'state' => 'proplaceno']), 'podruhé už nic (žádný druhý e-mail)');
 \App\Core\Db::exec('DELETE FROM return_events WHERE return_id = ?', [$x5['id']]); \App\Core\Db::exec('DELETE FROM return_lines WHERE return_id = ?', [$x5['id']]); \App\Core\Db::exec('DELETE FROM returns WHERE id = ?', [$x5['id']]);

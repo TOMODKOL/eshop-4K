@@ -1025,9 +1025,24 @@ final class Service
     public static function payoutPending(): array
     {
         $out = [];
-        foreach (Db::all("SELECT no, doc_no FROM returns WHERE doc_type = 'odd' AND doc_state = 'hotovo' AND doc_no IS NOT NULL AND doc_no <> ''
-            AND status NOT IN ('vyrizeno', 'zamitnuto') ORDER BY id") as $r) $out[] = ['no' => $r['no'], 'doc_no' => $r['doc_no']];
+        foreach (Db::all("SELECT no, doc_no, doc_mailed_at FROM returns WHERE doc_type = 'odd' AND doc_state = 'hotovo' AND doc_no IS NOT NULL AND doc_no <> ''
+            AND status NOT IN ('vyrizeno', 'zamitnuto') ORDER BY id") as $r) $out[] = ['no' => $r['no'], 'doc_no' => $r['doc_no'], 'mail' => empty($r['doc_mailed_at'])];
         return $out;
+    }
+
+    /** Pomocník poslal PDF dobropisu (nebo hlásí, že tisk nevyšel) → zákazník dostane e-mail „Vratka vyřízena – dobropis č. …“, jen jednou. */
+    public static function creditNoteMail(array $x): bool
+    {
+        $r = self::byNo((string) ($x['no'] ?? ''));
+        if (!$r || $r['doc_type'] !== 'odd' || $r['doc_state'] !== 'hotovo' || !empty($r['doc_mailed_at'])) return false;
+        $pdf = null;
+        if (!empty($x['pdf']) && Invoices::save((string) $r['doc_no'], (string) $x['pdf'], 'faktury') === null) $pdf = (string) file_get_contents(Invoices::path((string) $r['doc_no'], 'faktury'));
+        Db::exec('UPDATE returns SET doc_mailed_at = ? WHERE id = ?', [Db::now(), $r['id']]);
+        Notify::creditNote($r, $pdf);
+        Db::insert('return_events', ['return_id' => $r['id'], 'status' => null,
+            'note' => 'Zákazník dostal e-mail s dobropisem ' . $r['doc_no'] . ($pdf !== null ? ' (PDF v příloze).' : ' (bez PDF – tisk z Pohody nevyšel).'),
+            'public' => 0, 'user_id' => null, 'created_at' => Db::now()]);
+        return true;
     }
 
     /** Pomocník: opravný doklad je v Pohodě uhrazený (peníze odešly z banky) → Vyřízeno. E-mail se neposílá – peníze už má zákazník na účtu (26. 11. 2026). */

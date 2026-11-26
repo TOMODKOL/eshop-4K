@@ -30,7 +30,7 @@ final class Installer
     }
 
     /** Doplnění sloupců do už nainstalované databáze (na Forpsi). Značka v storage/ zajistí, že se to spustí jen jednou. */
-    public const SCHEMA = 14;
+    public const SCHEMA = 15;
 
     /** Tabulka plateb kartou (GP webpay) z sql/mysql.sql – pro doplnění do už nainstalované databáze. */
     public static function cardPaymentsSql(): string
@@ -94,6 +94,8 @@ final class Installer
             'ALTER TABLE returns ADD COLUMN check_mail_at DATETIME NULL',
             // v12: doplatek kartou přes GP webpay
             self::cardPaymentsSql(),
+            // v15: e-mail zákazníkovi s dobropisem (PDF z Pohody)
+            'ALTER TABLE returns ADD COLUMN doc_mailed_at DATETIME NULL',
         ];
         foreach ($cols as $sql) {
             try { Db::exec($sql); } catch (\Throwable $e) {
@@ -102,6 +104,9 @@ final class Installer
         }
         // v13/v14 (v14 = znovu, na serveru chyběla pravidla dopravy kvůli chybě v nasad-client.ps1): poštovné za vrácení se neodečítá, když si zákazník nechá zboží aspoň za hranici dopravy zdarma
         if (class_exists(\App\Modules\Vratky\Service::class)) \App\Modules\Vratky\Service::recheckPostage();
+        // v15: starší dobropisy (do 26. 11. 2026 15:40) posílala prodejna ručně z Pohody → znovu neposílat
+        Db::exec("UPDATE returns SET doc_mailed_at = ? WHERE doc_type = 'odd' AND doc_state = 'hotovo' AND doc_mailed_at IS NULL
+            AND id NOT IN (SELECT return_id FROM return_events WHERE note LIKE '%vystaven v Pohodě.%' AND created_at >= '2026-11-26 15:40:00')", [Db::now()]);
         @file_put_contents($mark, date('c'));
     }
 

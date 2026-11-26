@@ -9,7 +9,8 @@ namespace App\Core;
  */
 final class Mailer
 {
-    public static function send(string $to, string $subject, string $html, ?string $text = null): bool
+    /** @param array $attachments [['name' => 'Dobropis_260400266.pdf', 'mime' => 'application/pdf', 'data' => <bajty>], …] */
+    public static function send(string $to, string $subject, string $html, ?string $text = null, array $attachments = []): bool
     {
         // Testovací režim: všechno jen na jednu adresu (mail.redirect_to), původní příjemce v předmětu a v pruhu nahoře.
         $redirect = trim((string) Config::get('mail.redirect_to', ''));
@@ -45,6 +46,17 @@ final class Mailer
             "--$boundary\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" .
             chunk_split(base64_encode($html)) .
             "--$boundary--\r\n";
+        if ($attachments) {   // multipart/mixed: text + přílohy
+            $mixed = 'm' . bin2hex(random_bytes(8));
+            foreach ($headers as $i => $h) if (str_starts_with($h, 'Content-Type:')) $headers[$i] = 'Content-Type: multipart/mixed; boundary="' . $mixed . '"';
+            $parts = "--$mixed\r\nContent-Type: multipart/alternative; boundary=\"$boundary\"\r\n\r\n" . $body;
+            foreach ($attachments as $a) {
+                $name = preg_replace('/[^A-Za-z0-9._-]+/', '_', (string) $a['name']);
+                $parts .= "--$mixed\r\nContent-Type: " . ($a['mime'] ?? 'application/octet-stream') . "; name=\"$name\"\r\nContent-Transfer-Encoding: base64\r\n"
+                    . "Content-Disposition: attachment; filename=\"$name\"\r\n\r\n" . chunk_split(base64_encode((string) $a['data']));
+            }
+            $body = $parts . "--$mixed--\r\n";
+        }
         $data = implode("\r\n", $headers) . "\r\n\r\n" . $body;
 
         if (!Config::get('mail.enabled')) {
