@@ -35,7 +35,7 @@ Stav k 19. 11. 2026: na webu je 2 962 stránek s naším popisem (audit 18. 11.:
 - výřez (průchozí) / středový kanál
 - závody (ne granfondo)
 - treter (2. pád množného čísla)
-- nepoužívat „stabilní“ ani „temeno“
+- nepoužívat „temeno“. Slovo „stabilní“ zakázané není – vadil jen jeden špatný překlad (nadpis sedla). Kde dává smysl (kola v bočním větru apod.), použít ho lze.
 - košík = držák na láhev, bidon = láhev
 - Další výrazy: memory soubor /topics/eshop-terminologie.md.
 
@@ -189,6 +189,13 @@ Barvy jsou na webu samostatné produkty se stejným textem, což Google bere jak
 2. Vzít aktuální popis z webu (raw_desc), ne starý soubor. Měnit jen to, co je potřeba.
 3. Připravit CSV pro import (bsadmin → Importy): `"Kod";"Popis"`, ASCII s HTML entitami (`&#233;`), oddělovač `;`, vše v uvozovkách, CRLF, jeden soubor do 4,5 MB. Kód masteru i všech variant dostane stejný popis. Krátký popis jen ve sloupci KratkyPopis, nikdy prázdný (prázdný by smazal stávající).
 4. Náhled `NAHLED-<značka>.html` a zkontrolovat ho na šířce 390 px i 1440 px.
+4a. **Povinná kontrola obsahu před předáním** (nejen vzhledu). Skriptem projít všechna CSV a pro každý model vypsat počet fotek v galerii a počet obrázků u technologií. Každý model musí mít:
+   - vlastní akční fotky (z jízdy, na postavě) ze stránky výrobce, ne jen společné fotky celé značky,
+   - obrázky u technologií tam, kde je výrobce má,
+   - video výrobce, pokud existuje,
+   - alt texty, které sedí na daný model (ne „Mavic Cosmic“ u Ksyrium).
+   Výsledek porovnat s nejlepším hotovým vzorem stejné kategorie. Každý model s méně než 2 fotkami v galerii nebo bez obrázků technologií vysvětlit uživateli (výrobce nic nemá) nebo doplnit.
+   Fotky hledat nejen na stránce produktu, ale i na stránkách řad a kampaní výrobce (u Zipp `sram.com/en/zipp/road/series/<řada>`, `…/mountain/series/…`; u Mavic `ambiance_paysage` a `product_benefit_image` ve stránce modelu). Stránka produktu u Zipp má jen fotky na bílém pozadí. (Chyba 22. 11. 2026: popisy Zipp měly jen 4 společné fotky a technologie bez obrázků.)
 5. Úkol do Todoistu (projekt Otík): které soubory nahrát na FTP, které CSV importovat a **které sloupce mají být aktivní** (u popisů jen Kod a Popis).
 6. Po importu a doběhnutí robota ověřit na webu každou stránku (hledat název videa nebo novou větu v HTML). Teprve pak úkol odškrtnout.
 7. Když soubor po předání uživateli změním, musí ho naimportovat znovu. Napsat to do úkolu, jinak na webu zůstane stará verze (stalo se 18. 11. u Giro a Lake).
