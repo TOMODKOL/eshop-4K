@@ -1,0 +1,27 @@
+<!-- 4K – ostřejší náhledy ve výpisech (do vyřešení u BSSHOP): mřížka velikost 0 (200 px) → 1 (1000 px WebP), řádkový výpis velikost 3 (50 px) → 0 (200 px) -->
+<script>
+(function () {
+  /* adresa obrázku: cdn.4kluciodkol.cz/images/poradi/hash/velikost/nazev */
+  function zmen(v, z, na) {
+    var c = v.split('/'), i = c.indexOf('images');
+    if (i == -1 || c[i + 3] !== z) return v;
+    c[i + 3] = na;
+    return c.join('/');
+  }
+  function fix() {
+    var imgs = document.querySelectorAll('img.thumbnail, #ProductListCustom1 img.miniThumbnail');
+    for (var k = 0; k != imgs.length; k++) {
+      var i = imgs[k], radek = i.classList.contains('miniThumbnail');
+      ['data-src', 'src'].forEach(function (a) {
+        var v = i.getAttribute(a);
+        if (!v || v.indexOf('cdn.4kluciodkol.cz/images/') == -1) return;
+        var n = radek ? zmen(v, '3', '0') : zmen(v, '0', '1');
+        if (n != v) i.setAttribute(a, n);
+      });
+    }
+  }
+  fix();
+  new MutationObserver(fix).observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+<!-- 4K – ostřejší náhledy (konec) -->
