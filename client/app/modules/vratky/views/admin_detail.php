@@ -43,8 +43,8 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
       $st = (string) $ret['status']; $byPacketa = Service::usesPacketa((string) $ret['ship_method']);
       if ($st === 'novy' && $byPacketa) $next = 'Na cestě se přepne samo, až zákazník zásilku podá u Zásilkovny.';
       elseif ($st === 'na_ceste' && $byPacketa) $next = 'Dorazilo se přepne samo, až Zásilkovna zásilku doručí k nám.';
-      elseif (in_array($st, ['novy', 'na_ceste'], true)) $next = 'Až zboží převezmete, klikněte vpravo na „Zboží převzato a je v pořádku“.';
-      elseif ($st === 'dorazilo' && !in_array($docState, ['ceka', 'navrh', 'hotovo'], true) && $plan['type']) $next = 'Zkontrolujte zboží a klikněte vpravo na „Zboží je v pořádku“. Doklad i e-mail zákazníkovi půjdou samy.';
+      elseif (in_array($st, ['novy', 'na_ceste'], true)) $next = 'Až zboží převezmete a zkontrolujete, potvrďte to tlačítkem níže.';
+      elseif ($st === 'dorazilo' && !in_array($docState, ['ceka', 'navrh', 'hotovo'], true) && $plan['type']) $next = 'Zkontrolujte zboží a potvrďte tlačítkem níže.';
       elseif ($st === 'dorazilo' && $docState === 'hotovo' && $ret['doc_type'] === 'odd') $next = 'Pošlete peníze. Vyřízeno pak označíte ve výpisu „K proplacení“ – zákazník dostane e-mail.';
       elseif ($st === 'dorazilo' && $docState === 'hotovo') $next = 'Odešlete nové zboží a klikněte níže na „Nové zboží odesláno“.';
       elseif (in_array($st, ['dorazilo', 'v_reseni'], true) && $claim) $next = 'Stav se mění podle reklamace v Pohodě.';
@@ -55,6 +55,17 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
       <div class="prog"><div class="bars"><?php foreach ($pSteps as $i => $lab): ?><i class="<?= $i <= $pCur ? ($pRej && $i === $pCur ? 'rej' : 'ok') : '' ?>"></i><?php endforeach; ?></div>
         <div class="steplabs"><?php foreach ($pSteps as $i => $lab): ?><span<?= $i === $pCur ? ' class="cur"' : '' ?>><?= e($lab) ?></span><?php endforeach; ?></div></div>
       <?php if ($next !== ''): ?><span class="hint" style="font-size:13px"><?= e($next) ?></span><?php endif; ?>
+        <?php if ($plan['type'] && !in_array($docState, ['ceka', 'navrh', 'hotovo'], true) && !($ret['checked_at'] && !empty($ret['zf_no']) && empty($ret['zf_paid'])) && $open): ?>
+      <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
+        <input type="hidden" name="act" value="<?= $docState === 'chyba' ? 'doklad_znovu' : 'doklad' ?>">
+        <?php foreach ($lines as $l): if ($l['action'] !== 'vymenit') continue; if ((string) ($l['new_code'] ?? '') !== ''): ?><input type="hidden" name="new_code[<?= (int) $l['id'] ?>]" value="<?= e((string) $l['new_code']) ?>"><?php continue; endif; ?>
+          <div class="field" style="margin:0"><label class="l" for="nc<?= (int) $l['id'] ?>">Kód zásoby – <?= e(($l['new_name'] ?? '') !== '' ? $l['new_name'] : 'nová velikost ' . $l['size_to']) ?></label>
+            <input class="f" id="nc<?= (int) $l['id'] ?>" name="new_code[<?= (int) $l['id'] ?>]" value="<?= e((string) ($l['new_code'] ?? '')) ?>" placeholder="kód z Pohody" required></div>
+        <?php endforeach; ?>
+        <button class="btn" style="align-self:flex-start"><?= $docState === 'chyba' ? 'Zkusit znovu' : (in_array($ret['status'], ['novy', 'na_ceste'], true) ? 'Zboží převzato a je v pořádku ✓' : 'Zboží je v pořádku ✓') ?></button>
+        <span class="hint">Doklad v Pohodě i e-mail zákazníkovi pak půjdou samy.</span>
+      </form>
+      <?php endif; ?>
       <?php if ($open && $st === 'dorazilo' && $docState === 'hotovo' && $ret['doc_type'] !== 'odd'): ?>
       <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
         <input type="hidden" name="status" value="vyrizeno"><input type="hidden" name="notify" value="1">
@@ -154,18 +165,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
           <div style="font-size:13px;display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line2);padding-top:6px"><span><?= e($i['name']) ?><?= $i['code'] !== '' ? ' <span class="hint">(' . e($i['code']) . ')</span>' : '' ?></span><span style="white-space:nowrap"><?= (int) $i['qty'] ?> × <?= e(money($i['unit_price'])) ?></span></div>
         <?php endforeach; ?>
         <?php if ($docState === 'chyba'): ?><div class="warn" style="font-size:13px"><?= e((string) $ret['doc_error']) ?></div><?php endif; ?>
-        <?php if ($ret['checked_at'] && !empty($ret['zf_no']) && empty($ret['zf_paid'])): ?><span class="hint">Zboží je zkontrolované. Doklad se vystaví sám, až přijde doplatek.</span>
-        <?php elseif (!in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true)): ?>
-        <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
-          <input type="hidden" name="act" value="<?= $docState === 'chyba' ? 'doklad_znovu' : 'doklad' ?>">
-          <?php foreach ($lines as $l): if ($l['action'] !== 'vymenit') continue; if ((string) ($l['new_code'] ?? '') !== ''): ?><input type="hidden" name="new_code[<?= (int) $l['id'] ?>]" value="<?= e((string) $l['new_code']) ?>"><?php continue; endif; ?>
-            <div class="field" style="margin:0"><label class="l" for="nc<?= (int) $l['id'] ?>">Kód zásoby – <?= e(($l['new_name'] ?? '') !== '' ? $l['new_name'] : 'nová velikost ' . $l['size_to']) ?></label>
-              <input class="f" id="nc<?= (int) $l['id'] ?>" name="new_code[<?= (int) $l['id'] ?>]" value="<?= e((string) ($l['new_code'] ?? '')) ?>" placeholder="kód z Pohody" required></div>
-          <?php endforeach; ?>
-          <button class="btn" style="align-self:flex-start"><?= $docState === 'chyba' ? 'Zkusit znovu' : (in_array($ret['status'], ['novy', 'na_ceste'], true) ? 'Zboží převzato a je v pořádku ✓' : 'Zboží je v pořádku ✓') ?></button>
-          <span class="hint">Doklad v Pohodě i e-mail zákazníkovi pak půjdou samy.</span>
-        </form>
-        <?php endif; ?>
+        <?php if ($ret['checked_at'] && !empty($ret['zf_no']) && empty($ret['zf_paid'])): ?><span class="hint">Zboží je zkontrolované. Doklad se vystaví sám, až přijde doplatek.</span><?php endif; ?>
       <?php endif; ?>
     </div>
     <?php endif; ?>
