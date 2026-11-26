@@ -475,7 +475,7 @@ try {
                 if (-not $u) { throw "Číslo účtu zákazníka '$($r.bank_account)' neumím zapsat – doklad vystavte ručně." }
                 $ucetX = "<inv:paymentAccount><typ:accountNo>$($u.cislo)</typ:accountNo><typ:bankCode>$($u.banka)</typ:bankCode></inv:paymentAccount>"
             }
-            $text = if ($odd) { "Opravný daňový doklad k daňovému dokladu č. $fvNo`nDůvod opravy: Vratka eshop" } else { "Výměna zboží k faktuře č. $fvNo" + $(if ($xo) { ", objednávka $xo" } else { '' }) }
+            $text = if ($odd) { "Opravný daňový doklad k daňovému dokladu č. $fvNo Důvod opravy: Vratka eshop" } else { "Výměna zboží k faktuře č. $fvNo" + $(if ($xo) { ", objednávka $xo" } else { '' }) }
             $hlavicka = @"
 <inv:invoiceHeader>
 <inv:invoiceType>$(if ($odd) { 'issuedCorrectiveTax' } else { 'issuedInvoice' })</inv:invoiceType>
