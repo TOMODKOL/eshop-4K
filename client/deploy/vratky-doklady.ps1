@@ -338,7 +338,7 @@ $polozky
     Zapis-Log $uloha ('CHYBA daňové doklady k zálohám {0}' -f $_.Exception.Message)
 }
 
-# ===== 1c. Peníze odeslány: opravný doklad (ODD) z vratky je v Pohodě uhrazený z banky → Client vratku uzavře a pošle zákazníkovi e-mail =====
+# ===== 1c. Peníze odeslány: opravný doklad (ODD) z vratky je v Pohodě uhrazený z banky → Client vratku uzavře (bez e-mailu zákazníkovi) =====
 # Jen čtení Pohody. Úhrada = KcLikv 0 a vyplněné datum likvidace (bankovní pohyb spárovaný s ODD).
 try {
     $vyplaty = @((Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/doklady') -Headers $apiHlav -TimeoutSec 60).payouts)
@@ -353,7 +353,7 @@ try {
         foreach ($v in $vyplaty) {
             if (-not $uhrazene.ContainsKey([string]$v.doc_no)) { continue }
             Zpet ([string]$v.no) 'proplaceno' ([string]$v.doc_no) ''
-            Zapis-Log $uloha ("PROPLACENO {0}: ODD {1} uhrazen v Pohodě → Vyřízeno, zákazník dostal e-mail" -f $v.no, $v.doc_no)
+            Zapis-Log $uloha ("PROPLACENO {0}: ODD {1} uhrazen v Pohodě → Vyřízeno" -f $v.no, $v.doc_no)
         }
     }
 } catch {

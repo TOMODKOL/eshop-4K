@@ -33,7 +33,7 @@ $typLabel = ['reklamace' => 'Reklamace', 'vymena' => 'Výměna', 'vratka' => 'Vr
   <form class="card" method="post" action="<?= url('/admin/vratky/odeslano') ?>" data-once>
     <?= csrf_field() ?>
     <strong>Peníze k odeslání</strong>
-    <span class="hint">Opravný daňový doklad je v Pohodě. Pošlete peníze příkazem (VS = číslo dokladu) – jakmile platba projde výpisem z banky, vratka se uzavře sama a zákazník dostane e-mail. Tlačítko dole jen když to spěchá.</span>
+    <span class="hint">Opravný daňový doklad je v Pohodě. Pošlete peníze příkazem (VS = číslo dokladu) – jakmile platba projde výpisem z banky, vratka se uzavře sama (bez e-mailu, peníze už zákazník má). Tlačítko dole jen když to spěchá – to pošle zákazníkovi e-mail.</span>
     <?php if (!$rows): ?><span class="hint">Nic nečeká.</span><?php endif; ?>
     <?php foreach ($rows as $r): ?>
       <label class="chk" style="align-items:flex-start"><input type="checkbox" name="ids[]" value="<?= (int) $r['id'] ?>" checked>
