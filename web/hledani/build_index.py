@@ -68,7 +68,10 @@ MODEL = {'sl', 'lite', 'race', 'aero', 'ultra', 'mips', 'team', 'comp', 'hi-mod'
          # skupina = jen barvy téhož výrobku: jiná velikost / provedení / model telefonu je jiný výrobek
          'pro', 'max', 'plus', 'mini', 'standard', 'air', 'medium', 'small', 'large', 'micro', 'long', 'short',
          'wide', 'narrow', 'regular', 'xs', 's', 'm', 'l', 'xl', 'xxl', 'uni', 'slim', 'stand', 'vent', 'vhb',
-         'ultra', 'fz', 'hz', 'ls', 'ss', 'half', 'zip', 'light'}
+         'ultra', 'fz', 'hz', 'ls', 'ss', 'half', 'zip', 'light',
+         # kola: jiné provedení = jiná výbava („Synapse Carbon 2“ × „… SmartSense“, „Topstone Carbon 1 AXS“ × „… Lefty AXS“,
+         # „Topstone CAAD 3 Cues 1x“ × „… Flat Bar“, „Esecta S“ × „Esecta S EQ“)
+         'lefty', 'eq', 'smartsense', 'bar'}
 BARVA_I_MODEL = {'light', 'air', 'carbon'}   # „Light Black“, „Air Blue“: když za nimi jde další slovo, může to být barva
 def slova_modelu(r):   # slova modelu/velikosti ve zbytku názvu (kromě „Light Black“ apod., kde jde o barvu)
     out = []
@@ -82,11 +85,28 @@ def slova_modelu(r):   # slova modelu/velikosti ve zbytku názvu (kromě „Ligh
     return sorted(out)
 def zaklad(n):   # „Peak Design Everyday Case - iPhone 14 Pro - Charcoal“ → vše před posledním „ - “
     return n.rsplit(' - ', 1)[0].lower() if ' - ' in n else None
+# stejný název, jiná specifikace (jiný ročník kola) → nikdy do jedné skupiny; seznam v rozdelit.json
+import os
+ROZ = {}
+_rf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rozdelit.json')
+if os.path.exists(_rf):
+    for model, skupiny in json.load(open(_rf, encoding='utf-8')).items():
+        if model.startswith('_'): continue
+        for si, kody in enumerate(skupiny):
+            for k in kody: ROZ[k] = (model, si)
 parent = list(range(len(prods)))
+znacky = [{ROZ[p[7]]} if p[7] in ROZ else set() for p in prods]   # (model, skupina) v každé skupině
 def find(i):
     while parent[i] != i:
         parent[i] = parent[parent[i]]; i = parent[i]
     return i
+def lze_spojit(a, b):
+    za, zb = znacky[find(a)], znacky[find(b)]
+    return not any(m1 == m2 and s1 != s2 for m1, s1 in za for m2, s2 in zb)
+def spoj(a, b):
+    ra, rb = find(a), find(b)
+    if ra == rb: return
+    parent[ra] = rb; znacky[rb] |= znacky[ra]
 buckets = {}
 for i, p in enumerate(prods):
     if any(k in cats[p[6]][0] for k in SKUPINY_NE) or not brands[p[5]]: continue
@@ -105,8 +125,9 @@ for (ci, bi), ids in buckets.items():
             mx = 5 if l >= bpos + 3 else 3   # dlouhé barvy („Hydrogen White/Uranium Black Matt“) jen u delšího názvu modelu
             if l >= bpos + 2 and 0 < len(ra) <= mx and 0 < len(rb) <= mx and nodig(ra) and nodig(rb) \
                     and slova_modelu(ra) == slova_modelu(rb) \
-                    and zaklad(prods[ids[a]][1]) == zaklad(prods[ids[b]][1]):
-                parent[find(ids[a])] = find(ids[b])
+                    and zaklad(prods[ids[a]][1]) == zaklad(prods[ids[b]][1]) \
+                    and lze_spojit(ids[a], ids[b]):
+                spoj(ids[a], ids[b])
 for i, p in enumerate(prods): p.append(find(i))
 print('skupin s více barvami', sum(1 for i in range(len(prods)) if sum(1 for q in prods if q[9] == i) > 1))
 json.dump({'v': datetime.date.today().isoformat(), 'c': cats, 'b': brands, 'p': prods}, open(out, 'w', encoding='utf-8'),

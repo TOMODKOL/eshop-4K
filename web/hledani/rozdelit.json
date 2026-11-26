@@ -1,0 +1,93 @@
+{
+ "_popis": "Kola se stejným názvem, ale jinou specifikací komponentů (jiný ročník). Ve vyhledávání se neseskupí dohromady. Každá položka = model, uvnitř skupiny kódů (master/SKU z e-shopu), které spolu seskupit smějí. Porovnáno podle specifikace z feedu Aspire bez SKU, barvy, hmotnosti a ročníku (26. 11. 2026). U nových barev téhož modelu doplnit kód do správné skupiny.",
+ "kolo Cannondale Moterra Carbon 1": [
+  [
+   "00096630",
+   "00096631"
+  ],
+  [
+   "00101875",
+   "00101876"
+  ]
+ ],
+ "kolo Cannondale Moterra Carbon 2": [
+  [
+   "00096633"
+  ],
+  [
+   "00101878",
+   "00101879"
+  ]
+ ],
+ "kolo Cannondale Scalpel Carbon 2 Lefty": [
+  [
+   "00093099",
+   "00093100"
+  ],
+  [
+   "00097612",
+   "00097613"
+  ]
+ ],
+ "kolo Cannondale SuperSix EVO 4": [
+  [
+   "00101902",
+   "00101903"
+  ],
+  [
+   "00106020",
+   "00106021"
+  ]
+ ],
+ "kolo Cannondale SuperSix EVO 5": [
+  [
+   "00101904",
+   "00101905"
+  ],
+  [
+   "00106022",
+   "00106023"
+  ]
+ ],
+ "kolo Cannondale SuperSix EVO LAB71": [
+  [
+   "00097026"
+  ],
+  [
+   "00101890"
+  ]
+ ],
+ "kolo Cannondale SuperX 1": [
+  [
+   "00098610"
+  ],
+  [
+   "00101907"
+  ]
+ ],
+ "kolo Cannondale SuperX 3": [
+  [
+   "00098435"
+  ],
+  [
+   "00101909"
+  ]
+ ],
+ "kolo Cannondale SuperX LAB71": [
+  [
+   "00093086"
+  ],
+  [
+   "00101893"
+  ]
+ ],
+ "kolo Cannondale Synapse Carbon 4": [
+  [
+   "00081732"
+  ],
+  [
+   "00098422",
+   "00098423"
+  ]
+ ]
+}
