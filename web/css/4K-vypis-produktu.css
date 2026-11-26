@@ -212,3 +212,74 @@ html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important
  #ProductListDefault .ProductView .dcPrice .price.retail .value{font-size:13px!important}
  #ProductListDefault .ProductView .AvailabilityInfo{font-size:13px!important}
 }
+
+/* ===================== DOPLNĚK 26. 11. 2026: ŘÁDKOVÝ VÝPIS, STRÁNKOVÁNÍ, KŘÍŽKY ===================== */
+
+/* aktivní filtry: křížek kreslený CSS (znak krizku BSSHOP pri ukladani rozbije) */
+#AttributeFilterActiveValues .attribute a.value::after{content:""!important;display:inline-block!important;width:9px!important;height:9px!important;background:linear-gradient(45deg,transparent 42%,#c9c9c4 42%,#c9c9c4 58%,transparent 58%),linear-gradient(-45deg,transparent 42%,#c9c9c4 42%,#c9c9c4 58%,transparent 58%)!important}
+/* Zrušit vše bez červené ikonky BSSHOP */
+#AttributeFilterActiveValues .clearAll span::after{background:none!important;border:0!important;padding:0!important;margin:0!important;width:auto!important;height:auto!important;position:static!important}
+
+/* stránkování: kulatá čísla, aktivní černé, šipky */
+#CompoundPagingTop .ProductPaging,#CompoundPagingBottom .ProductPaging{display:flex!important;align-items:center!important;gap:4px;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
+#CompoundPagingBottom{display:flex!important;flex-direction:column;align-items:center;gap:20px;justify-content:center;margin:40px 0 0!important;padding:0!important;border:0!important;background:none!important}
+.ProductPaging a{position:relative!important;top:auto!important;float:none!important;flex:0 0 auto;box-sizing:border-box;width:auto!important;min-width:40px;height:40px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;margin:0!important;padding:0 4px!important;border:0!important;border-radius:20px!important;background:transparent!important;color:#231F20!important;font:400 15px 'GoodSans-Regular',Arial,sans-serif!important;line-height:1!important;text-decoration:none!important;box-shadow:none!important;cursor:pointer}
+.ProductPaging a:hover{background:#f0f0ed!important}
+.ProductPaging a.page.active,.ProductPaging a.active{background:#231F20!important;color:#fff!important}
+.ProductPaging a span{color:inherit!important;font:inherit!important;background:none!important;border:0!important;padding:0!important;margin:0!important}
+.ProductPaging a.gotoPrevious span,.ProductPaging a.gotoNext span{display:none!important}
+.ProductPaging a.gotoPrevious::before,.ProductPaging a.gotoNext::before{content:""!important;display:block!important;position:static!important;width:8px!important;height:8px!important;margin:0!important;border:0!important;border-right:2px solid currentColor!important;border-bottom:2px solid currentColor!important;background:none!important;transform:rotate(-45deg);margin-left:-3px!important}
+.ProductPaging a.gotoPrevious::before{transform:rotate(135deg);margin:0 -3px 0 0!important}
+.ProductPaging a.gotoPrevious::after,.ProductPaging a.gotoNext::after{display:none!important}
+.ProductPaging a.disabled{opacity:.3;pointer-events:none}
+
+@media (max-width:700px){
+.ProductPaging{gap:0!important}
+.ProductPaging a{min-width:34px;height:34px!important;padding:0 6px!important;border-radius:17px!important;font-size:14px!important}
+}
+
+/* řádkový výpis (přepínač vpravo nahoře) */
+#ProductListCustom1 .items{display:block!important;margin:0!important;padding:0!important}
+#ProductListCustom1 .items>bs-separator-horizontal{display:none!important}
+#ProductListCustom1 .productHolder{width:auto!important;max-width:none!important;float:none!important;margin:0!important;padding:0!important;border:0!important;border-top:1px solid #e6e6e3!important}
+#ProductListCustom1 .productHolder:last-of-type{border-bottom:1px solid #e6e6e3!important}
+#ProductListCustom1 .ProductView{position:relative;display:grid!important;grid-template-columns:120px minmax(0,1fr) auto auto;grid-template-rows:none!important;grid-auto-rows:auto!important;grid-template-areas:"img name price cart" "img avail price cart";column-gap:24px;row-gap:6px;align-items:center;height:auto!important;min-height:0!important;margin:0!important;padding:16px 0!important;border:0!important;background:none!important;box-shadow:none!important}
+#ProductListCustom1 .ProductView>*{margin:0!important;float:none!important}
+#ProductListCustom1 .ProductView>dc-con:first-child{grid-area:img;display:block!important;height:auto!important;padding:0!important}
+#ProductListCustom1 .ProductView a.image{display:flex!important;align-items:center;justify-content:center;width:120px!important;height:90px!important;padding:0!important;background:#fff;overflow:hidden}
+#ProductListCustom1 .ProductView a.image img{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain}
+#ProductListCustom1 .ProductView h2{grid-area:name;align-self:end;padding:0!important;border:0!important;height:auto!important;font:400 17px/1.35 'GoodSans-Regular',Arial,sans-serif!important;color:#231F20!important}
+#ProductListCustom1 .ProductView h2 a{position:static!important;color:inherit!important;text-decoration:none!important;font:inherit!important}
+#ProductListCustom1 .ProductView h2 a span{font:inherit!important;color:inherit!important}
+#ProductListCustom1 .ProductView h2 a::after{content:"";position:absolute;inset:0;z-index:1}
+#ProductListCustom1 .ProductView:hover h2{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+#ProductListCustom1 .ProductView>dc-con:has(.price){grid-area:price;display:flex!important;flex-direction:column;align-items:flex-end;gap:2px;padding:0!important}
+#ProductListCustom1 .ProductView .price{margin:0!important;padding:0!important}
+#ProductListCustom1 .ProductView .price.novat{display:none!important}
+#ProductListCustom1 .ProductView .price.user .value{font-family:'FKScreamer-Upright',Impact,sans-serif!important;font-weight:400!important;font-synthesis:none!important;font-size:30px!important;line-height:1!important;color:#231F20!important}
+#ProductListCustom1 .ProductView .price.retail .value{font:400 15px 'GoodSans-Regular',Arial,sans-serif!important;color:#8a8a86!important;text-decoration:line-through}
+#ProductListCustom1 .ProductView .AddToCart{grid-area:cart;position:relative;z-index:2}
+#ProductListCustom1 .ProductView .AvailabilityInfo{grid-area:avail;align-self:start;display:flex!important;align-items:center;gap:8px;padding:0!important;font-size:14px!important;color:#a85200!important}
+#ProductListCustom1 .ProductView .AvailabilityInfo .label{color:inherit!important;font-size:inherit!important}
+#ProductListCustom1 .ProductView .AvailabilityInfo::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:currentColor}
+#ProductListCustom1 .ProductView .AvailabilityInfo.cs_zelena{color:#1f7a3a!important}
+#ProductListCustom1 .ProductView .code{display:none!important}
+#ProductListCustom1 .ProductView>*:not(dc-con):not(h2):not(.AddToCart):not(.AvailabilityInfo):not(.ActionIcons3){display:none!important}
+#ProductListCustom1 .ProductView>.ActionIcons3:not(:has(.productFlag)){display:none!important}
+#ProductListCustom1 .ProductView::before,#ProductListCustom1 .ProductView::after{display:none!important;content:none!important}
+/* štítky Black Friday / sleva pod dostupností */
+#ProductListCustom1 .ProductView{grid-template-areas:"img name price cart" "img avail price cart" "img flags price cart"}
+#ProductListCustom1 .ProductView .ActionIcons3{grid-area:flags;position:static!important;justify-self:start;width:auto!important;height:auto!important;min-height:0!important;padding:0!important;pointer-events:none}
+#ProductListCustom1 .ProductView .ActionIcons3 .icons{position:static!important;display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:4px;width:auto!important;height:auto!important;margin:0!important;padding:0!important}
+#ProductListCustom1 .ProductView .ActionIcons3 .productFlag{position:static!important;display:inline-flex!important;width:auto!important;height:auto!important;min-width:0!important;margin:0!important;padding:3px 7px!important;border-radius:3px!important;font:400 12px/1.2 'GoodSans-Regular',Arial,sans-serif!important;background:var(--bg-color,#FFC524)!important;color:var(--text-color,#231F20)!important}
+#ProductListCustom1 .ProductView .ActionIcons3 .productFlag.discount{background:#ffc524!important;color:#231F20!important}
+#ProductListCustom1 .ProductView .ActionIcons3 .productFlag span{font:inherit!important;color:inherit!important}
+@media (max-width:700px){
+#ProductListCustom1 .ProductView{grid-template-columns:88px minmax(0,1fr) auto;grid-template-areas:"img name name" "img avail avail" "img flags flags" "img price cart";column-gap:14px;padding:14px 0!important}
+#ProductListCustom1 .ProductView a.image{width:88px!important;height:66px!important}
+#ProductListCustom1 .ProductView h2{font-size:15px!important}
+#ProductListCustom1 .ProductView>dc-con:has(.price){align-items:flex-start}
+#ProductListCustom1 .ProductView .price.user .value{font-size:24px!important}
+#ProductListCustom1 .ProductView .AvailabilityInfo{font-size:13px!important}
+#ProductListCustom1 .ProductView .AddToCart .quantity,#ProductListCustom1 .ProductView .AddToCart .decrease,#ProductListCustom1 .ProductView .AddToCart .increase{display:none!important}
+}
