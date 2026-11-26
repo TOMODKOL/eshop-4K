@@ -1,0 +1,75 @@
+<!--EXPERTMODE-->
+<div class="socSite bsuc-flex" style="font-size: 13px;">
+    <span>
+        <a style="color: #ffffff;" href="$HOME_PAGE_URL/#kdoJsme"><span> KDO JSME </span></a>
+        <a style="color: #ffffff;" href="$HOME_PAGE_URL/#servis">&nbsp;&nbsp;&nbsp;<span> SERVIS </span></a>
+        <a style="color: #ffffff;" href="$HOME_PAGE_URL/#prodejna">&nbsp;&nbsp;&nbsp;<span> PRODEJNA </span></a>
+        <a style="color: #ffffff;" href="$HOME_PAGE_URL/#kontakt">&nbsp;&nbsp;&nbsp;<span> KONTAKT </span></a>
+        <a style="color: #ffffff;" href="$PAGE-URL(4)" target="_self">&nbsp;&nbsp;&nbsp;<span> OBCHODNÍ PODMÍNKY </span></a>
+        <a style="color: #ffffff;" href="$PAGE-URL(34)" target="_self">&nbsp;&nbsp;&nbsp;<span> GDPR </span></a>
+        <a style="color: #ffffff;" href="https://client.4kluciodkol.cz/vratky" target="_self">&nbsp;&nbsp;&nbsp;<span>  ODSTOUPENÍ OD SMLOUVY  </span></a>
+        <a style="color: #ffffff;" href="$PAGE-URL(35)" target="_self">&nbsp;&nbsp;&nbsp;<span>  NÁKUP NA SPLÁTKY  </span></a>
+        <a style="color: #ffffff;" href="https://www.facebook.com/4kluciodkol" target="_blank">&nbsp;&nbsp;&nbsp;<span> facebook </span></a>
+        <a style="color: #ffffff;" href="https://www.instagram.com/4kluciodkol/" target="_blank" rel="noopener">&nbsp;&nbsp;&nbsp;<span> instagram </span></a>
+    </span>
+</div>
+<!-- 4K BLACK FRIDAY POP-UP (start) v4 | vlozit na konec Uzivatelskeho obsahu Zapati (HTML rezim) -->
+<div id="am4k-bf" class="am4k-bf" role="dialog" aria-modal="true" aria-label="Black Friday" style="display:none">
+  <div class="am4k-bf__box">
+    <button type="button" class="am4k-bf__close" aria-label="Zavřít">×</button>
+    <a class="am4k-bf__link" href="/black-friday-c2130/">
+      <img class="am4k-bf__img" src="https://cdn.4kluciodkol.cz/data/user-content/Obr%C3%A1zky/Eshop/black-friday-popup-2026.webp" width="1000" height="1000" alt="Black Friday ve 4 KLUCI OD KOL" loading="lazy">
+    </a>
+  </div>
+</div>
+<style>
+.am4k-bf{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(11,11,11,.72);opacity:0;transition:opacity .25s ease}
+.am4k-bf.is-show{display:flex!important}
+.am4k-bf.is-open{opacity:1}
+.am4k-bf__box{position:relative;width:min(520px,100%,calc(100vh - 32px));width:min(520px,100%,calc(100dvh - 32px));box-sizing:border-box;border:6px solid #ffc524;background:#0b0b0b;box-shadow:0 0 0 1px rgba(0,0,0,.25),0 20px 60px rgba(0,0,0,.6);transform:translateY(12px);transition:transform .25s ease}
+.am4k-bf.is-open .am4k-bf__box{transform:none}
+.am4k-bf__link{display:block;text-decoration:none!important}
+.am4k-bf__img{display:block;width:100%;height:auto;aspect-ratio:1/1}
+.am4k-bf__close{position:absolute;top:8px;right:8px;z-index:2;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:#ffc524;color:#0b0b0b;font:400 30px/40px Arial,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.am4k-bf__close:hover{background:#fff}
+@media (max-width:480px){.am4k-bf__box{border-width:4px}.am4k-bf__close{width:36px;height:36px;line-height:36px;font-size:26px}}
+@media (prefers-reduced-motion:reduce){.am4k-bf,.am4k-bf__box{transition:none}}
+</style>
+<script>
+(function(){
+  var KONEC = '2026-12-01T00:00:00';   /* od tohoto okamziku se pop-up uz nezobrazi */
+  var ZPOZDENI = 1500;                 /* ms po nacteni stranky */
+  var KLIC = 'am4k-bf-2026';           /* zmenou klice se pop-up ukaze znovu vsem */
+  var el = document.getElementById('am4k-bf');
+  if (!el || new Date() >= new Date(KONEC)) return;
+  if (/black-friday-c2130/.test(location.pathname)) return;
+  try { if (localStorage.getItem(KLIC) === new Date().toDateString()) return; } catch(e) {}
+  function zavrit(){
+    el.classList.remove('is-open');
+    setTimeout(function(){ el.classList.remove('is-show'); }, 250);
+    document.removeEventListener('keydown', esc);
+    try { localStorage.setItem(KLIC, new Date().toDateString()); } catch(e) {}
+  }
+  function esc(e){ if (e.key === 'Escape') zavrit(); }
+  function otevrit(){
+    if (el.parentNode !== document.body) document.body.appendChild(el); /* ven z obsahu zapati, aby byl nad hlavickou */
+    el.classList.add('is-show');
+    setTimeout(function(){ el.classList.add('is-open'); }, 30);
+    document.addEventListener('keydown', esc);
+  }
+  setTimeout(function(){
+    /* BSSHOP prepisuje obrazky na lazy-load (data-src), proto obrazek nacteme sami */
+    var img = el.querySelector('.am4k-bf__img');
+    var url = img.getAttribute('data-src') || img.getAttribute('src');
+    var pre = new Image();
+    pre.onload = function(){ img.removeAttribute('data-lazy'); img.src = url; otevrit(); };
+    pre.src = url;
+  }, ZPOZDENI);
+  el.querySelector('.am4k-bf__close').addEventListener('click', zavrit);
+  el.addEventListener('click', function(e){ if (e.target === el) zavrit(); });
+  el.querySelector('.am4k-bf__link').addEventListener('click', function(){
+    try { localStorage.setItem(KLIC, new Date().toDateString()); } catch(e) {}
+  });
+})();
+</script>
+<!-- 4K BLACK FRIDAY POP-UP (konec) -->

@@ -1,6 +1,6 @@
 /* 4K – nový detail produktu (čistá verze v8.2.1, 5. 11. 2026)
    Nahrazuje celý předchozí obsah včetně záplat v3–v7.
-   Vypnutí: Internetový obchod → Stylesheety → odškrtnout Aktivní. */
+   Vypnutí: Internetový obchod › Stylesheety › odškrtnout Aktivní. */
 
 /* ===================== SPOLEČNÉ (počítač i mobil) ===================== */
 
@@ -10,7 +10,7 @@
 #PDProductDescription{font-size:17px;line-height:1.5;color:#3b3b3b}
 
 /* cena: akční velká, běžná přeškrtnutá vedle, bez DPH skrytá
-   (nadpisové písmo má jen jeden řez → bez umělého ztučnění) */
+   (nadpisové písmo má jen jeden řez › bez umělého ztučnění) */
 #PDMaster #PDTable.PDTable{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;align-items:baseline!important;gap:4px 14px}
 #PDTable .price.vat .value{font-family:'FKScreamer-Upright',Impact,sans-serif;font-size:36px;line-height:1;color:#231F20}
 #PDTable .price.user.vat{order:1}
@@ -130,7 +130,7 @@ body:has(.BreadcrumbNavigation a[href*="/jizdni-kola-c276/"]) #PDAvailabilityPan
  /* značka nad názvem (odkaz doplní podpora BSSHOP, šipka se pak ukáže sama) */
  #PDTable2 .maker.value{grid-column:2 / -1;grid-row:1;margin:4px 0 6px;font-size:13px}
  #PDTable2 .maker.value a{color:#5a5a5a;text-decoration:none;border-bottom:1px solid #c9c9c4;padding-bottom:2px}
- #PDTable2 .maker.value a::after{content:"→";margin-left:6px}
+ #PDTable2 .maker.value a::after{content:"›";margin-left:6px}
 
  #PDMaster>dc-con:has(>h1){grid-column:2 / -1;grid-row:2}
  #PDMaster h1.Heading{font-size:44px}
@@ -209,4 +209,18 @@ body:has(.BreadcrumbNavigation a[href*="/jizdni-kola-c276/"]) #PDAvailabilityPan
  .PDActionIcons .icons:has(.productFlag.discount) .productFlag{font-size:11px!important;padding:3px 6px!important}
  .ActionIcons .icons:has(.productFlag.discount){gap:2px!important}
  .ActionIcons .icons:has(.productFlag.discount) .productFlag{font-size:10px!important;padding:2px 5px!important;border-radius:2px!important;letter-spacing:.02em!important}
+}
+
+/* 4K dlazdice velikosti + sikma puvodni cena 2026-11-06 */#PDVariantSelector .buttons{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(86px,1fr))!important;gap:10px!important}#PDVariantSelector .buttons .value{position:relative;box-sizing:border-box;width:auto!important;min-width:0!important;height:86px!important;margin:0!important;padding:14px 6px 14px!important;display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:5px;overflow:hidden;border:1px solid #dcdcd8!important;border-radius:6px!important;background:#fff!important;color:#231f20!important;box-shadow:none!important;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}#PDVariantSelector .buttons .value::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:transparent;transition:background .15s}#PDVariantSelector .buttons .value:has(.zelena)::after{background:#2e9e4f}#PDVariantSelector .buttons .value .labelValue,#PDVariantSelector .buttons .value .availabilityInfo{display:block!important;width:auto!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;text-align:center;background:none!important}#PDVariantSelector .buttons .value .labelValue{font-family:'GoodSans-Bold',Arial,sans-serif!important;font-size:21px!important;line-height:1.1!important;color:#231f20!important}#PDVariantSelector .buttons .value .availabilityInfo{flex:1 1 auto!important;width:100%!important;display:flex!important;align-items:center;justify-content:center;font-size:13px!important;line-height:1.2!important;white-space:normal!important;word-break:normal!important;hyphens:manual!important}#PDVariantSelector .availabilityInfo.zelena{color:#1f7a3a!important}#PDVariantSelector .availabilityInfo.oranzova{color:#b45a00!important}#PDVariantSelector .buttons .value:hover{border-color:#231f20!important;transform:translateY(-2px);box-shadow:0 6px 14px rgba(35,31,32,.10)!important}#PDVariantSelector .buttons .value.selected{background:#231f20!important;border-color:#231f20!important;transform:none}#PDVariantSelector .buttons .value.selected::after{height:4px}#PDVariantSelector .buttons .value.selected:has(.zelena)::after{background:#4cc46f!important}#PDVariantSelector .buttons .value.selected:has(.oranzova)::after{background:#ff9a3c!important}#PDVariantSelector .buttons .value.selected .labelValue{color:#fff!important;text-decoration:none}#PDVariantSelector .buttons .value.selected .availabilityInfo.zelena{color:#6fdc8c!important}@media(max-width:899px){#PDVariantSelector .buttons{grid-template-columns:repeat(auto-fill,minmax(76px,1fr))!important;gap:8px!important}#PDVariantSelector .buttons .value{height:80px!important;padding:12px 4px 12px!important}#PDVariantSelector .buttons .value .labelValue{font-size:19px!important}#PDVariantSelector .buttons .value .availabilityInfo{font-size:12px!important}}#PDVariantSelector .buttons .value.selected .availabilityInfo.oranzova{color:#ffa857!important}#PDVariantSelector .value:has(.oranzova) .labelValue{color:#231f20!important}#PDTable .price.retail .value{position:relative!important;display:inline-block!important;padding:0 3px!important;text-decoration:none!important;font:400 20px 'GoodSans-Regular',Arial,sans-serif!important;color:#5a5a5a!important}#PDTable .price.retail .value *{text-decoration:none!important}#PDTable .price.retail .value::after{content:"";position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:#231f20;transform:rotate(-14deg);pointer-events:none}#PDVariantSelector .buttons .value .labelValue{font-family:'GoodSans-Regular',Arial,sans-serif!important;font-size:17px!important}#PDVariantSelector .buttons .value .availabilityInfo{font-size:11px!important}@media(max-width:899px){#PDVariantSelector .buttons .value .labelValue{font-size:17px!important}#PDVariantSelector .buttons .value .availabilityInfo{font-size:10px!important}}#PDVariantSelector .buttons{grid-template-columns:repeat(auto-fill,minmax(69px,1fr))!important;gap:8px!important}#PDVariantSelector .buttons .value{height:69px!important;padding:11px 5px 11px!important;gap:4px!important}#PDVariantSelector .buttons .value .labelValue{font-size:14px!important}#PDVariantSelector .buttons .value .availabilityInfo{font-size:10px!important}@media(max-width:899px){#PDVariantSelector .buttons{grid-template-columns:repeat(auto-fill,minmax(61px,1fr))!important;gap:6px!important}#PDVariantSelector .buttons .value{height:64px!important;padding:10px 3px 10px!important}#PDVariantSelector .buttons .value .labelValue{font-size:14px!important}#PDVariantSelector .buttons .value .availabilityInfo{font-size:10px!important}}#PDTable .price.vat .value,#PDTable .price.vat .from{font-size:40px!important}@media(max-width:899px){#PDTable .price.vat .value,#PDTable .price.vat .from{font-size:32px!important}}#PDTable .price.vat.retail .value{font-size:20px!important}
+
+/* ===================== DOPLNĚK 26. 11. 2026: ZÁLOŽKY POPIS / TABULKA VELIKOSTÍ (styl jako filtry ve výpisu) ===================== */
+#PDTabsMaster .tabs{display:flex!important;flex-wrap:nowrap;align-items:center;gap:8px;margin:0 0 32px!important;padding:0 0 14px!important;border:0!important;border-bottom:1px solid #e6e6e3!important;background:none!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#PDTabsMaster .tabs::-webkit-scrollbar{display:none}
+#PDTabsMaster .tabs>span{flex:0 0 auto;display:inline-flex!important;align-items:center;height:44px;margin:0!important;padding:0 20px!important;box-sizing:border-box;border:1px solid #dcdcd8!important;border-radius:22px!important;background:#fff!important;color:#231F20!important;font:400 16px 'GoodSans-Regular',Arial,sans-serif!important;line-height:1!important;white-space:nowrap;cursor:pointer;box-shadow:none!important;text-transform:none!important;letter-spacing:0!important}
+#PDTabsMaster .tabs>span:hover{border-color:#231F20!important}
+#PDTabsMaster .tabs>span.selected{background:#231F20!important;border-color:#231F20!important;color:#fff!important}
+#PDTabsMaster .tabs>span::before,#PDTabsMaster .tabs>span::after{display:none!important}
+@media (max-width:700px){
+#PDTabsMaster .tabs{margin:0 0 24px!important;padding:0 0 10px!important}
+#PDTabsMaster .tabs>span{height:40px;padding:0 16px!important;font-size:15px!important;border-radius:20px!important}
 }

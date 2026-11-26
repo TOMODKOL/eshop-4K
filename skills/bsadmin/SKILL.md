@@ -180,7 +180,7 @@ Terminologie, oslovení a kontakt do popisů: skill popisy-produktu. Adresa prod
 Kde se co mění:
 - **Hlavní CSS:** Nastavení → Nastavení aplikace → expertní nastavení → Vlastní HTML → Všechny stránky → Vlastní CSS styly. Nic nemazat. Naše bloky označovat `/* 4K – … */`.
 - **Stylesheety:** Internetový obchod → Stylesheety. Stav 19. 11. 2026: „4K – detail produktu“ (pořadí 0), „4K - Nový detail produktu“ (10), „4K - popisy na mobilu“ (20). Vypínají se odškrtnutím Aktivní. Nový styl raději jako samostatný stylesheet (Přidat → Pořadí, Název, Aktivní, CSS → Uložit a zavřít) než zásah do stávajícího; vrací se pouhým odškrtnutím.
-- **„4K - popisy na mobilu“** (19. 11. 2026): do šířky 600 px dá v rozbalovacích sadách popisů (.am4k/.wo4k details) samotné fotky (`div > img:only-child`, aspoň 2 vedle sebe) do 2 sloupců, lichou doprostřed. Kód: `web/css/4K-popisy-na-mobilu-v1.css` v repozitáři eshop-4K.
+- **„4K - popisy na mobilu“** (19. 11. 2026): do šířky 600 px dá v rozbalovacích sadách popisů (.am4k/.wo4k details) samotné fotky (`div > img:only-child`, aspoň 2 vedle sebe) do 2 sloupců, lichou doprostřed. Kód: `web/css/4K-popisy-na-mobilu.css` v repozitáři eshop-4K.
 - **Mobil** dělá přes 70 % přístupů. Boční okraj stránky na telefonu (10 px) zatím zůstává, mobilní zobrazení se bude řešit při redesignu webu (rozhodnuto 19. 11. 2026).
 - **Akční ikony:** Nastavení → Akční ikony.
 - **Typy plateb:** Nastavení typů plateb.
@@ -201,7 +201,7 @@ Podpora BSSHOP je potřeba jen na šablonu detailu a galerii.
 Aktuální kód je v GitHub repozitáři **TOMODKOL/eshop-4K**, složka `web/`. Před úpravou vždy vycházet z něj a novou verzi tam zase uložit.
 
 V repozitáři jsou i skilly pro kolegy (Ondra): `skills/bsadmin/SKILL.md`, `skills/popisy-produktu/SKILL.md` a jejich ZIPy `bsadmin-skill.zip`, `popisy-produktu-skill.zip`. Po každé změně skillu v účtu nahrát do repozitáře novou verzi souboru i ZIPu (README.md popisuje, jak si je kolega nahraje).
-- `web/css/4K-novy-detail-produktu-v8.2.css`: detail produktu nasazený 4. 11. 2026. Vedle něj je novější `v8.2.1`; zda je nasazená, ověřit ve stavovém dokumentu.
+- `web/css/`: jeden soubor na každý stylesheet v BSADMIN, přesně jako je na webu (přehled ve `web/README.md`). Po každé změně v BSADMIN hned uložit sem, žádné souběžné verze.
 - `web/css/4K-vypis-produktu.css`: výpis kategorie. Počet sloupců se nastavuje číslem `--4k-sloupce`.
 - `web/skripty/`: skript filtru do Zápatí.
 - `web/popisy/`: vzorový popis kola (SuperSix EVO LAB71).

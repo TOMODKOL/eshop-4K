@@ -1,12 +1,32 @@
-/* 4K – Black Friday v hlavním menu (počítač)
-   Rozbalovací panel pod položkou BLACK FRIDAY: černé pozadí, žluté odkazy, při najetí bílé.
-   Po akci stačí celý soubor (stylesheet) vypnout nebo smazat. */
+/* 4K – Black Friday v hlavním menu (počítač), v4 20. 11. 2026 (jen jedna žlutá #ffc524, ani po najetí se nemění)
+   Rozbalovací panel pod položkou BLACK FRIDAY: černé pozadí, 7 dlaždic s fotkou
+   produktu (ikona kategorie z Editoru kategorií › Ikony, soubory /Ikony/bf-*.jpg)
+   a žlutým názvem. Podkategorie (např. u Oblečení) se v menu skrývají, zůstávají
+   jako dlaždice na stránce kategorie.
+   Po akci stačí celý stylesheet vypnout (odškrtnout Aktivní). */
 @media (min-width:768px){
-nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child{background:#0b0b0b!important;border-color:#0b0b0b!important}
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child{background:#0b0b0b!important;border-color:#0b0b0b!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;column-gap:22px!important;row-gap:0!important;padding:36px 40px 40px!important}
 nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child li,
 nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child ul{background:transparent!important}
 nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child a,
 nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child a span{color:#ffc524!important}
 nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child a:hover,
-nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child a:hover span{color:#fff!important}
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child a:hover span{color:#ffc524!important}
+
+/* dlaždice: fotka nahoře, název pod ní */
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child>li{display:flex!important;flex-direction:column!important;align-items:center!important;padding:0!important;text-align:center}
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child>li>a.image{display:flex!important;align-items:center;justify-content:center;box-sizing:border-box;width:100%!important;height:auto!important;max-width:none!important;aspect-ratio:1/1;background:#fff;border-radius:6px;overflow:hidden}
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child>li>a.image img{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain;transition:transform .25s}
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child>li:hover>a.image{outline:2px solid #ffc524;outline-offset:3px}
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child>li:hover>a.image img{transform:scale(1.04)}
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child>li>a.name{margin-top:14px!important;padding:0!important;white-space:nowrap;font:400 19px/1.2 'GoodSans-Regular',Arial,sans-serif!important}
+
+/* v menu jen hlavní kategorie – podkategorie a šipky skrýt */
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child>li>ul.child,
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child>li>a.name .bs-crv,
+nav.MenuCategoriesRwdView li.cs_blackfriday.level_0>ul.child>li>span.imageNotDefined{display:none!important}
 }
+
+/* jen jedna žlutá: přebíjí světlejší #FFE066 po najetí z obecného uživatelského CSS (RJ/164318) */
+.MenuCategoriesRwdView.v1.big ul.root>li.cs_blackfriday.level_0:hover a,
+.MenuCategoriesRwdView.v1.big ul.root>li.cs_blackfriday.level_0:hover a span{color:#ffc524!important}

@@ -1,0 +1,25 @@
+/* 4K – záložka Specifikace (tabulka z feedu, pole 4. Eshop popis) – platí pro celý e-shop */
+.PDDescription4 table{width:100% !important;max-width:1000px;margin:32px auto 8px !important;border-collapse:collapse !important;border-spacing:0 !important;border-bottom:1px solid #e6e6e3 !important}
+.PDDescription4 tr{border:0 !important;background:none !important}
+.PDDescription4 td{padding:11px 20px 11px 0 !important;border-top:1px solid #e6e6e3 !important;vertical-align:top !important;font-family:'GoodSans-Regular',Arial,sans-serif !important;font-size:15px !important;line-height:1.55 !important;color:#2b2b2b !important}
+.PDDescription4 td:first-child{width:190px !important;font-family:'GoodSans-Bold',Arial,sans-serif !important;color:#0b0b0b !important}
+.PDDescription4 td:last-child{padding-right:0 !important}
+/* nadpisy oddílů (např. Amflow: RÁM, ODPRUŽENÍ…) */
+.PDDescription4 td[colspan]{width:auto !important;padding:32px 0 10px !important;font-family:'GoodSans-Bold',Arial,sans-serif !important;font-size:13px !important;letter-spacing:2px !important;text-transform:uppercase !important;color:#6a6a66 !important}
+.PDDescription4 tr:first-child td[colspan]{padding-top:8px !important}
+/* mobil: název nad hodnotou */
+@media (max-width:640px){
+.PDDescription4 td{display:block !important;width:auto !important;padding:0 !important}
+.PDDescription4 td:first-child{width:auto !important;padding-top:10px !important}
+.PDDescription4 td:last-child{border-top:0 !important;padding-bottom:10px !important;font-size:14px !important}
+.PDDescription4 td[colspan]{padding:24px 0 8px !important}
+}/* 4K – tabulka parametrů pod popisem produktu (#PDTable3), stejný vzhled jako Specifikace */
+.PDDescription .PDTable3{max-width:1000px;margin:48px auto 8px !important;padding:0 !important}
+.PDDescription .PDTable3::before{content:"Parametry";display:block;margin:0 0 12px;font-family:'GoodSans-Bold',Arial,sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6a6a66}
+.PDDescription .PDTable3 table{width:100% !important;border-collapse:collapse !important;border-spacing:0 !important;border-bottom:1px solid #e6e6e3 !important}
+.PDDescription .PDTable3 tr{border:0 !important;background:none !important}
+.PDDescription .PDTable3 td{padding:11px 20px 11px 0 !important;border:0 !important;border-top:1px solid #e6e6e3 !important;vertical-align:top !important;text-align:left !important;font-family:'GoodSans-Regular',Arial,sans-serif !important;font-size:15px !important;line-height:1.55 !important;color:#2b2b2b !important;background:none !important}
+.PDDescription .PDTable3 td.caption{width:190px !important;font-family:'GoodSans-Bold',Arial,sans-serif !important;color:#0b0b0b !important}
+.PDDescription .PDTable3 td.value{padding-right:0 !important}
+@media (max-width:640px){.PDDescription .PDTable3 td{display:block !important;width:auto !important;padding:0 !important}.PDDescription .PDTable3 td.caption{width:auto !important;padding-top:10px !important}.PDDescription .PDTable3 td.value{border-top:0 !important;padding-bottom:10px !important;font-size:14px !important}}
+.PDDescription .PDTable3{display:none !important}

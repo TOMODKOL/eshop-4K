@@ -1,4 +1,5 @@
-/* 4K – řádkový výpis: místo 50px náhledu (/3/) načíst 220px (/0/) */
+<!-- 4K – řádkový výpis: větší náhledy (220 px místo 50 px) -->
+<script>
 (function () {
   function fix() {
     var imgs = document.querySelectorAll('#ProductListCustom1 img.miniThumbnail');
@@ -13,3 +14,5 @@
   fix();
   new MutationObserver(fix).observe(document.documentElement, { childList: true, subtree: true });
 })();
+</script>
+<!-- 4K – řádkový výpis (konec) -->

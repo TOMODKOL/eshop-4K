@@ -1,7 +1,7 @@
 /* 4K – účet zákazníka (v1, 23. 11. 2026)
    Přehled objednávek, detail objednávky, Přehled faktur. Patří k skriptu „4K-ucet-skript“ na konci Zápatí.
    Karty se ukážou jen tehdy, když skript proběhne (třída html.k4u); jinak zůstane původní tabulka BSSHOP.
-   Vypnutí: Internetový obchod → Stylesheety → odškrtnout Aktivní. */
+   Vypnutí: Internetový obchod › Stylesheety › odškrtnout Aktivní. */
 
 /* ===================== SPOLEČNÉ ===================== */
 /* značka pro skript: bez aktivního stylesheetu skript nic nedělá */
@@ -77,11 +77,7 @@ html.k4u .InvoiceListState .summary .k4u-prazdne{display:none!important}
 .k4u-info{flex:1 1 260px;margin:0;font-size:14px;line-height:1.5;color:#6a6a66}
 html.k4u .OrderDetailState .k4u-prazdne{display:none!important}
 
-/* 4 bloky s adresami schované – souhrn (datum, platba, doručení) je v panelu nahoře */
-html.k4u .OrderDetailState #PohodaOrderMaster.k4u-kompakt>dc-con:first-of-type{display:none!important}
-.k4u-panel .k4u-meta{margin:10px 0 0;font-size:15px;line-height:1.5;color:#6a6a66}
-.k4u-panel .k4u-meta i{font-style:normal;color:#c9c9c4;padding:0 2px}
-/* bloky údajů jako 4 karty (když skript neproběhne) */
+/* bloky údajů jako 4 karty */
 .OrderDetailState #PohodaOrderMaster>dc-con:first-of-type{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 20px}
 .OrderDetailState #PohodaOrderMaster .PohodaDocumentFormView{margin:0!important;padding:18px 20px!important;border:1px solid #e6e6e3!important;border-radius:4px;background:#fff!important;width:auto!important;float:none!important;box-sizing:border-box}
 .OrderDetailState #PohodaOrderMaster .PohodaDocumentFormView .formFields{display:grid!important;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:15px;line-height:1.45}
@@ -138,6 +134,13 @@ html.k4u .OrderDetailState #PohodaOrderItemList>.footer .documentTotalPriceVat.v
   html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>.codeValue{padding-left:80px}
   html.k4u .OrderDetailState #PohodaOrderItemList .item>dc-root>dc-con{padding-left:80px}
 }
+
+/* 4 bloky s adresami schované – souhrn (datum, platba, doručení) je v panelu nahoře (23. 11. 22:10) */
+html.k4u .OrderDetailState #PohodaOrderMaster.k4u-kompakt>dc-con:first-of-type{display:none!important}
+.k4u-panel .k4u-meta{margin:10px 0 0;font-size:15px;line-height:1.5;color:#6a6a66}
+.k4u-panel .k4u-meta i{font-style:normal;color:#c9c9c4;padding:0 2px}
+
+/* ===== 23. 11. 22:55: PDF z Pohody, filtr schovaný ===== */
 /* detail faktury: tlačítko PDF vedle Vytisknout */
 .k4u-pdf-detail{margin:0 8px 0 0;vertical-align:middle}
 /* objednávka z e-shopu: tisk stránky nahrazuje PDF z Pohody */
@@ -153,7 +156,9 @@ html.k4u .OrderListState #PohodaOrderList.k4u-vice-stran>.filter dc-con{margin:0
 /* stránkování pod seznamem */
 html.k4u .OrderListState #PohodaOrderList>.PagingView,html.k4u .InvoiceListState #PohodaInvoiceList>.PagingView{margin:16px 0 0!important}
 html.k4u .InvoiceListState #PohodaInvoiceList>.summary .PagingView{display:none!important}
+
 /* 23. 11. 23:05: filtr objednávek schovaný vždy (zaškrtávátko „Jen nevyřízené“ nebylo vidět zaškrtnuté a zákazník ho nepotřebuje) */
 html.k4u .OrderListState #PohodaOrderList.k4u-vice-stran>.filter{display:none!important}
+
 /* 23. 11. 23:10: seznamy a detail přes celou šířku obsahu (do 1000 px) – BSSHOP je jinak smrskl na šířku obsahu */
 html.k4u .OrderListState #PohodaOrderList,html.k4u .InvoiceListState #PohodaInvoiceList,html.k4u .OrderDetailState #PohodaOrderMaster{width:100%;box-sizing:border-box;justify-self:center}
