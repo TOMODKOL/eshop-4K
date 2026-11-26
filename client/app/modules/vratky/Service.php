@@ -1196,6 +1196,26 @@ final class Service
         return $w;
     }
 
+    /**
+     * Průběh pro zákazníka i administraci (stejný jako v e-mailech e-shopu: Přijato → Připravujeme → Odesláno).
+     * @return array{steps: string[], cur: int, rejected: bool}
+     */
+    public static function progress(array $ret, array $lines): array
+    {
+        $claim = true; foreach ($lines as $l) if (in_array($l['action'], ['vratit', 'vymenit'], true)) $claim = false;
+        $check = $claim ? 'Posuzujeme' : 'Kontrolujeme';
+        $st = (string) ($ret['status'] ?? 'novy');
+        if (($ret['ship_method'] ?? '') === 'osobne') {   // zboží předané na prodejně – bez cesty k nám
+            $steps = ['Přijato', $check, 'Vyřízeno'];
+            $cur = ['novy' => 0, 'na_ceste' => 0, 'dorazilo' => 1, 'v_reseni' => 1, 'vyrizeno' => 2, 'zamitnuto' => 2][$st] ?? 0;
+        } else {
+            $steps = ['Zadáno', 'Na cestě k nám', $check, 'Vyřízeno'];
+            $cur = ['novy' => 0, 'na_ceste' => 1, 'dorazilo' => 2, 'v_reseni' => 2, 'vyrizeno' => 3, 'zamitnuto' => 3][$st] ?? 0;
+        }
+        if ($st === 'zamitnuto') $steps[count($steps) - 1] = 'Zamítnuto';
+        return ['steps' => $steps, 'cur' => $cur, 'rejected' => $st === 'zamitnuto'];
+    }
+
     public static function hasAction(array $lines, string $a): bool
     {
         foreach ($lines as $l) if ($l['action'] === $a) return true;

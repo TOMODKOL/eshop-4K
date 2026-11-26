@@ -10,16 +10,7 @@ require __DIR__ . '/email_head.php'; ?>
   <div style="font-size:15px;line-height:1.6;color:#444444"><?= nl2br(e($text)) ?></div>
 </td></tr>
 <?php if (!$rejTop):
-  // průběh jako v e-mailech e-shopu: Zadáno → Na cestě k nám → Kontrolujeme → Vyřízeno
-  $claim = true; foreach ($lines as $l) if (in_array($l['action'], ['vratit', 'vymenit'], true)) $claim = false;
-  $check = $claim ? 'Posuzujeme' : 'Kontrolujeme';
-  if (($ret['ship_method'] ?? '') === 'osobne') {   // zboží předané na prodejně – bez cesty k nám
-    $steps = ['Přijato', $check, 'Vyřízeno'];
-    $cur = ['novy' => 0, 'na_ceste' => 0, 'dorazilo' => 1, 'v_reseni' => 1, 'vyrizeno' => 2][$ret['status'] ?? 'novy'] ?? 0;
-  } else {
-    $steps = ['Zadáno', 'Na cestě k nám', $check, 'Vyřízeno'];
-    $cur = ['novy' => 0, 'na_ceste' => 1, 'dorazilo' => 2, 'v_reseni' => 2, 'vyrizeno' => 3][$ret['status'] ?? 'novy'] ?? 0;
-  }
+  ['steps' => $steps, 'cur' => $cur] = Service::progress($ret, $lines);
   $n = count($steps); $wd = (int) floor(100 / $n); ?>
 <tr><td style="padding:22px 28px 4px 28px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:12px;text-align:center"><tr>

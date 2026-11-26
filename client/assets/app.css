@@ -414,3 +414,9 @@ span.ai-img{background:var(--soft)}
 .tabs a.on{background:var(--ink);color:#fff}
 .tabs a small{display:inline-block;min-width:22px;padding:1px 7px;margin-left:4px;border-radius:999px;background:var(--yel);color:var(--ink);font-size:12px;text-align:center}
 .vcard .typ{font-family:inherit;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+/* průběh v administraci (jako v e-mailech e-shopu) */
+.prog .bars i.ok{background:var(--green)}
+.prog .bars i.rej{background:var(--red)}
+.steplabs{display:flex;gap:4px;font-size:13px;color:#999}
+.steplabs span{flex:1;text-align:center}
+.steplabs span.cur{color:var(--ink,#111);font-weight:700}

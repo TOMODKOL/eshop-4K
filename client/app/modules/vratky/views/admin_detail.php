@@ -39,16 +39,48 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
     </div>
     <?php endforeach; ?>
 
+    <?php ['steps' => $pSteps, 'cur' => $pCur, 'rejected' => $pRej] = Service::progress($ret, $lines);
+      $st = (string) $ret['status']; $byPacketa = Service::usesPacketa((string) $ret['ship_method']);
+      if ($st === 'novy' && $byPacketa) $next = 'Na cestě se přepne samo, až zákazník zásilku podá u Zásilkovny.';
+      elseif ($st === 'na_ceste' && $byPacketa) $next = 'Dorazilo se přepne samo, až Zásilkovna zásilku doručí k nám.';
+      elseif (in_array($st, ['novy', 'na_ceste'], true)) $next = 'Až zboží převezmete, klikněte vpravo na „Zboží převzato a je v pořádku“.';
+      elseif ($st === 'dorazilo' && !in_array($docState, ['ceka', 'navrh', 'hotovo'], true) && $plan['type']) $next = 'Zkontrolujte zboží a klikněte vpravo na „Zboží je v pořádku“. Doklad i e-mail zákazníkovi půjdou samy.';
+      elseif ($st === 'dorazilo' && $docState === 'hotovo' && $ret['doc_type'] === 'odd') $next = 'Pošlete peníze. Vyřízeno pak označíte ve výpisu „K proplacení“ – zákazník dostane e-mail.';
+      elseif ($st === 'dorazilo' && $docState === 'hotovo') $next = 'Odešlete nové zboží a klikněte níže na „Nové zboží odesláno“.';
+      elseif (in_array($st, ['dorazilo', 'v_reseni'], true) && $claim) $next = 'Stav se mění podle reklamace v Pohodě.';
+      elseif (in_array($st, ['dorazilo', 'v_reseni'], true)) $next = 'Čeká se na doklad v Pohodě.';
+      else $next = '';
+      $open = !in_array($st, ['vyrizeno', 'zamitnuto'], true); ?>
+    <div class="card"><span class="kicker">Stav</span>
+      <div class="prog"><div class="bars"><?php foreach ($pSteps as $i => $lab): ?><i class="<?= $i <= $pCur ? ($pRej && $i === $pCur ? 'rej' : 'ok') : '' ?>"></i><?php endforeach; ?></div>
+        <div class="steplabs"><?php foreach ($pSteps as $i => $lab): ?><span<?= $i === $pCur ? ' class="cur"' : '' ?>><?= e($lab) ?></span><?php endforeach; ?></div></div>
+      <?php if ($next !== ''): ?><span class="hint" style="font-size:13px"><?= e($next) ?></span><?php endif; ?>
+      <?php if ($open && $st === 'dorazilo' && $docState === 'hotovo' && $ret['doc_type'] !== 'odd'): ?>
+      <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
+        <input type="hidden" name="status" value="vyrizeno"><input type="hidden" name="notify" value="1">
+        <div class="field" style="margin:0"><label class="l" for="trk">Číslo zásilky (nepovinné)</label><input class="f" id="trk" name="note" placeholder="Např. Nové zboží odesláno, sledování Z 123…"></div>
+        <button class="btn" style="align-self:flex-start">Nové zboží odesláno ✓</button>
+      </form>
+      <?php endif; ?>
+    </div>
+
     <form class="card" method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" data-once>
       <?= csrf_field() ?>
-      <strong>Změnit stav nebo připsat poznámku</strong>
-      <div class="field"><label class="l" for="status">Stav</label>
-        <select class="f" id="status" name="status"><?php foreach (Service::STATUS as $k => $lab): ?><option value="<?= $k ?>" <?= $k === $ret['status'] ? 'selected' : '' ?>><?= e($lab) ?></option><?php endforeach; ?></select></div>
-      <div class="field"><label class="l" for="note" data-note-label>Poznámka</label><textarea class="f" id="note" name="note" rows="3" placeholder="Např. Peníze odeslány 21. 11. / Nová velikost M odeslána, sledování Z 123…"></textarea></div>
-      <?php if ($ret['email'] !== ''): ?><label class="chk"><input type="checkbox" name="notify" value="1" checked><span>Poslat zákazníkovi e-mail (vidí stav i tuto poznámku)</span></label>
-      <?php else: ?><span class="hint">Zákazník nemá e-mail – o změně ho informujte telefonem.</span><?php endif; ?>
-      <button class="btn" style="align-self:flex-start">Uložit</button>
+      <strong>Připsat poznámku</strong>
+      <div class="field"><label class="l" for="note">Poznámka</label><textarea class="f" id="note" name="note" rows="3" placeholder="Např. Volali jsme zákazníkovi, posílá zbytek balení…"></textarea></div>
+      <?php if ($ret['email'] !== ''): ?><label class="chk"><input type="checkbox" name="notify" value="1"><span>Poslat zákazníkovi e-mail s touto poznámkou</span></label>
+      <?php else: ?><span class="hint">Zákazník nemá e-mail – informujte ho telefonem.</span><?php endif; ?>
+      <button class="btn ghost" style="align-self:flex-start">Uložit poznámku</button>
     </form>
+    <?php if ($open): ?>
+    <details class="card"><summary class="kicker" style="cursor:pointer">Zamítnout</summary>
+      <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:8px 0 0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
+        <input type="hidden" name="status" value="zamitnuto"><input type="hidden" name="notify" value="1">
+        <div class="field" style="margin:0"><label class="l" for="why">Důvod (zákazník ho dostane e-mailem)</label><textarea class="f" id="why" name="note" rows="3" required></textarea></div>
+        <button class="btn" style="align-self:flex-start;background:#b3261e;border-color:#b3261e;color:#fff">Zamítnout</button>
+      </form>
+    </details>
+    <?php endif; ?>
 
     <div class="card"><span class="kicker">Historie</span>
       <?php foreach ($events as $ev): ?>
