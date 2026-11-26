@@ -51,7 +51,8 @@ final class Tracking
 
     /**
      * Zpětná zásilka (vratka k nám): kdy ji zákazník podal a kdy k nám dorazila.
-     * Stavy packetTracking: 1 = jen data, 2–6 = v přepravě, 7 = doručeno (u zpětné zásilky = u nás), 11 = zrušeno.
+     * Stavy packetTracking: 1 = jen data, 2–6 = v přepravě, 7 = doručeno, 10 = vráceno odesílateli, 11 = zrušeno.
+     * Zpětná zásilka (vratka k nám) končí stavem 10 „Vrácena odesílateli“ (ověřeno 26. 11. 2026 na Z 499 5933 557) – i ten znamená „u nás“.
      * @return array{sent:?string, delivered:?string}|null  null = nejde zjistit
      */
     public static function packetaReturn(string $packetId): ?array
@@ -83,8 +84,8 @@ final class Tracking
         foreach ($r->result->record ?? [] as $rec) {
             $c = (int) $rec->statusCode; $t = strtotime((string) $rec->dateTime);
             if (!$t) continue;
-            if ($c >= 2 && $c <= 7 && $out['sent'] === null) $out['sent'] = date('Y-m-d H:i:s', $t);
-            if ($c === 7) $out['delivered'] = date('Y-m-d H:i:s', $t);
+            if ((($c >= 2 && $c <= 7) || $c === 10) && $out['sent'] === null) $out['sent'] = date('Y-m-d H:i:s', $t);
+            if ($c === 7 || $c === 10) $out['delivered'] = date('Y-m-d H:i:s', $t);
         }
         return $out;
     }
