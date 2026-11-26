@@ -86,6 +86,13 @@ def slova_modelu(r):   # slova modelu/velikosti ve zbytku názvu (kromě „Ligh
             if t in ('light', 'air') and nxt and nxt not in MODEL and nxt not in ('-', '–'): continue
         if t in MODEL or t in BARVA_I_MODEL: out.append(t)
     return sorted(out)
+TYP = {'glove', 'gloves', 'jersey', 'socks', 'sock', 'bibshort', 'bibshorts', 'bib', 'shorts', 'short', 'jacket', 'vest',
+       'gilet', 'tee', 'tights', 'bibtights', 'knickers', 'cap', 'beanie', 'neck', 'warmer', 'warmers', 'top', 'skinsuit',
+       'helmet', 'shoe', 'shoes', 'overshoe', 'overshoes', 'shell', 'pants', 'hoodie', 'bag', 'case'}
+def cast_modelu(r):   # zbytek názvu až po poslední slovo typu výrobku (např. „Adj Glove“); za ním je barva/velikost
+    t = [x.lower().strip('-–/,') for x in r]
+    k = max((i for i, x in enumerate(t) if x in TYP), default=-1)
+    return t[:k + 1]
 def zaklad(n):   # „Peak Design Everyday Case - iPhone 14 Pro - Charcoal“ → vše před posledním „ - “
     return n.rsplit(' - ', 1)[0].lower() if ' - ' in n else None
 # stejný název, jiná specifikace (jiný ročník kola) → nikdy do jedné skupiny; seznam v rozdelit.json
@@ -97,6 +104,19 @@ if os.path.exists(_rf):
         if model.startswith('_'): continue
         for si, kody in enumerate(skupiny):
             for k in kody: ROZ[k] = (model, si)
+# kód výrobce (POC, Castelli, ASSOS) z kody.json: jiný kód modelu = jiný výrobek, stejný kód = barvy téhož výrobku
+#   POC PC303341815SML1 → model 30334 (pak barva 1815, velikost) · Castelli 4523026-424-M → 4523026 · ASSOS P13.60.677.18.I → P13.60.677
+KODY = {}
+_kf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'kody.json')
+if os.path.exists(_kf):
+    KODY = json.load(open(_kf, encoding='utf-8'))
+def model_kod(p):
+    k = (KODY.get(p[0]) or '').strip().upper()
+    for rx in (r'^PC(\d{5})\d{4}', r'^(\d{7})-', r'^(P?\d{2}\.\d{2}\.\d{3})\.'):
+        m = re.match(rx, k)
+        if m: return m.group(1)
+    return None
+MK = [model_kod(p) for p in prods]
 parent = list(range(len(prods)))
 znacky = [{ROZ[p[7]]} if p[7] in ROZ else set() for p in prods]   # (model, skupina) v každé skupině
 def find(i):
@@ -126,8 +146,12 @@ for (ci, bi), ids in buckets.items():
             while l < min(len(x), len(y)) and x[l].lower() == y[l].lower(): l += 1
             ra, rb = x[l:], y[l:]
             mx = 5 if l >= bpos + 3 else 3   # dlouhé barvy („Hydrogen White/Uranium Black Matt“) jen u delšího názvu modelu
+            ka, kb = MK[ids[a]], MK[ids[b]]
+            if ka and kb and ka != kb: continue          # jiný kód modelu u výrobce → jiný výrobek
+            if ka and kb and l >= bpos + 2 and lze_spojit(ids[a], ids[b]):
+                spoj(ids[a], ids[b]); continue           # stejný kód modelu → barvy téhož výrobku
             if l >= bpos + 2 and 0 < len(ra) <= mx and 0 < len(rb) <= mx and nodig(ra) and nodig(rb) \
-                    and slova_modelu(ra) == slova_modelu(rb) \
+                    and slova_modelu(ra) == slova_modelu(rb) and cast_modelu(ra) == cast_modelu(rb) \
                     and zaklad(prods[ids[a]][1]) == zaklad(prods[ids[b]][1]) \
                     and lze_spojit(ids[a], ids[b]):
                 spoj(ids[a], ids[b])
