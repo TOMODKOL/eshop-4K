@@ -101,6 +101,8 @@ return [
         'from'        => 'client@4kluciodkol.cz',
         'from_name'   => '4 KLUCI OD KOL',
         'reply_to'    => 'eshop@4kluciodkol.cz',
+        // Kopie každého e-mailu zákazníkovi (bez příloh) – Tomáš chce ze začátku vidět vše (26. 11. 2026). Prázdné = bez kopií.
+        'copy_to'     => 'tomas@4kluciodkol.cz',
         'smtp_host'   => 'smtp.forpsi.com',
         'smtp_port'   => 465,
         'smtp_secure' => 'ssl',   // ssl (465) nebo tls (587)

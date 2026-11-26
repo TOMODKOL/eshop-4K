@@ -23,6 +23,14 @@ final class Notify
             return;
         }
         Mailer::send($ret['email'], $subject, $html, null, $attachments);
+        // kopie každého e-mailu zákazníkovi pro nás (bez příloh), mail.copy_to – prázdné = nic
+        $copy = trim((string) Config::get('mail.copy_to', ''));
+        if ($copy !== '' && strcasecmp($copy, trim((string) $ret['email'])) !== 0) {
+            $note = '<div style="background:#f2f2f0;color:#231F20;font:13px Arial,sans-serif;padding:10px 14px;text-align:center">Kopie e-mailu pro zákazníka ' . htmlspecialchars((string) $ret['email'], ENT_QUOTES, 'UTF-8')
+                . ($attachments ? ' · přílohy vynechány: ' . htmlspecialchars(implode(', ', array_column($attachments, 'name')), ENT_QUOTES, 'UTF-8') : '') . '</div>';
+            $chtml = preg_match('/<body[^>]*>/i', $html) ? preg_replace('/(<body[^>]*>)/i', '$1' . $note, $html, 1) : $note . $html;
+            Mailer::send($copy, '[Kopie → ' . $ret['email'] . '] ' . $subject, $chtml);
+        }
     }
 
     public static function statusUrl(array $ret): string
