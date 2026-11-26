@@ -30,18 +30,15 @@ $typLabel = ['reklamace' => 'Reklamace', 'vymena' => 'Výměna', 'vratka' => 'Vr
   <?php endif; ?>
   <?php \App\Modules\Vratky\Eshop::$budget = 6; // výpis nečeká na desítky stránek e-shopu ?>
   <?php if ($stav === 'proplatit'): ?>
-  <form class="card" method="post" action="<?= url('/admin/vratky/odeslano') ?>" data-once>
-    <?= csrf_field() ?>
+  <div class="card">
     <strong>Peníze k odeslání</strong>
-    <span class="hint">Opravný daňový doklad je v Pohodě. Pošlete peníze příkazem (VS = číslo dokladu) – jakmile platba projde výpisem z banky, vratka se uzavře sama (bez e-mailu, peníze už zákazník má). Tlačítko dole jen když to spěchá – to pošle zákazníkovi e-mail.</span>
+    <span class="hint">Pošlete příkazem z banky, VS = číslo dokladu. Jakmile platba projde výpisem, vratka se uzavře sama.</span>
     <?php if (!$rows): ?><span class="hint">Nic nečeká.</span><?php endif; ?>
     <?php foreach ($rows as $r): ?>
-      <label class="chk" style="align-items:flex-start"><input type="checkbox" name="ids[]" value="<?= (int) $r['id'] ?>" checked>
-        <span><strong><?= e(money(Service::payout($r))) ?></strong> · účet <span style="user-select:all"><?= e($r['bank_account']) ?></span> · VS <span style="user-select:all"><?= e((string) $r['doc_no']) ?></span><br>
-        <span class="hint"><?= e($r['customer_name'] ?: $r['email']) ?> · obj. <?= e($r['order_no'] ?: $r['invoice_no']) ?> · <?= e(Service::displayNo($r)) ?></span></span></label>
+      <div style="font-size:14px;line-height:1.5;border-top:1px solid var(--line2);padding-top:8px"><strong><?= e(money(Service::payout($r))) ?></strong> · účet <span style="user-select:all"><?= e($r['bank_account']) ?></span> · VS <span style="user-select:all"><?= e((string) $r['doc_no']) ?></span><br>
+        <span class="hint"><?= e($r['customer_name'] ?: $r['email']) ?> · obj. <?= e($r['order_no'] ?: $r['invoice_no']) ?> · <?= e(Service::displayNo($r)) ?></span></div>
     <?php endforeach; ?>
-    <?php if ($rows): ?><button class="btn" style="align-self:flex-start">Peníze odeslány – uzavřít</button><?php endif; ?>
-  </form>
+  </div>
   <?php endif; ?>
   <div class="vr">
     <?php foreach ($rows as $r):

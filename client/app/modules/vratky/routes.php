@@ -297,23 +297,6 @@ Http::get('/admin/vratky', function () {
         'typ' => $typ, 'stav' => $stav, 'q' => $q, 'lastSync' => $lastSync], 'admin');
 });
 
-// hromadně: peníze odeslány (po zadání příkazů v bance) → Vyřízeno + e-mail zákazníkovi
-Http::post('/admin/vratky/odeslano', function () {
-    $u = Auth::require();
-    Session::checkCsrf();
-    $n = 0;
-    foreach ((array) ($_POST['ids'] ?? []) as $id) {
-        $r = Service::get((int) $id);
-        if (!$r || $r['doc_type'] !== 'odd' || $r['doc_state'] !== 'hotovo' || in_array($r['status'], ['vyrizeno', 'zamitnuto'], true)) continue;
-        $note = 'Peníze ' . money(Service::payout($r)) . ' jsme poslali na účet ' . $r['bank_account'] . '. Na účtu by měly být do 1–2 pracovních dnů.';
-        Service::setStatus($r, 'vyrizeno', $note, true, (int) $u['id']);
-        Notify::statusChanged(Service::get((int) $r['id']), $note);
-        $n++;
-    }
-    Session::flash($n ? 'Hotovo: ' . $n . ' × Vyřízeno, zákazníci dostali e-mail.' : 'Nic jste neoznačili.', $n ? 'ok' : 'err');
-    Http::redirect('/admin/vratky?stav=proplatit');
-});
-
 Http::get('/admin/vratky/foto/{id}', function (string $id) {
     Auth::require();
     Photos::output((int) $id);
@@ -363,14 +346,6 @@ Http::post('/admin/vratky/{no}', function (string $no) {
             Service::setStatus($ret, '', 'Problém se zbožím: ' . $why, false, (int) $u['id']);
             Session::flash('Poznamenáno. Až se se zákazníkem domluvíte, potvrďte zboží nebo vratku zamítněte.');
         }
-        Http::redirect('/admin/vratky/' . $no);
-    }
-    if ($act === 'postovne' && ($ret['doc_state'] ?? '') !== 'hotovo' && !in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true)) {
-        $on = !$ret['postage_applies'];
-        $p = Config::get('vratky.return_postage');
-        Db::exec('UPDATE returns SET postage_applies = ?, postage = ?, updated_at = ? WHERE id = ?', [$on ? 1 : 0, $on && $p !== null ? (float) $p : null, Db::now(), $ret['id']]);
-        Service::setStatus($ret, '', $on ? 'Poštovné za vrácení se odečte.' : 'Poštovné za vrácení se neodečítá.', false, (int) $u['id']);
-        Session::flash($on ? 'Poštovné se odečte.' : 'Poštovné se neodečítá – vrací se celá částka.');
         Http::redirect('/admin/vratky/' . $no);
     }
     if ($act === 'smazat_test') {

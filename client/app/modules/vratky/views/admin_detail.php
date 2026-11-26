@@ -190,10 +190,6 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
         <?php if ($bal < 0): ?><div style="font-size:14px">Doplatek: <strong><?= e(Service::PAY[$ret['pay_method']] ?? '–') ?></strong><?php $cardPay = \App\Modules\Vratky\GpWebpay::paidPayment((int) $ret['id']); ?><?= in_array($ret['pay_method'], ['prevod', 'karta'], true) ? ($ret['zf_paid'] ? ($cardPay ? ' – zaplaceno kartou ' . e(money((float) $cardPay['amount'])) . ' (GP ' . e($cardPay['order_number']) . ($cardPay['test'] ? ', TEST' : '') . '), nové zboží můžete odeslat' : ' – zaplaceno, nové zboží můžete odeslat') : ' – nové zboží odeslat až po zaplacení zálohové faktury') : ' – nové zboží poslat na dobírku' ?></div>
         <?php else: ?><div style="font-size:14px">Na účet: <strong style="user-select:all"><?= e($ret['bank_account']) ?></strong></div><?php endif; ?>
       <?php else: ?><span class="hint">Nic se nevrací.</span><?php endif; ?>
-      <?php if ($onlyRet && Service::usesPacketa((string) $ret['ship_method'])): if (!in_array($docState, ['hotovo'], true) && !in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true)): ?>
-      <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0"><?= csrf_field() ?><input type="hidden" name="act" value="postovne">
-        <button class="pill"><?= $ret['postage_applies'] ? 'Neodečítat poštovné' : 'Odečíst poštovné' ?></button></form>
-      <?php endif; endif; ?>
     </div>
     <?php if ($claim && $ret['claim_deadline']): ?><div class="card"><span class="kicker">Reklamace</span><div style="font-size:14px">Vyřídit nejpozději do <strong><?= e(date_cz($ret['claim_deadline'])) ?></strong></div></div><?php endif; ?>
     <?php if ($ret['note']): ?><div class="card"><span class="kicker">Poznámka zákazníka</span><div style="font-size:14px;white-space:pre-line"><?= e($ret['note']) ?></div></div><?php endif; ?>
