@@ -492,7 +492,7 @@ Http::post('/api/sync/reklamace', function () use ($syncAuth) {
 // doklady k vratkám: GET = co vystavit (?navrhy=1 i návrhy čekající na schválení), POST {"results":[{"no":"V-2026-0001","state":"hotovo","doc_no":"260400261"}]}
 Http::get('/api/sync/doklady', function () use ($syncAuth) {
     $syncAuth();
-    Http::json(['ok' => true, 'returns' => Service::docPending(Http::input('navrhy') === '1')]);
+    Http::json(['ok' => true, 'returns' => Service::docPending(Http::input('navrhy') === '1'), 'payouts' => Service::payoutPending()]);
 });
 
 // výměny (/api/sync/vymeny): GET = objednávky 991… k založení (?navrhy=1 i návrhy) a zálohy k hlídání platby, POST {"results":[{"no":"V-…","state":"hotovo","zf_no":"260800110"}]}
@@ -512,7 +512,11 @@ Http::post('/api/sync/vymeny', function () use ($syncAuth) {
 Http::post('/api/sync/doklady', function () use ($syncAuth) {
     $d = $syncAuth();
     $n = 0;
-    foreach ((array) ($d['results'] ?? []) as $x) if (is_array($x) && Service::docResult($x)) $n++;
+    foreach ((array) ($d['results'] ?? []) as $x) {
+        if (!is_array($x)) continue;
+        if (($x['state'] ?? '') === 'proplaceno') { if (Service::payoutDone($x)) $n++; continue; }   // ODD uhrazený v bance
+        if (Service::docResult($x)) $n++;
+    }
     Http::json(['ok' => true, 'updated' => $n]);
 });
 

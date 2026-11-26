@@ -46,7 +46,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
       elseif ($st === 'na_ceste' && $byPacketa) $next = 'Dorazilo se přepne samo, až Zásilkovna zásilku doručí k nám.';
       elseif (in_array($st, ['novy', 'na_ceste'], true)) $next = 'Až zboží převezmete a zkontrolujete, potvrďte to tlačítkem níže.';
       elseif ($st === 'dorazilo' && !in_array($docState, ['ceka', 'navrh', 'hotovo'], true) && $plan['type']) $next = 'Zkontrolujte zboží a potvrďte, jestli je v pořádku.';
-      elseif ($st === 'dorazilo' && $docState === 'hotovo' && $ret['doc_type'] === 'odd') $next = 'Pošlete peníze. Vyřízeno pak označíte ve výpisu „K proplacení“ – zákazník dostane e-mail.';
+      elseif ($st === 'dorazilo' && $docState === 'hotovo' && $ret['doc_type'] === 'odd') $next = 'Pošlete peníze z banky (VS = číslo dokladu). Jakmile platba projde výpisem, vratka se uzavře sama a zákazník dostane e-mail.';
       elseif ($st === 'dorazilo' && $docState === 'hotovo') $next = 'Odešlete nové zboží a klikněte níže na „Nové zboží odesláno“.';
       elseif (in_array($st, ['dorazilo', 'v_reseni'], true) && $claim) $next = 'Stav se mění podle reklamace v Pohodě.';
       elseif (in_array($st, ['dorazilo', 'v_reseni'], true)) $next = 'Čeká se na doklad v Pohodě.';
@@ -160,7 +160,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
     <div class="card"<?= $docState === 'chyba' ? ' style="border:2px solid var(--red,#d33)"' : '' ?>><span class="kicker">Doklad v Pohodě</span>
       <?php if ($docState === 'hotovo'): ?>
         <div style="font-size:14px"><?= e(Service::DOC_TYPE[$ret['doc_type']] ?? 'Doklad') ?> <strong style="user-select:all"><?= e((string) $ret['doc_no']) ?></strong> je vystavený.</div>
-        <span class="hint"><?= $ret['doc_type'] === 'odd' ? 'Peníze pošlete příkazem k úhradě. Pak ve výpisu vratek „K proplacení“ označte odeslané – zákazník dostane e-mail.' : 'Novou velikost odešlete a změňte stav na Vyřízeno.' ?></span>
+        <span class="hint"><?= $ret['doc_type'] === 'odd' ? 'Peníze pošlete příkazem k úhradě, jako VS číslo dokladu. Jakmile platba projde výpisem z banky, vratka se uzavře sama a zákazník dostane e-mail.' : 'Novou velikost odešlete a změňte stav na Vyřízeno.' ?></span>
       <?php elseif ($docState === 'ceka'): ?>
         <div style="font-size:14px"><?= e(Service::DOC_TYPE[$ret['doc_type']] ?? 'Doklad') ?> čeká na vystavení. Pomocník na KANCL ho vystaví <?= e(Service::pohodaEta()) ?>.</div>
       <?php elseif ($docState === 'navrh'): ?>

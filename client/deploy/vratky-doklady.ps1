@@ -338,6 +338,28 @@ $polozky
     Zapis-Log $uloha ('CHYBA daňové doklady k zálohám {0}' -f $_.Exception.Message)
 }
 
+# ===== 1c. Peníze odeslány: opravný doklad (ODD) z vratky je v Pohodě uhrazený z banky → Client vratku uzavře a pošle zákazníkovi e-mail =====
+# Jen čtení Pohody. Úhrada = KcLikv 0 a vyplněné datum likvidace (bankovní pohyb spárovaný s ODD).
+try {
+    $vyplaty = @((Invoke-RestMethod -Uri ($Portal.TrimEnd('/') + '/api/sync/doklady') -Headers $apiHlav -TimeoutSec 60).payouts)
+    if ($vyplaty.Count -gt 0) {
+        $cisla = ($vyplaty | ForEach-Object { "'" + (([string]$_.doc_no) -replace "[^0-9A-Za-z]", '') + "'" }) -join ','
+        $d = MServer 'vratky_uhrady_odd' ("<dat:dataPackItem id=`"odd`" version=`"2.0`"><lst:listInvoiceRequest version=`"2.0`" invoiceType=`"issuedCorrectiveTax`" invoiceVersion=`"2.0`"><lst:requestInvoice><ftr:queryFilter><ftr:filter>FA.Cislo IN ($cisla) AND FA.KcLikv = 0</ftr:filter></ftr:queryFilter></lst:requestInvoice></lst:listInvoiceRequest></dat:dataPackItem>") 'Vratky - uhrada ODD (jen cteni)'
+        $uhrazene = @{}
+        foreach ($h in $d.SelectNodes("//*[local-name()='invoiceHeader']")) {
+            $c = Text $h 'number/numberRequested'
+            if ($c -and (Text $h 'liquidation/date')) { $uhrazene[$c] = $true }
+        }
+        foreach ($v in $vyplaty) {
+            if (-not $uhrazene.ContainsKey([string]$v.doc_no)) { continue }
+            Zpet ([string]$v.no) 'proplaceno' ([string]$v.doc_no) ''
+            Zapis-Log $uloha ("PROPLACENO {0}: ODD {1} uhrazen v Pohodě → Vyřízeno, zákazník dostal e-mail" -f $v.no, $v.doc_no)
+        }
+    }
+} catch {
+    Zapis-Log $uloha ('CHYBA úhrady ODD {0}' -f $_.Exception.Message)
+}
+
 # ===== 2. Doklad po kontrole vráceného zboží (ODD / faktura) =====
 try {
     $q = if ($Ostre) { '?navrhy=1' } else { '' }

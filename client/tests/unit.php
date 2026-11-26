@@ -215,6 +215,14 @@ t(Service::payout(Service::get((int) $x4['id'])) == 4311, 'před migrací 4 311'
 Service::recheckPostage();
 t(Service::payout(Service::get((int) $x4['id'])) == 4390, 'po migraci 4 390 (poštovné zrušeno)');
 Service::deleteTest(Service::get((int) $x4['id']), null);
+// úhrada opravného dokladu v bance → Vyřízeno samo
+$x5 = Service::create($o4, ['lines' => [$mk($i4[1], 'vratit')], 'ship' => 'zbox', 'account' => '123456789/0800', 'note' => '', 'phone' => '', 'calc' => $c4]);
+\App\Core\Db::exec("UPDATE returns SET status = 'dorazilo', doc_type = 'odd', doc_state = 'hotovo', doc_no = '260400300' WHERE id = ?", [$x5['id']]);
+$pp = array_values(array_filter(Service::payoutPending(), fn($p) => $p['no'] === $x5['no']));
+t(count($pp) === 1 && $pp[0]['doc_no'] === '260400300', 'pomocník hlídá úhradu ODD 260400300');
+t(Service::payoutDone(['no' => $x5['no'], 'state' => 'proplaceno']) && Service::get((int) $x5['id'])['status'] === 'vyrizeno', 'ODD uhrazen → Vyřízeno');
+t(!Service::payoutDone(['no' => $x5['no'], 'state' => 'proplaceno']), 'podruhé už nic (žádný druhý e-mail)');
+\App\Core\Db::exec('DELETE FROM return_events WHERE return_id = ?', [$x5['id']]); \App\Core\Db::exec('DELETE FROM return_lines WHERE return_id = ?', [$x5['id']]); \App\Core\Db::exec('DELETE FROM returns WHERE id = ?', [$x5['id']]);
 
 // velikosti z e-shopu
 $es = \App\Modules\Vratky\Eshop::parse((string) file_get_contents(__DIR__ . '/fixtures/eshop_variant.html'));

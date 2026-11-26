@@ -982,6 +982,26 @@ final class Service
         return true;
     }
 
+    /** Vratky s vystaveným opravným dokladem, u kterých ještě neodešly peníze – pomocník hlídá jejich úhradu v Pohodě. */
+    public static function payoutPending(): array
+    {
+        $out = [];
+        foreach (Db::all("SELECT no, doc_no FROM returns WHERE doc_type = 'odd' AND doc_state = 'hotovo' AND doc_no IS NOT NULL AND doc_no <> ''
+            AND status NOT IN ('vyrizeno', 'zamitnuto') ORDER BY id") as $r) $out[] = ['no' => $r['no'], 'doc_no' => $r['doc_no']];
+        return $out;
+    }
+
+    /** Pomocník: opravný doklad je v Pohodě uhrazený (peníze odešly z banky) → Vyřízeno + e-mail zákazníkovi. */
+    public static function payoutDone(array $x): bool
+    {
+        $r = self::byNo((string) ($x['no'] ?? ''));
+        if (!$r || $r['doc_type'] !== 'odd' || $r['doc_state'] !== 'hotovo' || in_array($r['status'], ['vyrizeno', 'zamitnuto'], true)) return false;
+        $note = 'Peníze ' . money(self::payout($r)) . ' jsme poslali na účet ' . $r['bank_account'] . '. Na účtu by měly být do 1–2 pracovních dnů.';
+        self::setStatus($r, 'vyrizeno', $note, true, null);
+        Notify::statusChanged(self::get((int) $r['id']), $note);
+        return true;
+    }
+
     // ---------- Pohoda: agenda Reklamace ----------
 
     public const POHODA_STATE = ['cekame' => 'Čeká na založení v Pohodě', 'propojeno' => 'V Pohodě'];
