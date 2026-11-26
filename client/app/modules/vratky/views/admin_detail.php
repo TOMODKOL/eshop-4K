@@ -3,6 +3,7 @@ use App\Modules\Vratky\Service;
 use App\Modules\Vratky\Packeta;
 /** @var array $ret @var ?array $order @var array $lines @var array $events */
 $claim = Service::hasAction($lines, 'reklamovat');
+$onlyRet = !Service::hasAction($lines, 'vymenit') && !$claim;
 $docState = (string) ($ret['doc_state'] ?? '');
 $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => Service::shippingRefund($ret)] : []), $lines);
 ?>
@@ -180,12 +181,19 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
           <?php if ((float) ($ret['swap_diff'] ?? 0) != 0): ?><?= (float) $ret['swap_diff'] > 0 ? 'Jiné zboží levnější – vrátit rozdíl' : 'Jiné zboží dražší – doplatek zákazníka' ?>: <?= e(money(abs((float) $ret['swap_diff']))) ?><?php endif; ?>
           <?php if ((float) ($ret['cod_fee'] ?? 0) > 0): ?><br>Dobírka (platí zákazník): <?= e(money($ret['cod_fee'])) ?><?php endif; ?>
           <?php if ($ret['postage_applies'] && $ret['postage'] !== null): ?><br>Poštovné za vrácení: −<?= e(money($ret['postage'])) ?><?php endif; ?>
+          <?php if ($onlyRet && Service::usesPacketa((string) $ret['ship_method']) && $order): [$kLeft, $kLimit] = Service::keptInfo($order, (int) $ret['id']); $kept = $kLeft - (float) $ret['refund_total']; ?>
+            <br><span class="hint">Z objednávky si nechává zboží za <?= e(money(max(0, $kept))) ?> (doprava zdarma od <?= e(money($kLimit)) ?>)<?= $ret['postage_applies'] ? '' : ' – poštovné se neodečítá' ?>.</span>
+          <?php endif; ?>
           <?php if ((float) ($ret['ship_charge'] ?? 0) > 0): ?><br>Doprava (pod hranicí dopravy zdarma): −<?= e(money($ret['ship_charge'])) ?><?php endif; ?>
           <?php if ((float) $ret['ship_refund'] > 0): ?><br>Vrácení dopravy: +<?= e(money($ret['ship_refund'])) ?><?php endif; ?>
           <br><?= $bal < 0 ? 'Zákazník doplatí' : 'Vrátit' ?>: <strong><?= e(money(abs($bal))) ?></strong></div>
         <?php if ($bal < 0): ?><div style="font-size:14px">Doplatek: <strong><?= e(Service::PAY[$ret['pay_method']] ?? '–') ?></strong><?php $cardPay = \App\Modules\Vratky\GpWebpay::paidPayment((int) $ret['id']); ?><?= in_array($ret['pay_method'], ['prevod', 'karta'], true) ? ($ret['zf_paid'] ? ($cardPay ? ' – zaplaceno kartou ' . e(money((float) $cardPay['amount'])) . ' (GP ' . e($cardPay['order_number']) . ($cardPay['test'] ? ', TEST' : '') . '), nové zboží můžete odeslat' : ' – zaplaceno, nové zboží můžete odeslat') : ' – nové zboží odeslat až po zaplacení zálohové faktury') : ' – nové zboží poslat na dobírku' ?></div>
         <?php else: ?><div style="font-size:14px">Na účet: <strong style="user-select:all"><?= e($ret['bank_account']) ?></strong></div><?php endif; ?>
       <?php else: ?><span class="hint">Nic se nevrací.</span><?php endif; ?>
+      <?php if ($onlyRet && Service::usesPacketa((string) $ret['ship_method'])): if (!in_array($docState, ['hotovo'], true) && !in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true)): ?>
+      <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0"><?= csrf_field() ?><input type="hidden" name="act" value="postovne">
+        <button class="pill"><?= $ret['postage_applies'] ? 'Neodečítat poštovné' : 'Odečíst poštovné' ?></button></form>
+      <?php endif; endif; ?>
     </div>
     <?php if ($claim && $ret['claim_deadline']): ?><div class="card"><span class="kicker">Reklamace</span><div style="font-size:14px">Vyřídit nejpozději do <strong><?= e(date_cz($ret['claim_deadline'])) ?></strong></div></div><?php endif; ?>
     <?php if ($ret['note']): ?><div class="card"><span class="kicker">Poznámka zákazníka</span><div style="font-size:14px;white-space:pre-line"><?= e($ret['note']) ?></div></div><?php endif; ?>

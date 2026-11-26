@@ -365,6 +365,14 @@ Http::post('/admin/vratky/{no}', function (string $no) {
         }
         Http::redirect('/admin/vratky/' . $no);
     }
+    if ($act === 'postovne' && ($ret['doc_state'] ?? '') !== 'hotovo' && !in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true)) {
+        $on = !$ret['postage_applies'];
+        $p = Config::get('vratky.return_postage');
+        Db::exec('UPDATE returns SET postage_applies = ?, postage = ?, updated_at = ? WHERE id = ?', [$on ? 1 : 0, $on && $p !== null ? (float) $p : null, Db::now(), $ret['id']]);
+        Service::setStatus($ret, '', $on ? 'Poštovné za vrácení se odečte.' : 'Poštovné za vrácení se neodečítá.', false, (int) $u['id']);
+        Session::flash($on ? 'Poštovné se odečte.' : 'Poštovné se neodečítá – vrací se celá částka.');
+        Http::redirect('/admin/vratky/' . $no);
+    }
     if ($act === 'smazat_test') {
         if (trim(Http::input('potvrzeni')) !== $ret['no']) {
             Session::flash('Pro smazání opište číslo ' . $ret['no'] . '.', 'err');
