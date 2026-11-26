@@ -124,6 +124,15 @@ Get-ChildItem -LiteralPath $tmp -Recurse | Sort-Object FullName | ForEach-Object
 }
 Remove-Item -LiteralPath $tmp -Recurse -Force
 Pis "Hotovo: nahráno $pocet souborů do $Cil." 'Green'
+
+# mezipaměť PHP na hostingu – jinak server ještě dlouho používá staré soubory
+try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $hm = New-Object System.Security.Cryptography.HMACSHA256 -ArgumentList (,[byte[]][Text.Encoding]::UTF8.GetBytes($appKey))
+    $k = ($hm.ComputeHash([Text.Encoding]::UTF8.GetBytes('obnovit-cache')) | ForEach-Object { $_.ToString('x2') }) -join ''
+    $o = Invoke-RestMethod -Uri ("https://client.4kluciodkol.cz/assets/obnovit.php?k=" + $k) -TimeoutSec 30
+    Pis ("Mezipaměť PHP: " + $(if ($o.opcache_reset) { 'vyprázdněna' } else { 'není / nešlo vyprázdnit' }) + " (validate_timestamps=" + $o.validate_timestamps + ", revalidate_freq=" + $o.revalidate_freq + ")")
+} catch { Pis ("Mezipaměť PHP se nepodařilo vyprázdnit: " + $_.Exception.Message) 'Yellow' }
 Pis ("E-maily: " + $(if ($smtp) { ('zapnuté, odesílatel ' + $smtp.UserName) } else { 'vypnuté – jen do logu' }))
 Pis ("Platba kartou (GP webpay): " + $(if ($gp) { $(if ($gp.UserName -eq 'ostry') { 'zapnutá – OSTRÁ brána' } else { 'zapnutá – TESTOVACÍ brána' }) } else { 'vypnutá' }))
 Pis ("Zásilkovna: " + $(if ($packeta) { ('zapnutá, odesílatel ' + '4 KLUCI OD KOL') } else { 'vypnutá – podací kódy se nevytvářejí' }))
