@@ -420,3 +420,39 @@ span.ai-img{background:var(--soft)}
 .steplabs{display:flex;gap:4px;font-size:13px;color:#999}
 .steplabs span{flex:1;text-align:center}
 .steplabs span.cur{color:var(--ink,#111);font-weight:700}
+/* přehled „Na vás čeká“ */
+.vcard.todo{border-left-color:var(--yel);text-decoration:none;color:inherit}
+.vcard.todo:hover{box-shadow:0 0 0 2px var(--ink) inset}
+.todo-l{font-family:"FK Screamer",Impact,sans-serif;font-weight:400;font-size:26px;line-height:1.05;text-transform:uppercase}
+.no-s{font-weight:700;color:var(--ink)}
+.okdot{width:28px;height:28px;border-radius:14px;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.orow{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line2,#eee);color:inherit;text-decoration:none;font-size:14px;line-height:1.4}
+.orow:first-child{border-top:0}
+.orow:hover .txt strong{text-decoration:underline}
+.orow .who{flex:0 0 140px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding-top:2px}
+@media (max-width:520px){.orow{flex-direction:column;gap:2px}.orow .who{flex:none}}
+.howto{border-top:1px solid var(--line2,#eee);padding-top:8px;font-size:14px;line-height:1.55}
+.howto summary{cursor:pointer;font-weight:700;font-size:13px;list-style:none;display:inline-flex;gap:6px;align-items:center}
+.howto summary::-webkit-details-marker{display:none}
+.howto summary::before{content:"?";width:18px;height:18px;border-radius:9px;background:var(--ink);color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center}
+.howto ol,.howto ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.legend{display:flex;gap:14px;flex-wrap:wrap}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{width:6px;height:14px;border-radius:2px;display:inline-block}
+/* detail: karta „co teď“ */
+.nowcard.mine{box-shadow:inset 6px 0 0 var(--yel)}
+.copybox{background:var(--soft);border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.6}
+.sel{user-select:all}
+.custnote{background:var(--yel-soft);border-radius:10px;padding:10px 12px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.details-body{display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.55;margin-top:10px}
+/* nápověda */
+.help .card p{margin:0;font-size:14px;line-height:1.6}
+.help .card ol,.help .card ul{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.55}
+.help summary.hs{cursor:pointer;font-weight:700;font-size:16px}
+.howto.more summary::before{content:"+";background:var(--off);color:var(--ink);font-size:14px}
+.howto.more[open] summary::before{content:"−"}
+.col.wide>.layout{width:100%}
+@media (max-width:520px){
+  .tabs{overflow-x:auto;scrollbar-width:none}
+  .tabs a{padding:8px 12px 7px;font-size:14px;white-space:nowrap;flex-shrink:0}
+}

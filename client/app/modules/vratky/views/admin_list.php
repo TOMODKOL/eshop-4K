@@ -5,19 +5,7 @@ $colors = ['novy' => '#ffc524', 'na_ceste' => '#7fb0e6', 'dorazilo' => '#231F20'
 $typLabel = ['reklamace' => 'Reklamace', 'vymena' => 'Výměna', 'vratka' => 'Vrácení'];
 ?>
 <div class="col wide">
-  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;gap:6px"><span class="kicker">Prodejna</span><h1 class="h2"><?= $q !== '' ? 'HLEDÁNÍ' : mb_strtoupper(Service::TYPY[$typ]) ?></h1></div>
-    <form method="get" action="<?= url('/admin/vratky') ?>" style="display:flex;gap:6px;margin:0">
-      <label class="sr" for="q">Hledat</label>
-      <input class="f" id="q" name="q" value="<?= e($q) ?>" placeholder="číslo, jméno, e-mail, objednávka" style="height:42px;width:260px;font-size:14px">
-      <button class="pill">Hledat</button>
-    </form>
-  </div>
-  <nav class="tabs" aria-label="Typ">
-    <?php foreach (Service::TYPY as $t => $lab): $n = (int) ($counts[$t][''] ?? 0); ?>
-      <a href="<?= url('/admin/vratky?typ=' . $t) ?>" class="<?= $q === '' && $typ === $t ? 'on' : '' ?>"><?= e($lab) ?><?php if ($n): ?> <small><?= $n ?></small><?php endif; ?></a>
-    <?php endforeach; ?>
-  </nav>
+  <?php $tab = $typ; $heading = $q !== '' ? 'HLEDÁNÍ' : mb_strtoupper(Service::TYPY[$typ]); require __DIR__ . '/admin_head.php'; ?>
   <?php if ($q === ''): ?>
   <nav class="stat" aria-label="Filtr podle stavu">
     <?php foreach (Service::DLAZDICE[$typ] as $k => $lab): $n = (int) ($counts[$typ][$k] ?? 0);
@@ -25,8 +13,9 @@ $typLabel = ['reklamace' => 'Reklamace', 'vymena' => 'Výměna', 'vratka' => 'Vr
       <a href="<?= $href ?>" class="<?= $stav === $k ? 'on' : '' ?><?= in_array($k, ['proplatit', 'doplatek'], true) && $n ? ' hot' : '' ?>" aria-current="<?= $stav === $k ? 'true' : 'false' ?>"><b><?= $n ?></b><span><?= e($lab ?? Service::STATUS[$k]) ?></span></a>
     <?php endforeach; ?>
   </nav>
+  <div class="hint legend"><?php foreach (['novy' => 'čeká na odeslání', 'na_ceste' => 'na cestě', 'dorazilo' => 'dorazilo', 'v_reseni' => 'u dodavatele', 'vyrizeno' => 'vyřízeno', 'zamitnuto' => 'zamítnuto'] as $k => $lab): ?><span><i style="background:<?= $colors[$k] ?>"></i><?= $lab ?></span><?php endforeach; ?></div>
   <?php else: ?>
-  <div class="hint">Výsledky hledání „<?= e($q) ?>“ ve všech reklamacích, vratkách a výměnách · <a href="<?= url('/admin/vratky') ?>">zpět na přehled</a></div>
+  <div class="hint">Výsledky hledání „<?= e($q) ?>“ ve všech reklamacích, vratkách a výměnách, i vyřízených · <a href="<?= url('/admin/vratky') ?>">zpět na přehled</a></div>
   <?php endif; ?>
   <?php \App\Modules\Vratky\Eshop::$budget = 6; // výpis nečeká na desítky stránek e-shopu ?>
   <?php if ($stav === 'proplatit'): ?>

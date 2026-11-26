@@ -17,6 +17,7 @@ $u = \App\Core\Auth::user(); $active = $active ?? ''; ?>
   <?php if ($u): ?>
   <nav class="adminnav" aria-label="Administrace">
     <?php if (cfg('modules.vratky')): ?><a href="<?= url('/admin/vratky') ?>" class="<?= $active === 'vratky' ? 'on' : '' ?>">Reklamace a vratky</a><?php endif; ?>
+    <?php if (cfg('modules.vratky')): ?><a href="<?= url('/admin/napoveda') ?>" class="<?= $active === 'napoveda' ? 'on' : '' ?>">Nápověda</a><?php endif; ?>
     <?php if ($u['role'] === 'admin'): ?><a href="<?= url('/admin/uzivatele') ?>" class="<?= $active === 'users' ? 'on' : '' ?>">Kolegové</a><?php endif; ?>
     <?php if ($u['role'] === 'admin'): ?><a href="<?= url('/admin/emaily') ?>" class="<?= $active === 'emaily' ? 'on' : '' ?>">E-maily</a><?php endif; ?>
     <span><?= e($u['name']) ?></span>

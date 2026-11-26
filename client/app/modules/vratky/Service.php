@@ -982,6 +982,45 @@ final class Service
         return true;
     }
 
+    /** Kdo je na tahu – pro přehled „Na vás čeká“ a pro větu v kartě Stav. */
+    public const WHO = ['vy' => 'Na vás', 'tomas' => 'Na Tomášovi', 'zakaznik' => 'Čeká na zákazníka', 'zasilkovna' => 'Na cestě', 'dodavatel' => 'U dodavatele', 'system' => 'Řeší systém'];
+
+    /**
+     * Co se má s vratkou teď stát: ['who' => klíč WHO, 'label' => krátký úkol, 'hint' => jedna věta].
+     * null = vyřízeno / zamítnuto. Řádky ($r['lines']) musí být načtené.
+     */
+    public static function todo(array $r): ?array
+    {
+        $st = (string) $r['status'];
+        if (in_array($st, ['vyrizeno', 'zamitnuto'], true)) return null;
+        $lines = $r['lines'] ?? self::lines((int) $r['id']);
+        $claim = self::hasAction($lines, 'reklamovat');
+        $doc = (string) ($r['doc_state'] ?? '');
+        $packeta = self::usesPacketa((string) $r['ship_method']);
+        $t = fn(string $who, string $label, string $hint) => ['who' => $who, 'label' => $label, 'hint' => $hint];
+
+        if (($r['pohoda_state'] ?? '') === 'cekame') return $t('vy', 'Založit reklamaci v Pohodě', 'Údaje ke zkopírování a postup jsou u vratky. Client se s Pohodou propojí sám.');
+        if ($doc === 'chyba' || ($r['xorder_state'] ?? '') === 'chyba') return $t('tomas', 'Doklad v Pohodě se nepovedl', 'Dejte vědět Tomášovi, technická zpráva je v Podrobnostech.');
+        if ($packeta && ($r['packeta_error'] ?? '') !== '' && (string) ($r['packeta_password'] ?? '') === '') return $t('tomas', 'Zásilkovna nevytvořila podací kód', 'Dejte vědět Tomášovi, zákazník zatím nemá jak zboží poslat.');
+        if ($claim) {
+            if ($st === 'v_reseni') return $t('dodavatel', 'Posuzuje dodavatel', 'Až se dodavatel vyjádří, změňte stav reklamace v Pohodě.');
+            if ($st === 'dorazilo') return $t('vy', 'Vyřídit reklamaci', 'Posuďte vadu a stav zapisujte v Pohodě (Reklamace). Zákazník dostává e-maily sám.');
+            return $t($st === 'na_ceste' ? 'zasilkovna' : 'zakaznik', $st === 'na_ceste' ? 'Zboží je na cestě k nám' : 'Zákazník ještě zboží neposlal', 'Až dorazí, stav se změní sám.');
+        }
+        if (in_array($st, ['novy', 'na_ceste'], true)) {
+            if (!$packeta) return $t('zakaznik', 'Zákazník zboží přinese / pošle', 'Až zboží převezmete, otevřete vratku a zkontrolujte ho.');
+            return $st === 'na_ceste' ? $t('zasilkovna', 'Zboží je na cestě k nám', 'Až ho Zásilkovna doručí, objeví se tu „Zkontrolovat zboží“.')
+                : $t('zakaznik', 'Zákazník ještě zboží nepodal', 'Až ho podá u Zásilkovny, stav se změní sám.');
+        }
+        // zboží je u nás
+        if (!empty($r['checked_at']) && !empty($r['zf_no']) && empty($r['zf_paid'])) return $t('zakaznik', 'Čeká na doplatek', 'Zboží je zkontrolované. Až zákazník zaplatí, doklad se vystaví sám.');
+        if ($doc === '') return $t('vy', 'Zkontrolovat zboží', 'Zkontrolujte vrácené zboží a potvrďte, jestli je v pořádku.');
+        if ($doc === 'ceka') return $t('system', 'Vystavuje se doklad v Pohodě', 'Pomocník ho vystaví ' . self::pohodaEta() . '.');
+        if ($doc === 'navrh') return $t('tomas', 'Doklad čeká na schválení', 'Návrh dokladu schvaluje Tomáš.');
+        if (($r['doc_type'] ?? '') === 'odd') return $t('tomas', 'Poslat peníze ' . money(self::payout($r)), 'Příkazem z banky, VS = ' . $r['doc_no'] . '. Po spárování výpisu se vratka uzavře sama.');
+        return $t('vy', 'Poslat nové zboží', 'Odešlete nové zboží a potvrďte tlačítkem „Nové zboží odesláno“.');
+    }
+
     /** Vratky s vystaveným opravným dokladem, u kterých ještě neodešly peníze – pomocník hlídá jejich úhradu v Pohodě. */
     public static function payoutPending(): array
     {

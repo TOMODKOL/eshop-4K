@@ -260,11 +260,24 @@ Http::get('/admin/vratky', function () {
     $TYP = "CASE WHEN EXISTS (SELECT 1 FROM return_lines l WHERE l.return_id = r.id AND l.action = 'reklamovat') THEN 'reklamace'"
         . " WHEN EXISTS (SELECT 1 FROM return_lines l WHERE l.return_id = r.id AND l.action = 'vymenit') THEN 'vymena' ELSE 'vratka' END";
     $typ = Http::input('typ');
-    if (!isset(Service::TYPY[$typ])) $typ = (string) Session::get('vratky_typ', 'reklamace');
-    if (!isset(Service::TYPY[$typ])) $typ = 'reklamace';
-    Session::set('vratky_typ', $typ);
     $stav = Http::input('stav');
     $q = Http::input('q');
+    // výchozí obrazovka: Přehled – co je na prodejně, co na kom čeká
+    if ($q === '' && !isset(Service::TYPY[$typ])) {
+        $open = Db::all("SELECT r.*, o.order_no, o.invoice_no, ($TYP) AS typ FROM returns r LEFT JOIN orders o ON o.id = r.order_id
+            WHERE r.status NOT IN ('vyrizeno','zamitnuto') ORDER BY r.id");
+        $mine = []; $other = [];
+        foreach ($open as $r) {
+            $r['lines'] = Service::lines((int) $r['id']);
+            $r['todo'] = Service::todo($r);
+            if (!$r['todo']) continue;
+            if (in_array($r['todo']['who'], ['vy', 'tomas'], true)) $mine[] = $r; else $other[] = $r;
+        }
+        $lastSync = Db::one('SELECT * FROM sync_log ORDER BY id DESC LIMIT 1');
+        View::page('vratky:admin_prehled', ['title' => 'Přehled', 'active' => 'vratky', 'mine' => $mine, 'other' => $other, 'lastSync' => $lastSync], 'admin');
+        return;
+    }
+    if (!isset(Service::TYPY[$typ])) $typ = 'reklamace';
     $FILTR = [
         'proplatit' => "r.doc_type = 'odd' AND r.doc_state = 'hotovo' AND r.status NOT IN ('vyrizeno','zamitnuto')",
         'doplatek'  => "r.zf_no IS NOT NULL AND r.zf_no <> '' AND r.zf_paid = 0 AND r.status NOT IN ('vyrizeno','zamitnuto')",
@@ -295,6 +308,11 @@ Http::get('/admin/vratky', function () {
     $lastSync = Db::one('SELECT * FROM sync_log ORDER BY id DESC LIMIT 1');
     View::page('vratky:admin_list', ['title' => Service::TYPY[$typ], 'active' => 'vratky', 'rows' => $rows, 'counts' => $counts,
         'typ' => $typ, 'stav' => $stav, 'q' => $q, 'lastSync' => $lastSync], 'admin');
+});
+
+Http::get('/admin/napoveda', function () {
+    Auth::require();
+    View::page('vratky:help', ['title' => 'Nápověda', 'active' => 'napoveda'], 'admin');
 });
 
 Http::get('/admin/vratky/foto/{id}', function (string $id) {
@@ -349,6 +367,7 @@ Http::post('/admin/vratky/{no}', function (string $no) {
         Http::redirect('/admin/vratky/' . $no);
     }
     if ($act === 'smazat_test') {
+        if (($u['role'] ?? '') !== 'admin') { Session::flash('Mazat může jen správce.', 'err'); Http::redirect('/admin/vratky/' . $no); }
         if (trim(Http::input('potvrzeni')) !== $ret['no']) {
             Session::flash('Pro smazání opište číslo ' . $ret['no'] . '.', 'err');
             Http::redirect('/admin/vratky/' . $no);

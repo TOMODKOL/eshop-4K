@@ -224,6 +224,17 @@ t(Service::payoutDone(['no' => $x5['no'], 'state' => 'proplaceno']) && Service::
 t(!Service::payoutDone(['no' => $x5['no'], 'state' => 'proplaceno']), 'podruhé už nic (žádný druhý e-mail)');
 \App\Core\Db::exec('DELETE FROM return_events WHERE return_id = ?', [$x5['id']]); \App\Core\Db::exec('DELETE FROM return_lines WHERE return_id = ?', [$x5['id']]); \App\Core\Db::exec('DELETE FROM returns WHERE id = ?', [$x5['id']]);
 
+// co je na tahu (přehled „Na vás čeká“)
+$base = ['id' => 0, 'status' => 'dorazilo', 'ship_method' => 'zbox', 'doc_state' => '', 'doc_type' => '', 'doc_no' => null, 'pohoda_state' => '', 'xorder_state' => '', 'packeta_error' => '', 'packeta_password' => 'X',
+    'checked_at' => null, 'zf_no' => null, 'zf_paid' => 0, 'refund_total' => 1000, 'swap_diff' => 0, 'postage_applies' => 0, 'postage' => null, 'ship_charge' => 0, 'ship_refund' => 0, 'cod_fee' => 0];
+$lv = [['action' => 'vratit']]; $lx = [['action' => 'vymenit']]; $lc = [['action' => 'reklamovat']];
+t(Service::todo($base + ['lines' => $lv])['label'] === 'Zkontrolovat zboží', 'dorazilo → Zkontrolovat zboží (na vás)');
+t(Service::todo(array_merge($base, ['status' => 'na_ceste', 'lines' => $lv]))['who'] === 'zasilkovna', 'na cestě → nic nedělat');
+t(Service::todo(array_merge($base, ['doc_state' => 'hotovo', 'doc_type' => 'odd', 'doc_no' => '260400301', 'lines' => $lv]))['who'] === 'tomas', 'ODD vystaven → peníze posílá Tomáš');
+t(Service::todo(array_merge($base, ['doc_state' => 'hotovo', 'doc_type' => 'fv', 'lines' => $lx]))['label'] === 'Poslat nové zboží', 'výměna s fakturou → Poslat nové zboží');
+t(Service::todo(array_merge($base, ['pohoda_state' => 'cekame', 'lines' => $lc]))['label'] === 'Založit reklamaci v Pohodě', 'reklamace z webu → založit v Pohodě');
+t(Service::todo(array_merge($base, ['status' => 'vyrizeno', 'lines' => $lv])) === null, 'vyřízeno → nic');
+
 // velikosti z e-shopu
 $es = \App\Modules\Vratky\Eshop::parse((string) file_get_contents(__DIR__ . '/fixtures/eshop_variant.html'));
 t($es !== null && count($es['sizes']) === 4, 'e-shop: 4 dlaždice velikostí');
