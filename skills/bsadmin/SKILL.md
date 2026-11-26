@@ -35,6 +35,9 @@ Podklady jsou ve firemním OneDrive `Pomocnik\Podklady pro Claude`, na počíta�
 - **Karty TEST…** jsou testovací sedla, která půjčujeme zákazníkům.
 - **Stejný kód na více kartách.** Kód bývá ve skladě SKLAD, KOMIS, SERVIS, Cyklospeci i Import. Přejmenování platí pro všechny karty. Kopie v „Koš-sklad“ se neřeší.
 - **Text do vzdálené plochy** se vkládá přes schránku: na Macu Cmd+C, ve Windows Ctrl+C, na serveru vždy Ctrl+V. Při ovládání počítače: zapsat text do schránky Macu a ve Windows App vložit Cmd+V (funguje, ověřeno 16. 11. 2026). Psaní po znacích je pomalé a dlouhá pole se zasekávají.
+- **Ovládání z KANCL (Připojení ke vzdálené ploše, 19. 11. 2026).** Text s diakritikou se při psaní posílá přes schránku a vzdálená plocha může vložit starý obsah schránky serveru (stalo se: do názvu se vložil celý popis). Do polí psát jen ASCII (bez háčků, „-“ místo „–“) a po vložení vždy zkontrolovat. Obsah z jedné karty do druhé kopírovat uvnitř serveru (Ctrl+A, Ctrl+C v editoru kódu, Ctrl+V v cílové kartě).
+- **Licence BSADMIN.** Najednou běží jen omezený počet instancí. Hláška „Je spuštěno příliš mnoho instancí aplikace BSADMIN“ (uvádí uživatele, např. 4KPavlO, 4KKrcalS) → požádat uživatele, ať jednu zavře. Po práci BSADMIN vždy zavřít. Přihlášení Ota Hliník je bez hesla (jen OK).
+- **Spuštění BSADMIN na serveru:** vyhledávání v liště vzdálené plochy → „BSADMIN SQL“ → Enter.
 - **Složka Pomocnik na serveru.** Ve Windows App (připojení 4K – Šárka, Folders) je přesměrovaná firemní OneDrive složka Pomocnik, čtení i zápis. Na serveru je jako `\\tsclient\Pomocnik` (Tento počítač → „Pomocnik na Tomas-MacBook“). CSV k importu a exporty z BSADMIN se ukládají přímo tam. Funguje jen v relaci připojené z jeho Macu.
 - **Export z BSADMIN.** V Zásobách pravé tlačítko → „Export zobrazených produktů“. Soubor se uloží do Stažených na serveru. Odtud se přenese přes sdílenou schránku nebo složku vzdálené plochy.
 - **Návody.** Příkazy a postupy psát pro Mac i Windows (kolega používá Windows).
@@ -62,12 +65,12 @@ Platí pro každé větší zavedení (nová značka, přestavba kategorií, sto
 - **Tvorba masteru.** Master vytváří uživatel sám: označí karty → **Seskupit položky**. Já pomáhám hlavně se **správným filtrem** karet.
 - **Přidání karet k existujícímu masteru.** Označit existující master (i se skupinou) a nové karty → Seskupit. Jinak vznikne nový master.
 - **Checkbox Internet** je v detailu karty (záložka Hlavní, dole), ne v gridu.
-- **Popis masteru.** Seskupení popis do masteru nezkopíruje. Master potřebuje vlastní import popisu (Kod = kód masteru).
+- **Importy textu jdou do masteru I do všech variant.** Popis, krátký popis, názvy i tabulka velikostí: CSV obsahuje řádek pro kód masteru a řádek pro každou variantu, všechny se stejným textem (názvy variant s velikostí). Master si text z variant NEPřevezme a stránka webu často zobrazuje právě master (18. 11. 2026: Topstone Carbon 1 Lefty AXS zůstal bez videa, protože v CSV byla jen varianta 00100033-54). Platí i obráceně: jen master nestačí, varianty mají vlastní stránky.
 - **Chyba s kategorií Archiv.** Po seskupení někdy master spadne do „Sklad pro vyřazené produkty\Archiv“. Na webu pak chybí drobečková navigace a master není v sitemapě. Oprava: v Zásobách přetáhnout master do stejné kategorie jako varianty a zkontrolovat, že Umístění ukazuje [hlavní karta].
 - **Výběr velikosti.** Když varianta nemá parametr Velikost (nebo ho má jinak než ostatní), web místo výběru velikosti ukáže seznam celých názvů.
 - **„Související produkty“** nepoužíváme.
 - **Nové karty z feedů** padají do Import / !Importy. Popis připravit dřív, než je kolega přesune na e-shop.
-- **Fotky galerie** se dávají na varianty, master je převezme.
+- **Fotky galerie (pole Obrázky)** se dávají na varianty, master je převezme. To platí JEN pro fotky galerie, ne pro texty (viz výše).
 
 ### Filtry
 
@@ -156,7 +159,13 @@ Zápis a změna parametrů přes XML a fixace cen: viz skill pohoda. Tady jsou j
 - **Aktivní pole.** Zaškrtnout Aktivní jen u polí, která CSV obsahuje.
 - **POZOR – Název POHODA CZ.** Když je pole aktivní a CSV nemá sloupec Nazev, import zapíše prázdný název a BSADMIN ho pošle do Pohody. 16. 11. 2026 tak zmizel název 1 108 kartám Enduro (opraveno XML). Proto: buď CSV vždy obsahuje sloupec Nazev, nebo je pole vypnuté. U každého CSV výslovně uvést, která pole mají být aktivní.
 - **Import Obrázků nahradí stávající obrázky.** Při doplňování musí CSV obsahovat i ty, které už na kartě jsou.
-- **Zdvojené karty.** Import podle Kódu zapíše jen do jedné z nich.
+- **Zdvojené karty.** Import podle Kódu zapíše jen do jedné z nich (první nalezené, např. do KOMIS) a web může ukazovat jinou (Cyklospeci). Před importem zjistit, jestli kód není na více kartách. Po importu ověřit web; kartu, kterou web ukazuje, opravit ručně: v Zásobách filtr Kód → u každé karty Umístění ukáže sklad → otevřít kartu s novým popisem, 1. popis → Zobrazit → Zdrojový kód → Ctrl+A, Ctrl+C → zavřít křížkem → otevřít druhou kartu → Zdrojový kód → Ctrl+A, Ctrl+V → Uložit → zavřít → pravé tlačítko v mřížce → **Uložit všechny změny** (ověřeno 19. 11. 2026 na 00100033-54). Tlačítko OK v okně karty okno nezavře, zavírá se křížkem. Řádek se změnou je kurzívou s červenou ikonou.
+- **Velikost CSV.** Soubor 21 MB se nenaimportoval, soubory do 5 MB prošly. Dělit na soubory do 4,5 MB (hranice mezi kartami jednoho masteru).
+- **Změna souboru po předání.** Když CSV po předání uživateli upravím, musí ho naimportovat znovu. Vždy to napsat do úkolu v Todoistu.
+- **Po importu** se změna na web dostane až robotem (viz Roboti). Ověřit na webu, ne jen v BSADMIN.
+- **Kontrola před importem.** (1) Kódy s mezerou nebo tabulátorem: SQL filtr `SELECT ID FROM SKz WHERE CHARINDEX(CHAR(9),IDS)>0` – import kód ořízne a zapíše do duplicitní karty v jiném skladu (24. 11. 2026: 6 chráničů POC; 29 tabulátorů v kódech odstraněno, uživatel to schválil, Pohodu to neovlivní). Oprava: v detailu karty pole Kód → End → Backspace → v mřížce pravé tlačítko → Uložit všechny změny. (2) Duplicitní kódy (Zdvojené karty výše). (3) Podklad z exportu Zásob, ne z webu: master + všechny varianty včetně těch s vypnutým Internetem.
+- **Kontrola po importu.** Nový export Zásob (stejný filtr `[Id Virtuální] In (…)`) a porovnat s CSV – hlavně Obrázky u všech variant a že se zapsalo do správného Id (ne do kopie ve skladu Import/KOMIS). V náhledu importu (Rozšířený mód) zkontrolovat Id spárovaných karet. Řádky „Obnovené“ = karta v koši/archivu – neoznačovat, import by ji vrátil.
+- **Ovládání importu.** Soubor se vybírá až v Import → Načíst data → Zdroj dat ze souboru; cesta k počítači uživatele `\\tsclient\C\Users\<uživatel>\Downloads\…`. Název souboru psát po 9 znacích (vkládání přes schránku ho rozbije). Dotazy BSADMIN „není výrobce“ / „cena nulová“ jsou jen varování – nemapovaná pole se nepřepíší. Aktivní pole se mění ve Správci importů (filtr sloupce Aktivní: 2 kliky = jen zaškrtnutá), pak Uložit.
 - **Pohoda obrázky** jsou v BSADMIN jen pro čtení. Mění se v Pohodě.
 
 ### Loopback import (vlastní karty → vlastní karty)
@@ -193,7 +202,7 @@ Zápis a změna parametrů přes XML a fixace cen: viz skill pohoda. Tady jsou j
 - **Velikost a posed:** žádné rady s velikostí po telefonu ani bike fitting. Velikost se vybírá na prodejně, e-shop dává 14 dní na výměnu.
 - **Velikost modelky či modelu** patří do popisu, ne jako popisek přes fotku.
 - **Názvy produktů v textu:** jak jsou na kartách e-shopu.
-- **Feedy a popisy:** Aspire nepřepíše popis, který byl jakkoli upraven. Varianty dostanou stejný popis jako master.
+- **Feedy a popisy:** Aspire nepřepíše popis, který byl jakkoli upraven. Při našem importu dostane master i každá varianta stejný popis (v CSV zvlášť řádek pro každý kód).
 - **Tabulka parametrů BSSHOP** pod popisem je skrytá přes CSS.
 - **Konec popisu:** žlutý box s poradenstvím (604 998 800, adresa, otevírací doba). Nadpisy FK Screamer.
 
@@ -244,6 +253,8 @@ Kde se co mění:
 - **Hlavní CSS:** Nastavení → Nastavení aplikace → expertní nastavení → Vlastní HTML → Všechny stránky → Vlastní CSS styly. Nic nemazat. Naše bloky označovat `/* 4K – … */`.
 - **Stylesheety:** Internetový obchod → Stylesheety. Šest našich: „4K – detail produktu“ (0, Specifikace), „4K – Nový detail produktu“ (10), „4K - popisy na mobilu“ (20), „4K - Black Friday menu“ (30), „4K – účet zákazníka“ (40), „4K – výpis produktů“ (50). Vypínají se odškrtnutím Aktivní. V editoru stylesheetu jsou dole tři tlačítka: vlevo „Uložit a zavřít“, uprostřed „Uložit“, vpravo „Zavřít a zahodit změny“ – pozor, ne kliknout vpravo. Po uložení zkontrolovat, že se ve sloupci Délka změnilo číslo.
 - **Minifikátor BSSHOP:** vlastní proměnná nesmí začínat číslicí (`--4k-…` rozbije, používat `--k4-…`); znaky mimo Latin-2 (✕, „ “ apod.) v CSS mění na „?“ – ikonky kreslit CSS, v komentářích se jim vyhnout.
+- **„4K - popisy na mobilu“** (19. 11. 2026): do šířky 600 px dá v rozbalovacích sadách popisů (.am4k/.wo4k details) samotné fotky (`div > img:only-child`, aspoň 2 vedle sebe) do 2 sloupců, lichou doprostřed. Kód: `web/css/4K-popisy-na-mobilu.css` v repozitáři eshop-4K.
+- **Mobil** dělá přes 70 % přístupů. Boční okraj stránky na telefonu (10 px) zatím zůstává, mobilní zobrazení se bude řešit při redesignu webu (rozhodnuto 19. 11. 2026).
 - **Akční ikony:** Nastavení → Akční ikony.
 - **Typy plateb:** Nastavení typů plateb.
 - **Dostupnost:** Nastavení dostupnosti.
@@ -334,6 +345,13 @@ U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory
 - **Bez feedu:** Paul Lange.
 - **Dovozci:** Cyklospeciality (Woom, Rascal, FÍHA), Bottico (DT Swiss).
 - **Data pro nové karty** se berou z B2B portálů. Přihlášení zadává uživatel.
+
+## Roboti a synchronizace na web
+
+- Změny z BSADMIN (popisy, názvy) přenáší na web robot **Eshop synchronizátor produktů** v úloze „Synchronizace zásob“ (fronta 2, zhruba každých 30 minut). Ceny a sklady mají vlastní roboty.
+- **Kontrola:** Roboti → Ovládání robotů → záložka 2. fronta. Odškrtnout Informace, zaškrtnout kompletní log → Filtrovat. Detail chyby je ve spodním panelu (Ctrl+End na konec). Vpravo je čas do dalšího běhu.
+- **OutOfMemoryException** (18. 11. 2026 ve 23:19 a 23:37, po velkých importech popisů): robot spadne a na web nejde nic z popisů ani názvů. V 0:08 prošel sám. Když se opakuje, je to pro podporu BSSHOP (paměť služby). Prevence: velké importy po dávkách a mezi nimi nechat robota doběhnout.
+- Chyba „Error reading item … Popis2/techspec“ v detailu není chyba konkrétní karty, ale důsledek nedostatku paměti.
 
 ## Úklid a automatizace
 
