@@ -67,7 +67,8 @@ $cfg = $cfg -replace "'sync_token'\s*=>\s*''", ("'sync_token' => " + (PhpStr $sy
 if ($smtp) {
     $cfg = $cfg -replace "('mail'\s*=>\s*\[\s*\r?\n\s*'enabled'\s*=>\s*)false", '$1true'
     $cfg = $cfg -replace "'smtp_user'\s*=>\s*'[^']*'", ("'smtp_user'   => " + (PhpStr $smtp.UserName))
-    $cfg = $cfg -replace "'from'\s*=>\s*'[^']*'", ("'from'        => " + (PhpStr $smtp.UserName))
+    # jen 'from' s e-mailem (v mail), NE 'from' s datem u pravidel dopravy (shipping_rules)
+    $cfg = $cfg -replace "'from'\s*=>\s*'[^'@]*@[^']*'", ("'from'        => " + (PhpStr $smtp.UserName))
     $cfg = [regex]::Replace($cfg, "'smtp_pass'\s*=>\s*''", { param($m) "'smtp_pass'   => " + (PhpStr $smtp.GetNetworkCredential().Password) })
 }
 if ($packeta) {
