@@ -71,7 +71,10 @@ MODEL = {'sl', 'lite', 'race', 'aero', 'ultra', 'mips', 'team', 'comp', 'hi-mod'
          'ultra', 'fz', 'hz', 'ls', 'ss', 'half', 'zip', 'light',
          # kola: jiné provedení = jiná výbava („Synapse Carbon 2“ × „… SmartSense“, „Topstone Carbon 1 AXS“ × „… Lefty AXS“,
          # „Topstone CAAD 3 Cues 1x“ × „… Flat Bar“, „Esecta S“ × „Esecta S EQ“)
-         'lefty', 'eq', 'smartsense', 'bar'}
+         'lefty', 'eq', 'smartsense', 'bar',
+         # jiný výrobek téže řady (26. 11.): „Resistance Enduro Glove“ × „… Adj Glove“, „Premio Glove“ × „Premio Evo Glove“,
+         # „Flanders Warm“ × „… Neck“, „Core Jersey“ × „Core Lightweight Jersey“, „Winter Socks“ × „… EVO“, „Blinder Mini“ přední × zadní × Twinpack
+         'adj', 'adjustable', 'evo', 'neck', 'lightweight', 'unisea', 'twinpack', 'přední', 'zadní'}
 BARVA_I_MODEL = {'light', 'air', 'carbon'}   # „Light Black“, „Air Blue“: když za nimi jde další slovo, může to být barva
 def slova_modelu(r):   # slova modelu/velikosti ve zbytku názvu (kromě „Light Black“ apod., kde jde o barvu)
     out = []
