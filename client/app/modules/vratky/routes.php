@@ -352,6 +352,19 @@ Http::post('/admin/vratky/{no}', function (string $no) {
         Session::flash($err ?? (!empty($r['zf_no']) && empty($r['zf_paid']) ? 'Zapsáno – doklad se vystaví sám, až přijde doplatek.' : 'Doklad se vystaví v Pohodě ' . Service::pohodaEta() . '.'), $err ? 'err' : 'ok');
         Http::redirect('/admin/vratky/' . $no);
     }
+    if ($act === 'problem' && !in_array($ret['status'], ['vyrizeno', 'zamitnuto'], true)) {
+        $why = mb_substr(trim(Http::input('why')), 0, 2000);
+        if ($why === '') { Session::flash('Napište, co je špatně.', 'err'); Http::redirect('/admin/vratky/' . $no); }
+        if (Http::input('what') === 'zamitnout') {
+            Service::setStatus($ret, 'zamitnuto', $why, true, (int) $u['id']);
+            if ($ret['email'] !== '') Notify::statusChanged(Service::get((int) $ret['id']), $why);
+            Session::flash($ret['email'] !== '' ? 'Zamítnuto. Zákazník dostal e-mail s důvodem.' : 'Zamítnuto. Zákazník nemá e-mail – zavolejte mu.');
+        } else {
+            Service::setStatus($ret, '', 'Problém se zbožím: ' . $why, false, (int) $u['id']);
+            Session::flash('Poznamenáno. Až se se zákazníkem domluvíte, potvrďte zboží nebo vratku zamítněte.');
+        }
+        Http::redirect('/admin/vratky/' . $no);
+    }
     if ($act === 'smazat_test') {
         if (trim(Http::input('potvrzeni')) !== $ret['no']) {
             Session::flash('Pro smazání opište číslo ' . $ret['no'] . '.', 'err');

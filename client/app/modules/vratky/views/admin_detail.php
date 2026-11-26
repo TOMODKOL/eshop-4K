@@ -44,7 +44,7 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
       if ($st === 'novy' && $byPacketa) $next = 'Na cestě se přepne samo, až zákazník zásilku podá u Zásilkovny.';
       elseif ($st === 'na_ceste' && $byPacketa) $next = 'Dorazilo se přepne samo, až Zásilkovna zásilku doručí k nám.';
       elseif (in_array($st, ['novy', 'na_ceste'], true)) $next = 'Až zboží převezmete a zkontrolujete, potvrďte to tlačítkem níže.';
-      elseif ($st === 'dorazilo' && !in_array($docState, ['ceka', 'navrh', 'hotovo'], true) && $plan['type']) $next = 'Zkontrolujte zboží a potvrďte tlačítkem níže.';
+      elseif ($st === 'dorazilo' && !in_array($docState, ['ceka', 'navrh', 'hotovo'], true) && $plan['type']) $next = 'Zkontrolujte zboží a potvrďte, jestli je v pořádku.';
       elseif ($st === 'dorazilo' && $docState === 'hotovo' && $ret['doc_type'] === 'odd') $next = 'Pošlete peníze. Vyřízeno pak označíte ve výpisu „K proplacení“ – zákazník dostane e-mail.';
       elseif ($st === 'dorazilo' && $docState === 'hotovo') $next = 'Odešlete nové zboží a klikněte níže na „Nové zboží odesláno“.';
       elseif (in_array($st, ['dorazilo', 'v_reseni'], true) && $claim) $next = 'Stav se mění podle reklamace v Pohodě.';
@@ -54,8 +54,11 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
     <div class="card"><span class="kicker">Stav</span>
       <div class="prog"><div class="bars"><?php foreach ($pSteps as $i => $lab): ?><i class="<?= $i <= $pCur ? ($pRej && $i === $pCur ? 'rej' : 'ok') : '' ?>"></i><?php endforeach; ?></div>
         <div class="steplabs"><?php foreach ($pSteps as $i => $lab): ?><span<?= $i === $pCur ? ' class="cur"' : '' ?>><?= e($lab) ?></span><?php endforeach; ?></div></div>
+      <?php $lastProb = null; foreach ($events as $ev) if (str_starts_with((string) $ev['note'], 'Problém se zbožím: ')) $lastProb = $ev;
+        if ($lastProb && $open && empty($ret['checked_at'])): ?><div class="warn" style="font-size:13px"><?= e($lastProb['note']) ?> <span class="hint">(<?= e(date_cz($lastProb['created_at'], true)) ?>)</span></div><?php endif; ?>
       <?php if ($next !== ''): ?><span class="hint" style="font-size:13px"><?= e($next) ?></span><?php endif; ?>
-        <?php if ($plan['type'] && !in_array($docState, ['ceka', 'navrh', 'hotovo'], true) && !($ret['checked_at'] && !empty($ret['zf_no']) && empty($ret['zf_paid'])) && $open): ?>
+      <?php $arrived = in_array($st, ['dorazilo', 'v_reseni'], true) || !$byPacketa;   // u Zásilkovny až po doručení k nám
+      if ($plan['type'] && $arrived && !in_array($docState, ['ceka', 'navrh', 'hotovo'], true) && !($ret['checked_at'] && !empty($ret['zf_no']) && empty($ret['zf_paid'])) && $open): ?>
       <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
         <input type="hidden" name="act" value="<?= $docState === 'chyba' ? 'doklad_znovu' : 'doklad' ?>">
         <?php foreach ($lines as $l): if ($l['action'] !== 'vymenit') continue; if ((string) ($l['new_code'] ?? '') !== ''): ?><input type="hidden" name="new_code[<?= (int) $l['id'] ?>]" value="<?= e((string) $l['new_code']) ?>"><?php continue; endif; ?>
@@ -73,6 +76,17 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
         <button class="btn" style="align-self:flex-start">Nové zboží odesláno ✓</button>
       </form>
       <?php endif; ?>
+      <?php if ($open && $arrived && !in_array($docState, ['ceka', 'navrh', 'hotovo'], true)): ?>
+      <details style="border-top:1px solid var(--line2);padding-top:10px"><summary class="link" style="cursor:pointer;padding:0">Zboží není v pořádku</summary>
+        <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:10px 0 0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
+          <input type="hidden" name="act" value="problem">
+          <div class="field" style="margin:0"><label class="l" for="why">Co je špatně?</label><textarea class="f" id="why" name="why" rows="3" required placeholder="Např. Zboží je použité / chybí původní krabice / jiné zboží, než jsme prodali…"></textarea></div>
+          <label class="chk"><input type="radio" name="what" value="vyresit" checked><span>Jen poznamenat – domluvím se se zákazníkem (vratka zůstane otevřená, nic se mu nepošle)</span></label>
+          <label class="chk"><input type="radio" name="what" value="zamitnout"><span>Zamítnout – zákazník dostane e-mail s tímto důvodem, zboží mu pošleme zpět</span></label>
+          <button class="btn ghost" style="align-self:flex-start">Uložit</button>
+        </form>
+      </details>
+      <?php endif; ?>
     </div>
 
     <form class="card" method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" data-once>
@@ -83,15 +97,6 @@ $plan = Service::docPlan(array_merge($ret, $docState === '' ? ['ship_refund' => 
       <?php else: ?><span class="hint">Zákazník nemá e-mail – informujte ho telefonem.</span><?php endif; ?>
       <button class="btn ghost" style="align-self:flex-start">Uložit poznámku</button>
     </form>
-    <?php if ($open): ?>
-    <details class="card"><summary class="kicker" style="cursor:pointer">Zamítnout</summary>
-      <form data-once method="post" action="<?= url('/admin/vratky/' . $ret['no']) ?>" style="margin:8px 0 0;display:flex;flex-direction:column;gap:8px"><?= csrf_field() ?>
-        <input type="hidden" name="status" value="zamitnuto"><input type="hidden" name="notify" value="1">
-        <div class="field" style="margin:0"><label class="l" for="why">Důvod (zákazník ho dostane e-mailem)</label><textarea class="f" id="why" name="note" rows="3" required></textarea></div>
-        <button class="btn" style="align-self:flex-start;background:#b3261e;border-color:#b3261e;color:#fff">Zamítnout</button>
-      </form>
-    </details>
-    <?php endif; ?>
 
     <div class="card"><span class="kicker">Historie</span>
       <?php foreach ($events as $ev): ?>
