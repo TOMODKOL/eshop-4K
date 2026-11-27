@@ -33,5 +33,10 @@ Definice se vkládá v BSADMIN přes „Přidat ze schránky“ (obsah souboru 4
 - Spuštění: Roboti → Ovládání robotů → 2. fronta → Automatická úloha „Automatický import 4K univerzální“ → Spustit (běh ~1 min).
 - Postup: do `4K-univerzalni.csv` dát řádky (Kod + jen měněné sloupce) → push → Spustit → kontrola. Soubor je veřejný: nedávat ceny ani interní data.
 
+## Složka Importy (od 27. 11. 2026)
+- Robot **„Automatický import - 4K import (FTP Importy)“** (Id 77, úloha #19, každých 15 min): importér 4K - univerzální, zdroj `https://cdn.4kluciodkol.cz/data/user-content/Obr%C3%A1zky/Eshop/Importy/import.csv`, změny → C:\IPODNIK\BSSHOP\Importy\4K-import-ftp-zmeny.csv.
+- Soubor `import.csv` do OneDrive `Pomocnik\Fotky\Importy` (Kod + libovolné sloupce z tabulky); KANCL (nahraj-fotky.ps1) ho nahraje na FTP, po 45 min vyprázdní.
+- Definici nikdy neměnit (20 aktivních polí, Mazání Nikdy).
+
 ## GLS
 - Robot „Automatický import - 4K nadrozměrné (GLS)“ (Id 73, loopback, jen Aktualizovat změněné), úloha „Automatický import 4K nadrozměrné (GLS)“ fronta 2, denně 1:15.
