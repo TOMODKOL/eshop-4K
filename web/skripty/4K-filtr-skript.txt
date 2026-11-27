@@ -5,7 +5,10 @@
    v2 (27. 11. 2026): přepínání záložek řídí skript – BSSHOP na dotykových displejích
    záložky jen přidával (multiSelected), takže bylo otevřených víc panelů najednou.
    Po výběru hodnoty BSSHOP filtr překreslí – skript vrátí naposledy otevřenou záložku
-   a hlídá, aby byl otevřený vždy jen jeden panel (v3, 27. 11. 2026). */
+   a hlídá, aby byl otevřený vždy jen jeden panel (v3, 27. 11. 2026).
+   v4 (27. 11. 2026): hodnoty filtru Velikost jsou seskupené podle typu (oblečení, rozpětí, US, EU, EU Wide) – skupiny dělí jen větší mezera;
+   parametry typu „značka + číslo“ (Model telefonu…) podle značky, uvnitř značky větší mezera
+   mezi řadami (11, 12, 13…). Platí ve všech kategoriích, ostatní filtry se nemění. */
 (function () {
   var F = '#AttributeTabsFilter';
   var posledni = null;
@@ -38,10 +41,72 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') H().classList.remove('fx-open');
   });
+  /* velikosti seskupit podle typu – jen nastaví pořadí (CSS order) a vloží prázdné oddělovače, prvky BSSHOP nepřesouvá */
+  function skupina(v) {
+    v = (v || '').trim();
+    if (/wide/i.test(v)) return 4;
+    if (/^\d+X*[SL]$/i.test(v)) return 0;
+    if (/^\d+([,.]\d+)?\s*[-\/]\s*\d+([,.]\d+)?$/.test(v)) return 1;
+    var n = parseFloat(v.replace(',', '.'));
+    if (/^\d+([,.]\d+)?$/.test(v)) return n !== n ? 5 : (Math.max(n, 20) === n ? 3 : 2);
+    if (/^[0-9]/.test(v)) return 5;
+    return 0;
+  }
+  /* model telefonu: skupina = značka (text před prvním číslem), např. „iPhone“, „Samsung Galaxy S“ */
+  function rada(v) {
+    var m = (v || '').trim().match(/^\D*/);
+    return (m ? m[0] : '').trim().toLowerCase();
+  }
+  function seskup() {
+    var cony = document.querySelectorAll(F + ' .AttributeFilterValues dc-con');
+    for (var c = 0; c != cony.length; c++) {
+      var con = cony[c];
+      if (con.getAttribute('data-fx') === '1') continue;
+      con.setAttribute('data-fx', '1');
+      /* Velikost (v kterékoli kategorii) → podle typu velikosti; jiný parametr, jehož všechny hodnoty
+         jsou „značka + číslo“ (iPhone 15, Galaxy S24, Pixel 9…) → podle značky a řady; ostatní (barva,
+         výrobce, šířka…) zůstávají beze změny */
+      var velikost = !!con.closest('.attr_Velikost');
+      var vsechny = con.querySelectorAll('.value input'), model = !velikost && vsechny.length !== 0;
+      for (var t = 0; t != vsechny.length; t++) {
+        if (!/^[^0-9]*[A-Za-z][^0-9]*[0-9]/.test(vsechny[t].getAttribute('data-value') || '')) { model = false; break; }
+      }
+      if (!velikost && !model) continue;
+      var hodnoty = con.querySelectorAll('.value'), klice = [], poradi = {}, skup = [], rady = [];
+      for (var i = 0; i != hodnoty.length; i++) {
+        var inp = hodnoty[i].querySelector('input'), v = inp ? inp.getAttribute('data-value') : hodnoty[i].textContent;
+        var g = model ? rada(v) : skupina(v);
+        if (!(g in poradi)) { poradi[g] = model ? klice.length : g; klice.push(g); }
+        hodnoty[i].style.order = String(poradi[g] * 1000 + i + 1);
+        skup.push(poradi[g]);
+        rady.push(model ? ((v || '').trim().match(/^\D*\d+/) || [''])[0].toLowerCase() : '');
+      }
+      /* uvnitř značky větší mezera mezi řadami (11 | 12 | 13…) – pravý okraj posledního modelu řady,
+         na konci řádku se neprojeví, takže další řádek nezačíná odsazený */
+      for (var a = 0; a != hodnoty.length; a++) {
+        for (var b = a + 1; b != hodnoty.length; b++) {
+          if (skup[b] !== skup[a]) continue;
+          if (rady[b] !== rady[a]) hodnoty[a].style.setProperty('margin-right', '18px', 'important');
+          break;
+        }
+      }
+      if (klice.length === 0 || klice.length === 1) continue;
+      var cisla = [];
+      for (var k = 0; k != klice.length; k++) cisla.push(poradi[klice[k]]);
+      cisla.sort(function (x, y) { return x - y; });
+      for (var k2 = 1; k2 != cisla.length; k2++) {
+        var odd = document.createElement('div');
+        odd.className = 'fx-skup';
+        odd.style.cssText = 'order:' + (cisla[k2] * 1000) + ';flex:0 0 100%;height:0;margin:6px 0 0;padding:0';
+        con.appendChild(odd);
+      }
+    }
+  }
   /* po překreslení filtru (AJAX) vrátit otevřenou záložku */
   var cekam = false;
   function obnov() {
     cekam = false;
+    seskup();
     if (posledni === null || !H().classList.contains('fx-open')) return;
     var box = document.querySelector(F);
     if (!box) return;
@@ -52,6 +117,7 @@
     if (navic || !tab.classList.contains('selected') || !tab.classList.contains('multiSelected')) vyber(box, posledni);
   }
   function start() {
+    seskup();
     new MutationObserver(function () {
       if (!cekam) { cekam = true; setTimeout(obnov, 30); }
     }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
