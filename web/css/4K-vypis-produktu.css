@@ -287,3 +287,6 @@ html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important
 
 /* iPhone (Safari): posuvný řádek tlačítek ořízne vyjíždějící panel – při otevřeném panelu se řádek zalomí a neořezává (27. 11. 2026, ověřeno ve Web Inspectoru) */
 @media (max-width:700px){html.fx-open #AttributeTabsFilter .tabpages{overflow:visible!important;flex-wrap:wrap!important;row-gap:8px!important}}
+
+/* iPhone: tažení posuvníku ceny nesmí posouvat celou stránku (27. 11. 2026) */
+#PriceFilter .slider,#PriceFilter .ui-slider,#PriceFilter .ui-slider-handle{touch-action:none!important}

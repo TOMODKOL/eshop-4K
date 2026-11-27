@@ -4,7 +4,8 @@
    nebo dalším kliknutím na stejné tlačítko. Patří k stylesheetu „4K – výpis produktů“.
    v2 (27. 11. 2026): přepínání záložek řídí skript – BSSHOP na dotykových displejích
    záložky jen přidával (multiSelected), takže bylo otevřených víc panelů najednou.
-   Po výběru hodnoty BSSHOP filtr překreslí – skript vrátí naposledy otevřenou záložku. */
+   Po výběru hodnoty BSSHOP filtr překreslí – skript vrátí naposledy otevřenou záložku
+   a hlídá, aby byl otevřený vždy jen jeden panel (v3, 27. 11. 2026). */
 (function () {
   var F = '#AttributeTabsFilter';
   var posledni = null;
@@ -23,7 +24,7 @@
     if (!t || !t.closest) return;
     var tab = t.closest(F + ' .tab');
     if (tab) {
-      e.stopPropagation();
+      e.stopImmediatePropagation();
       e.preventDefault();
       var otevreno = H().classList.contains('fx-open') && tab.classList.contains('selected');
       posledni = tab.getAttribute('data-pageid');
@@ -45,13 +46,15 @@
     var box = document.querySelector(F);
     if (!box) return;
     var tab = box.querySelector('.tab[data-pageid="' + posledni + '"]');
-    if (tab) { if (!tab.classList.contains('selected') || !tab.classList.contains('multiSelected')) vyber(box, posledni); }
-    else H().classList.remove('fx-open');
+    if (!tab) { H().classList.remove('fx-open'); return; }
+    var jine = ':not([data-pageid="' + posledni + '"])';
+    var navic = box.querySelector('.tab.selected' + jine + ', .tab.multiSelected' + jine + ', .page.selected' + jine + ', .page.multiSelected' + jine);
+    if (navic || !tab.classList.contains('selected') || !tab.classList.contains('multiSelected')) vyber(box, posledni);
   }
   function start() {
     new MutationObserver(function () {
       if (!cekam) { cekam = true; setTimeout(obnov, 30); }
-    }).observe(document.body, { childList: true, subtree: true });
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
   }
   if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();
