@@ -1,25 +1,58 @@
 <script>
-/* 4K – filtr ve výpisu: panel se otevře kliknutím na Cena / Velikost / Výrobce,
+/* 4K – filtr ve výpisu: panel se otevře kliknutím na Cena / Barva / Výrobce…,
    zůstane otevřený při zaklikávání hodnot a zavře se kliknutím mimo, klávesou Esc
-   nebo dalším kliknutím na stejné tlačítko. Patří k stylesheetu „4K – výpis produktů“. */
+   nebo dalším kliknutím na stejné tlačítko. Patří k stylesheetu „4K – výpis produktů“.
+   v2 (27. 11. 2026): přepínání záložek řídí skript – BSSHOP na dotykových displejích
+   záložky jen přidával (multiSelected), takže bylo otevřených víc panelů najednou.
+   Po výběru hodnoty BSSHOP filtr překreslí – skript vrátí naposledy otevřenou záložku. */
 (function () {
-  var html = document.documentElement;
-  html.classList.add('fx-js');
   var F = '#AttributeTabsFilter';
-  document.addEventListener('click', function (e) {
+  var posledni = null;
+  function H() { return document.documentElement; }
+  if (H()) H().classList.add('fx-js');
+  function vyber(box, id) {
+    var els = box.querySelectorAll('.tab, .page');
+    for (var i = 0; i != els.length; i++) {
+      var m = els[i].getAttribute('data-pageid') === id;
+      els[i].classList.toggle('selected', m);
+      els[i].classList.toggle('multiSelected', m);
+    }
+  }
+  window.addEventListener('click', function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
     var tab = t.closest(F + ' .tab');
     if (tab) {
-      var otevreno = html.classList.contains('fx-open') && tab.classList.contains('selected');
-      html.classList.toggle('fx-open', !otevreno);
+      e.stopPropagation();
+      e.preventDefault();
+      var otevreno = H().classList.contains('fx-open') && tab.classList.contains('selected');
+      posledni = tab.getAttribute('data-pageid');
+      vyber(tab.closest(F), posledni);
+      H().classList.toggle('fx-open', !otevreno);
       return;
     }
-    if (t.closest(F + ' .SimpleFilter')) { html.classList.remove('fx-open'); return; }
-    if (!t.closest(F)) html.classList.remove('fx-open');
+    if (t.closest(F + ' .SimpleFilter')) { H().classList.remove('fx-open'); return; }
+    if (!t.closest(F)) H().classList.remove('fx-open');
   }, true);
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') html.classList.remove('fx-open');
+    if (e.key === 'Escape') H().classList.remove('fx-open');
   });
+  /* po překreslení filtru (AJAX) vrátit otevřenou záložku */
+  var cekam = false;
+  function obnov() {
+    cekam = false;
+    if (posledni === null || !H().classList.contains('fx-open')) return;
+    var box = document.querySelector(F);
+    if (!box) return;
+    var tab = box.querySelector('.tab[data-pageid="' + posledni + '"]');
+    if (tab) { if (!tab.classList.contains('selected') || !tab.classList.contains('multiSelected')) vyber(box, posledni); }
+    else H().classList.remove('fx-open');
+  }
+  function start() {
+    new MutationObserver(function () {
+      if (!cekam) { cekam = true; setTimeout(obnov, 30); }
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();
 </script>
