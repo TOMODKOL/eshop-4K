@@ -284,3 +284,6 @@ html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important
 #ProductListCustom1 .ProductView .AvailabilityInfo{font-size:13px!important}
 #ProductListCustom1 .ProductView .AddToCart .quantity,#ProductListCustom1 .ProductView .AddToCart .decrease,#ProductListCustom1 .ProductView .AddToCart .increase{display:none!important}
 }
+
+/* iPhone (Safari): posuvný řádek tlačítek ořízne vyjíždějící panel – při otevřeném panelu se řádek zalomí a neořezává (27. 11. 2026, ověřeno ve Web Inspectoru) */
+@media (max-width:700px){html.fx-open #AttributeTabsFilter .tabpages{overflow:visible!important;flex-wrap:wrap!important;row-gap:8px!important}}
