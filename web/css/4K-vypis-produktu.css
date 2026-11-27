@@ -62,8 +62,6 @@
    Bez skriptu zůstane chování BSSHOP (panel otevřený) – filtr tak nikdy nepřestane fungovat. */
 html.fx-js:not(.fx-open) #AttributeTabsFilter .page:not([data-pageid="0"]),
 html.fx-js:not(.fx-open) #AttributeTabsFilter #PriceFilter{display:none!important}
-/* mobil: BSSHOP tam panel ukáže jen s třídou multiSelected, kterou po klepnutí nemusí přidat – otevřený panel podle fx-open (27. 11. 2026) */
-html.fx-js.fx-open #AttributeTabsFilter .page.selected:not([data-pageid="0"]){display:block!important}
 html.fx-js.fx-open #AttributeTabsFilter .tab.selected,
 html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important;border-color:#231F20!important;color:#fff!important}
 
