@@ -290,3 +290,6 @@ html:not(.fx-js) #AttributeTabsFilter .tab.selected{background:#231F20!important
 
 /* iPhone: tažení posuvníku ceny nesmí posouvat celou stránku (27. 11. 2026) */
 #PriceFilter .slider,#PriceFilter .ui-slider,#PriceFilter .ui-slider-handle{touch-action:none!important}
+
+/* počítač: panel s hodnotami filtru (barva, model…) přes celou šířku stránky (27. 11. 2026) */
+#AttributeTabsFilter .page:not([data-pageid="0"]){flex:1 1 100%!important;max-width:none!important}
