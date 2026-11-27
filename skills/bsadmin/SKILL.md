@@ -14,7 +14,7 @@ E-shop běží na BSSHOP; BSADMIN je program na vzdáleném serveru iPodnik (ne 
 
 **Než začneš pracovat na webu, přečti dokument „E-shop 4K – stav a rozhodnutí“** (https://claude.ai/artifact/7DcPoZeGC2Z7UcDWVkGNCu, Claude Docs). Je v něm aktuální stav, rozhodnutí a otevřené úkoly. Když se něco rozhodne, dopiš to tam.
 
-Podklady jsou ve firemním OneDrive `Pomocnik\Podklady pro Claude`, na počítači KANCL v `D:\User\OneDrive - 4 KLUCI OD KOL s.r.o\Pomocnik\Podklady pro Claude` (do 19. 11. 2026 byly v `4 KLUCI OD KOL\AI`):
+Podklady jsou ve firemním OneDrive `Pomocnik\Podklady pro Claude`, na počítači KANCL v `D:\User\OneDrive - 4 KLUCI OD KOL s.r.o\Pomocnik\Podklady pro Claude` (stará složka `4 KLUCI OD KOL\AI` od 19. 11. 2026 neexistuje):
 - 01 Logo
 - 02 Font
 - 03 Barvy a styl
@@ -27,7 +27,7 @@ Podklady jsou ve firemním OneDrive `Pomocnik\Podklady pro Claude`, na počíta�
 - **Komunikace.** Uživateli vykat a mluvit česky. Říká mi „Otík“.
 - **Schvalování.** Na web se nic nezapisuje bez jeho OK. Nastavení BSADMIN a obsah Záhlaví/Zápatí se mění jen s jeho souhlasem. Import Aspire neměnit.
 - **Zadání CSV.** Ke každému CSV pro BSADMIN vždy napsat, které sloupce se importují a na která pole.
-- **Čekání.** Čas, kdy běží synchronizace, využít na jinou práci a výsledek zkontrolovat později.
+- **Čekání.** Čas, kdy běží synchronizace, využít na jinou práci a výsledek zkontrolovat později. Robot (synchronizace) se spouští každých 30 minut (interval mezi běhy, ne délka běhu) – změny jsou na webu až po dalším běhu.
 - **Kontroly webu.** Kontrolovat bez umělého zpomalování. Seznamy karet ale zjišťovat z exportu v BSADMIN, ne hromadným procházením webu (to už způsobilo chyby 503/504).
 - **Zásada.** „Méně je více“: web má být přehledný a jednoduchý.
 - **Vyprodané karty.** Nikdy je nemazat. Karty i master se přesunou do **koše** (viz Postup: vyřazení do koše). Internet se nevypíná. Adresa produktu dál funguje a web nehlásí 404.
@@ -41,6 +41,24 @@ Podklady jsou ve firemním OneDrive `Pomocnik\Podklady pro Claude`, na počíta�
 - **Složka Pomocnik na serveru.** Ve Windows App (připojení 4K – Šárka, Folders) je přesměrovaná firemní OneDrive složka Pomocnik, čtení i zápis. Na serveru je jako `\\tsclient\Pomocnik` (Tento počítač → „Pomocnik na Tomas-MacBook“). CSV k importu a exporty z BSADMIN se ukládají přímo tam. Funguje jen v relaci připojené z jeho Macu.
 - **Export z BSADMIN.** V Zásobách pravé tlačítko → „Export zobrazených produktů“. Soubor se uloží do Stažených na serveru. Odtud se přenese přes sdílenou schránku nebo složku vzdálené plochy.
 - **Návody.** Příkazy a postupy psát pro Mac i Windows (kolega používá Windows).
+
+## Zavedení nové značky nebo kategorie – povinný kontrolní seznam
+
+Platí pro každé větší zavedení (nová značka, přestavba kategorií, stovky karet – např. zapletená kola Mavic/Zipp 11/2026). Na začátku si seznam vypsat jako úkoly. Hotovo je až tehdy, když je každý bod splněný a ověřený na webu, nebo výslovně odložený s důvodem. Uživateli vždy předat celý stav seznamu, ne jen hotovou část. Rozhodnutí o struktuře a o Internetu dělá uživatel.
+
+1. **Struktura kategorií:** ukázat strom a počet kategorií a počkat na OK.
+2. **Nahrávat na eshop** u každé nové kategorie (BSADMIN → Zásoby) – bez toho kategorie na webu není. Úkol se seznamem kategorií do Todoistu.
+3. **Názvy karet** podle pravidel (typ – značka – model – …), bez roku. V Pohodě i v BSADMIN (Název krátký CZ, Název CZ) – CSV názvů patří do importního úkolu.
+4. **Internet:** které karty mají být na webu – rozhodne uživatel.
+5. **Mastery a varianty:** co se seskupí (přední/zadní/sada, velikosti, barvy). Filtr pro uživatele připravit.
+6. **Parametry:** vyplnit všechny hodnoty, které známe – i ty, které už jsou v popisu (hmotnost…). Jednotné hodnoty.
+7. **Parametrický filtr:** zapnout v každé nové kategorii (Editor kategorií → Obsah na stránce) a vybrat parametry.
+8. **„Zobrazit produkty“** u kategorií, které mají karty i podkategorie.
+9. **Popisy produktů:** podle skillu popisy-produktu, včetně kontroly obsahu (fotky po modelech, všechny obrázky dostupné na CDN, kontakt, O značce). Kód masteru i variant.
+10. **Krátký popis a Klíčová slova pro hledání** v CSV.
+11. **Text kategorie a SEO** (titulek, meta popis) – hlavní kategorie, značky a řady, u ostatních aspoň titulek a meta popis.
+12. **Video výrobce**, pokud ho má k většině produktů (jinak vynechat).
+13. **Kontrola na webu po synchronizaci:** drobečková navigace (chyba Archiv), sitemap, filtr, mobil.
 
 ## Karty, mastery, seskupení
 
@@ -145,15 +163,48 @@ Zápis a změna parametrů přes XML a fixace cen: viz skill pohoda. Tady jsou j
 - **Velikost CSV.** Soubor 21 MB se nenaimportoval, soubory do 5 MB prošly. Dělit na soubory do 4,5 MB (hranice mezi kartami jednoho masteru).
 - **Změna souboru po předání.** Když CSV po předání uživateli upravím, musí ho naimportovat znovu. Vždy to napsat do úkolu v Todoistu.
 - **Po importu** se změna na web dostane až robotem (viz Roboti). Ověřit na webu, ne jen v BSADMIN.
+- **Kontrola před importem.** (1) Kódy s mezerou nebo tabulátorem: SQL filtr `SELECT ID FROM SKz WHERE CHARINDEX(CHAR(9),IDS)>0` – import kód ořízne a zapíše do duplicitní karty v jiném skladu (24. 11. 2026: 6 chráničů POC; 29 tabulátorů v kódech odstraněno, uživatel to schválil, Pohodu to neovlivní). Oprava: v detailu karty pole Kód → End → Backspace → v mřížce pravé tlačítko → Uložit všechny změny. (2) Duplicitní kódy (Zdvojené karty výše). (3) Podklad z exportu Zásob, ne z webu: master + všechny varianty včetně těch s vypnutým Internetem.
+- **Kontrola po importu.** Nový export Zásob (stejný filtr `[Id Virtuální] In (…)`) a porovnat s CSV – hlavně Obrázky u všech variant a že se zapsalo do správného Id (ne do kopie ve skladu Import/KOMIS). V náhledu importu (Rozšířený mód) zkontrolovat Id spárovaných karet. Řádky „Obnovené“ = karta v koši/archivu – neoznačovat, import by ji vrátil.
+- **Ovládání importu.** Soubor se vybírá až v Import → Načíst data → Zdroj dat ze souboru; cesta k počítači uživatele `\\tsclient\C\Users\<uživatel>\Downloads\…`. Název souboru psát po 9 znacích (vkládání přes schránku ho rozbije). Dotazy BSADMIN „není výrobce“ / „cena nulová“ jsou jen varování – nemapovaná pole se nepřepíší. Aktivní pole se mění ve Správci importů (filtr sloupce Aktivní: 2 kliky = jen zaškrtnutá), pak Uložit.
 - **Pohoda obrázky** jsou v BSADMIN jen pro čtení. Mění se v Pohodě.
+
+### Loopback import (vlastní karty → vlastní karty)
+- Přidat další… → Loopback. Párovat podle **Pomocný párovací kód <-> id** a v Základním mapování aktivovat **Pomocný párovací kód (import) = sloupec `id`**. Bez toho jsou všechny položky „Nevalidní“.
+- Vstupní pole: `skupina_cesta` (Sklad|Eshop|Komponenty|…), `vetev1–7`, `priznak0–9`, `neaktualizovatCeny` aj. Matematický filtr bere pole holým názvem, např. `Obsahuje(skupina_cesta, "|Velké pumpy", …)` (Obsahuje rozlišuje velikost písmen).
+- Před ostrým během: Import → Druh ceníku = import → Načíst data → přehled (počty rozdílných) → filtr jen Rozdílné → Označit vše → Aktualizovat. Hlášky „není výrobce“ / „nulová cena“ jsou obecné, nemapovaná pole se nemění.
+- „Smazané skladem“ = karty v koši (loopback koš nenačítá); Aktualizovat se jich netýká.
+- Import **4K - nadrozměrné (GLS)** (24. 11. 2026) nastavuje jen příznak „Pouze GLS na adresu“ pro Zapletená kola (Silniční, MTB, Gravel, E-bike, Ráfky), Velké pumpy, Trenažery. Zatím se pouští ručně.
+- Nové volitelné parametry z Pohody (VPr…) BSADMIN uvidí až po synchronizaci parametrů (Nastavení aplikace, expertní → Synchronizace internetových parametrů a E1 parametrů → Synchronizovat parametry) a restartu.
+
+## Licence a automatické úlohy (z e-mailů BSSHOP 2019–2026)
+- Licence **BSSHOP ENTERPRISE + BSADMIN** koupena 06/2021 (faktura 215500878, na dobu neomezenou). Moduly: responzivní šablona, Zásilkovna, GLS parcel, Smartform, platby (ČSOB → GP webpay), Essox, robot Nepoužívané obrázky, Facebook Conversion API, Server Side Tracking (do 2025). Podpora a aktualizace placené ročně, nyní do **14. 5. 2027**. Přídavná licence BSADMIN 4 200 Kč + 1 200 Kč/rok (úkol 164603).
+- **Roboty a automatické úlohy si od 25. 11. 2026 upravujeme a zakládáme sami:** BSSHOP zpřístupnil agendy Nastavení robotů a celé Nastavení automatických úloh (na vlastní riziko). Podporu BSSHOP nežádat, oprava trvá aspoň měsíc.
+- **Univerzální import „4K - univerzální“** (25. 11. 2026): jedna definice CSV importu pro všechny textové a datové importy. Robot pro něj běží jen na vyžádání jedním klikem (Ovládání robotů → Spustit), ne v intervalu.
+- **Automatické úlohy jsou součástí ENTERPRISE.** Dříve je u každého nového importu připravil technik BSSHOP („roboti jsou připravení ve frontě, stačí nastavit interval a zaktivnit“, úkoly 81696 Cyklomax, 81858 LevelSport, 81859 SportImport, 98745 Nassa). Interval a Aktivní pak nastavujeme sami v Roboti → Nastavení automatických úloh. Požadavek do Zákaznického centra formulovat: „připravte robota pro import X ve frontě B (importy)“.
+- Roboti běží ve službě BSSHOP na serveru iPodniku (ne v klientu BSADMIN); služba je vypnutá 2:00–4:00 kvůli zálohám. Synchronizace zásob každých 30 min, Eshop objednávky každých 10 min, importy dodavatelů ve frontě B.
+- E1 parametr „Neaktualizovat ceny“ (VPrBsNeaktCeny) se edituje jen v Pohodě; skript ho přenáší do BSADMIN každých 30 min a před importy (úkol 99119).
+- Koš: do koše posílá jen import Aspire – Produkty u nevalidních (sklad 0 a dodavatel 0 / mimo feed); 4/2024 omylem přesunul všechny karty Aspire (úkol 122121).
+- Import Nassa: jednou vyplněný parametr už nemění a seskupení nemění; nové varianty seskupovat ručně (úkol 102124).
 
 ## Popisy produktů
 
-Šablony, pořadí bloků podle typu produktu, HTML bloky, fotky, video a postup výroby sady popisů jsou ve skillu **popisy-produktu**. Tady zůstává jen to, co se týká karet a BSADMIN:
-- **Geometrie** jde do 2. popisu (rozměry anglicky: Reach, Stack…), **tabulka velikostí** do 3. popisu.
-- **Záložka Specifikace z feedu** se nemění. Whyte a Cannondale jdou z feedu, Amflow se plní ručně.
+### Obsah
+- **Cíl:** popisy lepší než u dovozce a konkurence (ASSOS má vlastní assos-shop.cz). Terminologii lze ověřit na kola-radotin.cz, ale nekopírovat.
+- **Zdroj spec:** specifikace v popisu se bere z webu výrobce.
+- **Záložka Specifikace z feedu** se nemění. Whyte a Cannondale jdou z feedu, Amflow se plní ručně. U Whyte má katalog 2026 přednost před webem výrobce.
+- **Uvést vše důležité.** Raději rozbalovací části než krátit. Jedno téma otevře celou sadu 4–6 dlaždic.
+- **Dlaždice parametrů u kol:** hodnota začíná velkým písmenem („Karbon“). U řazení se uvádí značka („Shimano Ultegra Di2“).
+- **Tabulka velikostí** patří na vlastní záložku (3. popis), **geometrie** do 2. popisu, ani jedno ne do hlavního popisu. U oblečení vždy připravit i tabulku velikostí.
+- **Velikostní tabulka značky** platí každou sezónu stejně. Žádné poznámky typu „padne o půl čísla menší“.
+- **Geometrie:** rozměry anglicky (Reach, Stack…). Na mobilu úzký sloupec popisků.
+- **Velikosti v textu:** uvádět výrobní rozsah, ne jen to, co máme skladem.
+- **Záruka:** nezmiňovat roční záruku výrobce. Uvést jen skutečné bonusy, např. doživotní záruku rámu.
+- **Velikost a posed:** žádné rady s velikostí po telefonu ani bike fitting. Velikost se vybírá na prodejně, e-shop dává 14 dní na výměnu.
+- **Velikost modelky či modelu** patří do popisu, ne jako popisek přes fotku.
+- **Názvy produktů v textu:** jak jsou na kartách e-shopu.
 - **Feedy a popisy:** Aspire nepřepíše popis, který byl jakkoli upraven. Při našem importu dostane master i každá varianta stejný popis (v CSV zvlášť řádek pro každý kód).
 - **Tabulka parametrů BSSHOP** pod popisem je skrytá přes CSS.
+- **Konec popisu:** žlutý box s poradenstvím (604 998 800, adresa, otevírací doba). Nadpisy FK Screamer.
 
 ### Postup vložení popisu
 
@@ -165,7 +216,12 @@ Zápis a změna parametrů přes XML a fixace cen: viz skill pohoda. Tady jsou j
 Větší množství popisů najízdí importem CSV.
 
 ### Obrázky a videa
-- **Obrázky a videa v popisech:** viz skill popisy-produktu (vlastní FTP `Obrázky/Eshop/<Značka>`, WebP, alt, video nahoře).
+- **Obrázky v popisech** jsou na vlastním FTP ve složce `Obrázky/Eshop/<Značka>`, ne odkazem na web výrobce. Ručně se nahrávají přes BSADMIN → Internetový obchod → FTP klient (automatické nahrávání viz skill pohoda, úloha Fotky-FTP).
+- **Další fotky značky**, jejíž složka už byla nahraná na FTP, dávat do nové podsložky, ne do té už nahrané.
+- **Formát:** vždy **WebP**, každý obrázek s vlastním českým **alt** textem a s **width/height** v kódu.
+- **Videa** výrobce zkomprimovat a dát na FTP. Produktové video výrobce dát na začátek popisu místo první (hlavní) fotky, aby nebylo schované níž.
+- **Fotky v popisu** vždy (ne jen text): dohledat na webu výrobce detailní záběry, fotky na lidech a v akci. Popis nesmí vypadat jako druhá galerie (velká fotka + náhledy). Cíl: hezčí než konkurence a chuť koupit.
+- **Výstupy pro web** (CSV k importu, náhledy, ZIPy obrázků) ukládat do podsložek značek v Pomocnik\Fotky (např. Fotky\Sportful).
 - **Galerie produktu:** fotky leží na serveru v `C:\IPODNIK\BSSHOP\BSADMIN\Obrazky\<Značka>\<Sezóna>`. První fotka je pohled zepředu. Šedé pozadí z fotek výrobce opravit.
 - **Velikosti obrázků na CDN:**
   - `/3/` = 50 px
@@ -173,13 +229,30 @@ Větší množství popisů najízdí importem CSV.
   - `/1/` = 500 px (detail)
   - `/2/` ≈ 1 200 px
 
-Terminologie, oslovení a kontakt do popisů: skill popisy-produktu. Adresa prodejny je U Vlečky 726/5c, Brno-Komárov.
+### Terminologie
+- **šířka regular / wide** (nikdy „střih“)
+- **ponožkový návlek**
+- **horská / MTB** (ne „terénní“)
+- **uchycení pro 3šroubové kufry**
+- **Wahoo Speedplay**
+- **ližiny** (nikdy saně)
+- **výřez** (průchozí) / **středový kanál**
+- **závody** (ne granfondo)
+- **treter** (2. pád množného čísla)
+- nepoužívat „temeno“ („stabilní“ zakázané není, viz popisy-produktu)
+- košík = držák na láhev; bidon = láhev
+
+### Oslovení
+- Slogan „Nasedni a jeď“ a krátké výzvy tykají.
+- Vše, co mluví k zákazníkovi, vyká. Text dodavatele s tykáním přepsat na vykání.
+- Kontakt: telefon 604 998 800, U Vlčky 726/5c, Brno, Po–Pá 9–17, So 9–13.
 
 ## Vzhled webu (CSS)
 
 Kde se co mění:
 - **Hlavní CSS:** Nastavení → Nastavení aplikace → expertní nastavení → Vlastní HTML → Všechny stránky → Vlastní CSS styly. Nic nemazat. Naše bloky označovat `/* 4K – … */`.
-- **Stylesheety:** Internetový obchod → Stylesheety. Stav 19. 11. 2026: „4K – detail produktu“ (pořadí 0), „4K - Nový detail produktu“ (10), „4K - popisy na mobilu“ (20). Vypínají se odškrtnutím Aktivní. Nový styl raději jako samostatný stylesheet (Přidat → Pořadí, Název, Aktivní, CSS → Uložit a zavřít) než zásah do stávajícího; vrací se pouhým odškrtnutím.
+- **Stylesheety:** Internetový obchod → Stylesheety. Šest našich: „4K – detail produktu“ (0, Specifikace), „4K – Nový detail produktu“ (10), „4K - popisy na mobilu“ (20), „4K - Black Friday menu“ (30), „4K – účet zákazníka“ (40), „4K – výpis produktů“ (50). Vypínají se odškrtnutím Aktivní. V editoru stylesheetu jsou dole tři tlačítka: vlevo „Uložit a zavřít“, uprostřed „Uložit“, vpravo „Zavřít a zahodit změny“ – pozor, ne kliknout vpravo. Po uložení zkontrolovat, že se ve sloupci Délka změnilo číslo.
+- **Minifikátor BSSHOP:** vlastní proměnná nesmí začínat číslicí (`--4k-…` rozbije, používat `--k4-…`); znaky mimo Latin-2 (✕, „ “ apod.) v CSS mění na „?“ – ikonky kreslit CSS, v komentářích se jim vyhnout.
 - **„4K - popisy na mobilu“** (19. 11. 2026): do šířky 600 px dá v rozbalovacích sadách popisů (.am4k/.wo4k details) samotné fotky (`div > img:only-child`, aspoň 2 vedle sebe) do 2 sloupců, lichou doprostřed. Kód: `web/css/4K-popisy-na-mobilu.css` v repozitáři eshop-4K.
 - **Mobil** dělá přes 70 % přístupů. Boční okraj stránky na telefonu (10 px) zatím zůstává, mobilní zobrazení se bude řešit při redesignu webu (rozhodnuto 19. 11. 2026).
 - **Akční ikony:** Nastavení → Akční ikony.
@@ -199,17 +272,17 @@ Podpora BSSHOP je potřeba jen na šablonu detailu a galerii.
 ### Kde je kód webu
 
 Aktuální kód je v GitHub repozitáři **TOMODKOL/eshop-4K**, složka `web/`. Před úpravou vždy vycházet z něj a novou verzi tam zase uložit.
-
-V repozitáři jsou i skilly pro kolegy (Ondra): `skills/bsadmin/SKILL.md`, `skills/popisy-produktu/SKILL.md` a jejich ZIPy `bsadmin-skill.zip`, `popisy-produktu-skill.zip`. Po každé změně skillu v účtu nahrát do repozitáře novou verzi souboru i ZIPu (README.md popisuje, jak si je kolega nahraje).
-- `web/css/`: jeden soubor na každý stylesheet v BSADMIN, přesně jako je na webu (přehled ve `web/README.md`). Po každé změně v BSADMIN hned uložit sem, žádné souběžné verze.
-- `web/css/4K-vypis-produktu.css`: výpis kategorie. Počet sloupců se nastavuje číslem `--4k-sloupce`.
-- `web/skripty/`: skript filtru do Zápatí.
+- **Pravidlo:** `web/css/` a `web/skripty/` jsou přesná kopie toho, co je teď v BSADMIN (srovnáno 26. 11. 2026). Jeden soubor na jeden stylesheet, žádné souběžné verze – staré verze jsou v historii gitu. Každou změnu v BSADMIN hned zapsat do repozitáře a commitnout. Přehled souborů a kam patří je ve `web/README.md`.
+- `web/css/4K-novy-detail-produktu.css`: detail produktu (v8.2.1 + dlaždice velikostí 6. 11. + záložky 26. 11.).
+- `web/css/4K-vypis-produktu.css`: výpis kategorie (filtr, mřížka, řádkový výpis, stránkování). Počet sloupců se nastavuje číslem `--k4-sloupce`.
+- `web/skripty/`: části Zápatí → 2. obsah → Responsivní v pořadí podle `web/README.md`.
+- Ověření shody: v editoru stylesheetu Ctrl+A, Ctrl+C, přečíst schránku a porovnat; délka v BSADMIN = počet znaků s konci řádků CRLF.
 - `web/popisy/`: vzorový popis kola (SuperSix EVO LAB71).
 - `web/emaily/`: master šablona, potvrzení objednávky, vratka a newsletter.
 - `web/kategorie/`: texty kategorií.
 - `web/ODKAZY.md`: odkazy na návrhy a dokumenty.
 
-U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory `4K-…`, `popis-…`, `NAHLED-…`). Nápovědu BSSHOP (BSSHOP-KB-5 až 48.pdf) najdeš v OneDrive, `Work/4 KLUCI OD KOL/Dokumenty/BSshop - návod`.
+U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory `4K-…`, `popis-…`, `NAHLED-…`). Nápovědu BSSHOP (BSSHOP-KB-5 až 48.pdf) najdeš ve firemním OneDrive v `Pomocnik\Podklady pro Claude\BSshop - návod` (na KANCL `D:\User\OneDrive - 4 KLUCI OD KOL s.r.o\Pomocnik\Podklady pro Claude\BSshop - návod`, dostupné přes nástroje vzdálené plochy). Kopie je i v Tomášově osobním OneDrive, `Work/4 KLUCI OD KOL/Dokumenty/BSshop - návod`. Než začneš v BSADMIN hledat nastavení naslepo, podívej se nejdřív do návodu.
 
 ## Design webu
 
@@ -221,7 +294,7 @@ U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory
 - **Žádné abstrakce**, pokud o ně někdo výslovně nepožádá. Logo vždy z originálního souboru.
 - **Grafické prvky webu:**
   - šipka → z loga v drobečkové navigaci
-  - přeškrtnutá cena šikmo
+  - přeškrtnutá cena šikmo – čára vede zleva shora doprava dolů (ne zleva zdola nahoru)
   - žlutý štítek slevy #ffc524 a zelená „skladem“, jen na webu
   - „4 KLUCI → RADÍ“: slovo za šipkou písmem Slanted, obrysem
 - **Responzivita:** web musí fungovat na iPhonu i na desktopu.
@@ -237,6 +310,7 @@ U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory
 
 ## SEO
 
+- **Nová kategorie = text a SEO.** Každá nová kategorie potřebuje aspoň titulek a meta popis. Hlavní kategorie, značky a řady potřebují i text kategorie. Je to součást zavedení (viz kontrolní seznam), ne dodatečný úkol.
 - **Vstupní analýza:** leden 2026, seo-analyza.vercel.app.
 - **Požadavek BSSHOP 164701:**
   1. Odkaz ?print=1 se z detailu odstraní.
@@ -248,6 +322,7 @@ U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory
 - **Galerie `/2/` jako WebP:** tlačíme na BSSHOP.
 - **EANy 2220… (ASSOS) a 2345… (Cannondale lifestyle):** Google je hlásí, ale nechávají se.
 - **Texty kategorií:** bez značek Maloja, 7Mesh, Alé, Sportful, Rapha, GT, Sidi a Veloforte.
+- **SEO úvodní stránky** (title, meta description, keywords): Internetový obchod → Uživatelský obsah. Popis a Klíčová slova jsou vlevo nahoře v sekci SEO, Titulek a Nadpis (H1) hlavní strany vpravo v sekci Titulek stránky. Ukládá se samo po opuštění pole (ověřeno 23. 11. 2026, návod BSSHOP-KB-5). Popis obsahuje hranici dopravy zdarma – při její změně ho upravit.
 - **SEO a text kategorie v BSADMIN:** Editor kategorií → kategorie (filtr nahoře vlevo, Enter) →
   - záložka **SEO**: Titulek a Popis (meta description, do ~158 znaků);
   - záložka **Obsah na stránce**: zaškrtnout „Povolit vlastní obsah“ → Upravit obsah → Zobrazit → Zdrojový kód → vložit HTML (formát kat-obsah) → OK.
@@ -259,11 +334,14 @@ U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory
 - **Nové značky:** WHYTE, AMFLOW (modely PR, PX), ISADORE, GOBIK.
 - **Klíčové:** Whyte Karve / Karve EVO a Cannondale.
 - **Mavic** jen komponenty, **Rapha** jen vzorky.
+- **Zapletená kola (Mavic/Zipp):** hluboká struktura kategorií až na model (použití → značka → řada → model), aby zákazník mohl zůstat u řady nebo jít na konkrétní model. Internet u těchto karet zapíná uživatel sám. Na webu jen aktuální modely podle webů výrobců a modely, které má Aspire skladem (ty dostanou Internet).
 - **Feedy:**
   - Aspire: B2B API
   - Levelsport: POC RESULT15_POC, LEZYNE RESULT11_LEZYNE; ceny přes mywac.cloud; lyžařské POC ne na web
   - Cyklomax: LAKE
   - Schindler: feed na B2B
+  - Progress Cycle (plán 25. 11. 2026): feed přes robota BSADMIN, jen Giro, Vittoria a Crankbrothers, denně zakládá jen karty, které ještě nemáme. Kódy s předponou PS; stávající karty Progressu překódovat tak, aby se nerozbily feedy Facebook/Google/Heureka.
+  - Peak Design (plán 25. 11. 2026): feed OneFive jen pro data (EAN, kódy, názvy, popisy, ceny), dostupnost z něj nebrat; zakládá jen chybějící karty; párovat podle kódu (ne EAN), kód výrobce bez předpony. Nakupuje se od Agory.
 - **Bez feedu:** Paul Lange.
 - **Dovozci:** Cyklospeciality (Woom, Rascal, FÍHA), Bottico (DT Swiss).
 - **Data pro nové karty** se berou z B2B portálů. Přihlášení zadává uživatel.
@@ -289,8 +367,9 @@ U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory
 
 ## Vyhledávání
 
-- **Plán:** test Elasticsearch za 1 500 Kč měsíčně.
-- **Porovnání:** na skutečných dotazech ze Statistik vyhledávání.
+- **Vlastní vyhledávání:** objednávka Elasticsearch u BSSHOP je zrušená (24. 11. 2026). Vyhledávání (našeptávač + stránka výsledků) dělá Claude vlastním skriptem. Placené AI vyhledávání (Luigi's Box apod.) nechceme.
+- **Seskupování variant ve výsledcích jen podle barvy** v celém sortimentu. Jiný model, velikost nebo verze (iPhone Pro × Pro Max, Cytal × Cytal Lite, SuperSix EVO 1 × EVO 1 SL) je samostatný produkt.
+- **Ladění:** na skutečných dotazech ze Statistik vyhledávání.
 - **Synonyma:** navrhnout, nasadit až po OK.
 
 ## E-maily
@@ -308,6 +387,7 @@ U Tomáše na Macu leží pracovní kopie ve Stažených (`~/Downloads`, soubory
 - **Kopie na eshop@** stejná jako zákazníkovi. Pohoda posílá z info@.
 - **Číslo zásilky** patří do Poznámky vydané faktury, a to co nejdřív. Jinak robot pošle „Odesláno“ bez čísla.
 - **Plán:** Zásilkovna/GLS přes API.
+- **Doprava podle příznaků karty** (BSADMIN, Příznaky produktu): kola mají „Jízdní kola (A)“ (jen PPL, platí i pro rámy). Nadrozměrné zboží – zapletená kola, ráfky (Zapletená kola → Ráfky), velké pumpy, trenažéry – má „Pouze GLS na adresu (D)“: nejde přes Zásilkovnu a vratky jen vlastní dopravou zákazníka. Příznak se zatím nastavuje ručně u celých kategorií, u nových karet těchto kategorií ho zkontrolovat (24. 11. 2026).
 - **Dárkové poukazy:** zatím tištěné, uplatňují se číslem v poznámce.
 
 ## Cenovky kol
